@@ -16,6 +16,7 @@ let filterQuery = '';
 let deleteTargetId = null;
 let currentColor = '#C0392B';
 let isFeatured = false;
+let currentPhotoData = ''; // base64 or URL
 
 const $ = id => document.getElementById(id);
 
@@ -161,6 +162,7 @@ function openForm(id = null) {
   $('formTitle').textContent = id ? '회원 수정' : '회원 추가';
   currentColor = m ? m.color : '#C0392B';
   isFeatured = m ? m.featured : false;
+  currentPhotoData = m ? (m.photoUrl || '') : '';
 
   $('formBody').innerHTML = buildFormHTML(m);
 
@@ -183,6 +185,45 @@ function openForm(id = null) {
   toggleEl.addEventListener('click', () => {
     isFeatured = !isFeatured;
     toggleEl.classList.toggle('on', isFeatured);
+  });
+
+  // photo upload
+  $('fPhotoFile').addEventListener('change', e => {
+    const file = e.target.files[0];
+    if (!file) return;
+    if (file.size > 2 * 1024 * 1024) {
+      alert('파일 크기는 2MB 이하로 해주세요.');
+      e.target.value = '';
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = ev => {
+      currentPhotoData = ev.target.result;
+      $('photoPreview').src = currentPhotoData;
+      $('photoPreviewWrap').style.display = 'block';
+      $('fPhotoUrl').value = '';
+    };
+    reader.readAsDataURL(file);
+  });
+
+  // photo url input
+  $('fPhotoUrl').addEventListener('input', e => {
+    const url = e.target.value.trim();
+    currentPhotoData = url;
+    if (url) {
+      $('photoPreview').src = url;
+      $('photoPreviewWrap').style.display = 'block';
+    } else {
+      $('photoPreviewWrap').style.display = 'none';
+    }
+  });
+
+  // photo remove
+  $('photoRemoveBtn').addEventListener('click', () => {
+    currentPhotoData = '';
+    $('fPhotoUrl').value = '';
+    $('fPhotoFile').value = '';
+    $('photoPreviewWrap').style.display = 'none';
   });
 
   $('formBtnCancel').onclick = closeForm;
@@ -268,8 +309,20 @@ function buildFormHTML(m) {
         <input class="form-input" id="fWebsite" value="${m ? (m.website || '') : ''}" placeholder="www.example.com">
       </div>
       <div class="form-group">
-        <label class="form-label">프로필 사진 URL</label>
-        <input class="form-input" id="fPhoto" value="${m ? (m.photoUrl || '') : ''}" placeholder="https://...">
+        <label class="form-label">프로필 사진</label>
+        <div class="photo-upload-area" id="photoUploadArea">
+          <div class="photo-preview-wrap" id="photoPreviewWrap" style="display:${m && m.photoUrl ? 'block' : 'none'}">
+            <img class="photo-preview" id="photoPreview" src="${m && m.photoUrl ? m.photoUrl : ''}" alt="미리보기">
+            <button type="button" class="photo-remove-btn" id="photoRemoveBtn">✕ 제거</button>
+          </div>
+          <label class="photo-file-label" for="fPhotoFile">
+            <span class="photo-file-icon">📁</span>
+            <span>파일 선택 (JPG, PNG · 2MB 이하)</span>
+          </label>
+          <input type="file" id="fPhotoFile" class="photo-file-input" accept="image/*">
+          <div class="photo-divider"><span>또는 URL 입력</span></div>
+          <input class="form-input" id="fPhotoUrl" value="" placeholder="https://example.com/photo.jpg">
+        </div>
       </div>
     </div>
 
@@ -330,7 +383,7 @@ function submitForm() {
     instagram:     $('fInsta').value.trim(),
     kakao:         $('fKakao').value.trim(),
     website:       $('fWebsite').value.trim(),
-    photoUrl:      $('fPhoto').value.trim(),
+    photoUrl:      currentPhotoData,
     color:         currentColor,
     featured:      isFeatured,
   };
