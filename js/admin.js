@@ -399,24 +399,11 @@ function submitForm() {
   save(); refresh(); closeForm();
 }
 
-// ── Export ────────────────────────────────────────────────────
-function exportData() {
-  const json = JSON.stringify(members, null, 2);
-  const blob = new Blob([json], { type: 'application/json' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = 'bnistar-members.json';
-  a.click();
-  URL.revokeObjectURL(url);
-}
-
 // ── Event Wiring ──────────────────────────────────────────────
 $('loginBtn').onclick = login;
 $('loginInput').addEventListener('keydown', e => { if (e.key === 'Enter') login(); });
 $('logoutBtn').onclick = logout;
 $('addBtn').onclick = () => openForm();
-$('exportBtn').onclick = exportData;
 $('formClose').onclick = closeForm;
 $('formOverlay').addEventListener('click', e => { if (e.target === $('formOverlay')) closeForm(); });
 $('adminSearch').addEventListener('input', e => { filterQuery = e.target.value; renderList(); });
