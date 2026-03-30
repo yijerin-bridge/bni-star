@@ -1,0 +1,294 @@
+/* ============================================================
+   BNI STAR — App Logic
+   ============================================================ */
+
+// Member data is provided by members-data.js (loaded before this file)
+let MEMBERS = loadMembers();
+
+// ── State ────────────────────────────────────────────────────
+let slide = 0;
+let featured = [];
+let carouselTimer = null;
+let touchX0 = 0;
+
+// ── DOM refs ─────────────────────────────────────────────────
+const $ = id => document.getElementById(id);
+const track        = $('carouselTrack');
+const dots         = $('carouselDots');
+const catGrid      = $('categoryGrid');
+const membersGrid  = $('membersGrid');
+const memberCount  = $('memberCount');
+const modalOverlay = $('modalOverlay');
+const modalContent = $('modalContent');
+const catView      = $('categoryView');
+const catTitle     = $('categoryViewTitle');
+const catCount     = $('categoryCount');
+const catGrid2     = $('categoryMembersGrid');
+const searchOvl    = $('searchOverlay');
+const searchInput  = $('searchInput');
+const searchRes    = $('searchResults');
+
+// ── Helpers ──────────────────────────────────────────────────
+function initial(name) { return name.charAt(0); }
+
+function avatarHTML(member, size) {
+  const bg = `background:${member.color}`;
+  const st = `width:${size}px;height:${size}px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:${Math.round(size*.37)}px;font-weight:900;color:white;overflow:hidden;flex-shrink:0;`;
+  if (member.photoUrl) {
+    return `<div style="${st}${bg}"><img src="${member.photoUrl}" alt="${member.name}" style="width:100%;height:100%;object-fit:cover;border-radius:50%"></div>`;
+  }
+  return `<div style="${st}${bg}">${initial(member.name)}</div>`;
+}
+
+// ── Carousel ─────────────────────────────────────────────────
+function initCarousel() {
+  featured = [...MEMBERS].sort(() => Math.random() - .5);
+
+  track.innerHTML = featured.map(m => `
+    <div class="carousel-slide" style="--c:${m.color}" data-id="${m.id}">
+      <div class="slide-bg"></div>
+      <div class="slide-left">
+        <span class="slide-cat">${m.category}</span>
+        <div class="slide-headline">${m.headline || m.specialty}</div>
+        <div class="slide-name"><strong>${m.name}</strong> · ${m.specialty}</div>
+        <button class="slide-btn" style="color:${m.color}" onclick="openModal(${m.id})">
+          프로필 보기 →
+        </button>
+      </div>
+      <div class="slide-right">
+        <div class="slide-avatar" style="background:linear-gradient(145deg,${m.color},rgba(0,0,0,.4))">
+          ${m.photoUrl
+            ? `<img src="${m.photoUrl}" alt="${m.name}">`
+            : `<div class="slide-avatar-placeholder">
+                <span class="initial">${initial(m.name)}</span>
+                <span class="cam">📷 사진</span>
+               </div>`}
+        </div>
+      </div>
+    </div>`).join('');
+
+  dots.innerHTML = featured.map((_, i) =>
+    `<div class="dot${i===0?' on':''}" onclick="gotoSlide(${i})"></div>`
+  ).join('');
+
+  startTimer();
+
+  track.addEventListener('touchstart', e => { touchX0 = e.changedTouches[0].screenX; }, { passive: true });
+  track.addEventListener('touchend',   e => {
+    const dx = touchX0 - e.changedTouches[0].screenX;
+    if (Math.abs(dx) > 48) { gotoSlide(dx > 0 ? slide+1 : slide-1); resetTimer(); }
+  }, { passive: true });
+
+  $('carouselPrev').onclick = () => { gotoSlide(slide-1); resetTimer(); };
+  $('carouselNext').onclick = () => { gotoSlide(slide+1); resetTimer(); };
+}
+
+function gotoSlide(n) {
+  slide = ((n % featured.length) + featured.length) % featured.length;
+  track.style.transform = `translateX(-${slide * 100}%)`;
+  document.querySelectorAll('.dot').forEach((d, i) => d.classList.toggle('on', i === slide));
+}
+function startTimer() { carouselTimer = setInterval(() => gotoSlide(slide+1), 4200); }
+function resetTimer()  { clearInterval(carouselTimer); startTimer(); }
+
+// ── Category grid ─────────────────────────────────────────────
+function renderCategories() {
+  catGrid.innerHTML = CATEGORIES.map(c => {
+    const n = MEMBERS.filter(m => m.category === c.name).length;
+    return `
+      <div class="cat-item" onclick="openCatView('${c.name}')">
+        <div class="cat-icon" style="background:${c.color}18">${c.emoji}</div>
+        <span class="cat-name">${c.name}</span>
+        ${n ? `<span class="cat-badge" style="background:${c.color}">${n}</span>` : ''}
+      </div>`;
+  }).join('');
+}
+
+// ── Member cards ──────────────────────────────────────────────
+function cardHTML(m) {
+  return `
+    <div class="member-card" style="--c:${m.color}" onclick="openModal(${m.id})">
+      <div class="card-avatar" style="background:${m.color}">
+        ${m.photoUrl ? `<img src="${m.photoUrl}" alt="${m.name}">` : initial(m.name)}
+      </div>
+      <div class="card-name">${m.name}</div>
+      <div class="card-co">${m.company}</div>
+      <span class="card-spec" style="background:${m.color}">${m.specialty}</span>
+      <div class="card-target">👤 ${m.targetCustomer}</div>
+    </div>`;
+}
+
+function renderMembers(list = MEMBERS, container = membersGrid) {
+  container.innerHTML = list.map(cardHTML).join('');
+  if (container === membersGrid) memberCount.textContent = `${list.length}명`;
+}
+
+// ── Category view ─────────────────────────────────────────────
+function openCatView(name) {
+  const c = CATEGORIES.find(x => x.name === name);
+  const list = MEMBERS.filter(m => m.category === name);
+  catTitle.textContent = `${c ? c.emoji+' ' : ''}${name}`;
+  catCount.textContent = `${list.length}명`;
+  renderMembers(list, catGrid2);
+  catView.classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+function closeCatView() {
+  catView.classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+// ── Member modal ──────────────────────────────────────────────
+function openModal(id) {
+  const m = MEMBERS.find(x => x.id === id);
+  if (!m) return;
+  const c = CATEGORIES.find(x => x.name === m.category);
+
+  modalContent.innerHTML = `
+    <div class="m-header">
+      <div class="m-avatar" style="background:${m.color};border-color:${m.color}40">
+        ${m.photoUrl
+          ? `<img src="${m.photoUrl}" alt="${m.name}">`
+          : `<span style="font-size:2.1rem;font-weight:900;color:white">${initial(m.name)}</span>`}
+      </div>
+      <span class="m-badge" style="background:${m.color}">${c ? c.emoji+' ' : ''}${m.category}</span>
+      <div class="m-name">${m.name}</div>
+      <div class="m-co">${m.company}</div>
+      <div class="m-spec">${m.specialty}</div>
+    </div>
+
+    <div class="m-section">
+      <div class="m-label">소개</div>
+      <div class="m-desc">${m.description}</div>
+    </div>
+
+    <div class="m-section">
+      <div class="m-label">찾는 고객 유형</div>
+      <div class="m-target">🎯 ${m.targetCustomer}</div>
+    </div>
+
+    <div class="m-section">
+      <div class="m-label">연락처</div>
+      <div class="contact-list">
+        <a href="tel:${m.phone}" class="contact-row phone">
+          <div class="c-icon">📞</div>
+          <div><span class="c-label">전화번호</span><span class="c-val">${m.phone}</span></div>
+        </a>
+        <a href="mailto:${m.email}" class="contact-row email">
+          <div class="c-icon">✉️</div>
+          <div><span class="c-label">이메일</span><span class="c-val">${m.email}</span></div>
+        </a>
+        <div class="contact-row addr">
+          <div class="c-icon">📍</div>
+          <div><span class="c-label">주소</span><span class="c-val">${m.address}</span></div>
+        </div>
+        ${m.kakao ? `
+        <a href="https://open.kakao.com/search/${encodeURIComponent(m.kakao)}" class="contact-row kakao" target="_blank" rel="noopener">
+          <div class="c-icon">💬</div>
+          <div><span class="c-label">카카오톡</span><span class="c-val">${m.kakao}</span></div>
+        </a>` : ''}
+        ${m.instagram ? `
+        <a href="https://instagram.com/${m.instagram}" class="contact-row insta" target="_blank" rel="noopener">
+          <div class="c-icon">📷</div>
+          <div><span class="c-label">인스타그램</span><span class="c-val">@${m.instagram}</span></div>
+        </a>` : ''}
+        ${m.website ? `
+        <a href="https://${m.website}" class="contact-row web" target="_blank" rel="noopener">
+          <div class="c-icon">🌐</div>
+          <div><span class="c-label">웹사이트</span><span class="c-val">${m.website}</span></div>
+        </a>` : ''}
+      </div>
+    </div>
+
+    <div class="m-ctas">
+      <a href="tel:${m.phone}" class="m-cta prim" style="background:${m.color}">📞 전화하기</a>
+      ${m.kakao
+        ? `<a href="https://open.kakao.com/search/${encodeURIComponent(m.kakao)}" class="m-cta sec" target="_blank" rel="noopener">💬 카카오톡</a>`
+        : `<a href="mailto:${m.email}" class="m-cta sec">✉️ 이메일</a>`}
+    </div>`;
+
+  modalOverlay.classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+function closeModal() {
+  modalOverlay.classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+// ── Search ────────────────────────────────────────────────────
+function openSearch() {
+  searchOvl.classList.add('open');
+  setTimeout(() => searchInput.focus(), 300);
+}
+function closeSearch() {
+  searchOvl.classList.remove('open');
+  searchInput.value = '';
+  renderSearchResults('');
+}
+function renderSearchResults(q) {
+  if (!q.trim()) {
+    searchRes.innerHTML = `
+      <div class="search-placeholder">
+        <div class="search-placeholder-icon">🔍</div>
+        <p>전문가 이름이나 전문분야를 검색해보세요</p>
+      </div>`;
+    return;
+  }
+  const ql = q.toLowerCase();
+  const hits = MEMBERS.filter(m =>
+    m.name.includes(q) ||
+    m.specialty.toLowerCase().includes(ql) ||
+    m.category.toLowerCase().includes(ql) ||
+    m.company.toLowerCase().includes(ql) ||
+    m.targetCustomer.toLowerCase().includes(ql) ||
+    m.description.toLowerCase().includes(ql)
+  );
+  if (!hits.length) {
+    searchRes.innerHTML = `
+      <div class="no-results">
+        <div class="no-results-icon">😅</div>
+        <p>"${q}"에 대한 검색 결과가 없습니다</p>
+      </div>`;
+    return;
+  }
+  searchRes.innerHTML = hits.map(m => `
+    <div class="search-item" onclick="pickSearch(${m.id})">
+      <div class="s-avatar" style="background:${m.color}">
+        ${m.photoUrl ? `<img src="${m.photoUrl}" alt="${m.name}">` : initial(m.name)}
+      </div>
+      <div>
+        <div class="s-name">${m.name}</div>
+        <div class="s-spec">${m.specialty} · ${m.category}</div>
+      </div>
+      <span class="s-arrow">›</span>
+    </div>`).join('');
+}
+function pickSearch(id) {
+  closeSearch();
+  setTimeout(() => openModal(id), 280);
+}
+
+// ── Event wiring ──────────────────────────────────────────────
+$('modalClose').onclick    = closeModal;
+$('backBtn').onclick       = closeCatView;
+$('searchBtn').onclick     = openSearch;
+$('searchClose').onclick   = closeSearch;
+$('searchClear').onclick   = () => { searchInput.value=''; searchInput.focus(); renderSearchResults(''); };
+searchInput.addEventListener('input', e => renderSearchResults(e.target.value));
+
+modalOverlay.addEventListener('click', e => { if (e.target === modalOverlay) closeModal(); });
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') { closeModal(); closeSearch(); closeCatView(); }
+});
+
+// ── Init ──────────────────────────────────────────────────────
+function init() {
+  initCarousel();
+  renderCategories();
+  renderMembers();
+}
+
+document.readyState === 'loading'
+  ? document.addEventListener('DOMContentLoaded', init)
+  : init();

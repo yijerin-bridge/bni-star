@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#CC0000">
+  <title>BNI STAR - 전문가 매칭 플랫폼</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <!-- ===== HEADER ===== -->
+  <header class="app-header">
+    <div class="header-inner">
+      <div class="logo">
+        <span class="logo-bni">BNI</span>
+        <span class="logo-star">★</span>
+        <span class="logo-text">STAR</span>
+      </div>
+      <button class="search-btn" id="searchBtn" aria-label="검색">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+          <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+        </svg>
+      </button>
+      <a href="admin.html" class="admin-link" title="관리자">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+          <circle cx="12" cy="8" r="4"/><path d="M6 20v-2a6 6 0 0 1 12 0v2"/>
+        </svg>
+      </a>
+    </div>
+  </header>
+
+  <!-- ===== SEARCH OVERLAY ===== -->
+  <div class="search-overlay" id="searchOverlay">
+    <div class="search-header">
+      <button class="search-close" id="searchClose">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+          <path d="M19 12H5M12 5l-7 7 7 7"/>
+        </svg>
+      </button>
+      <input type="text" class="search-input" id="searchInput"
+        placeholder="이름, 전문분야, 업종 검색..." autocomplete="off">
+      <button class="search-clear" id="searchClear" aria-label="지우기">✕</button>
+    </div>
+    <div class="search-results" id="searchResults">
+      <div class="search-placeholder">
+        <div class="search-placeholder-icon">🔍</div>
+        <p>전문가 이름이나 전문분야를 검색해보세요</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== HOME VIEW ===== -->
+  <main class="app-main" id="homeView">
+
+    <!-- Hero Carousel -->
+    <section class="hero-section">
+      <div class="carousel-container" id="carouselContainer">
+        <div class="carousel-track" id="carouselTrack"></div>
+        <div class="carousel-dots" id="carouselDots"></div>
+        <button class="carousel-btn carousel-prev" id="carouselPrev" aria-label="이전">&#8249;</button>
+        <button class="carousel-btn carousel-next" id="carouselNext" aria-label="다음">&#8250;</button>
+      </div>
+    </section>
+
+    <!-- Category Grid -->
+    <section class="categories-section">
+      <div class="section-header">
+        <h2 class="section-title">전문분야별 찾기</h2>
+        <span class="section-sub">분야를 선택하세요</span>
+      </div>
+      <div class="category-grid" id="categoryGrid"></div>
+    </section>
+
+    <!-- All Members -->
+    <section class="members-section">
+      <div class="section-header">
+        <h2 class="section-title">전체 전문가</h2>
+        <span class="member-count" id="memberCount"></span>
+      </div>
+      <div class="members-grid" id="membersGrid"></div>
+    </section>
+
+  </main>
+
+  <!-- ===== CATEGORY VIEW (Slide-in) ===== -->
+  <div class="category-view" id="categoryView">
+    <div class="category-view-header" id="categoryViewHeader">
+      <button class="back-btn" id="backBtn" aria-label="뒤로">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+          <path d="M19 12H5M12 5l-7 7 7 7"/>
+        </svg>
+      </button>
+      <h2 class="category-view-title" id="categoryViewTitle"></h2>
+      <span class="category-count" id="categoryCount"></span>
+    </div>
+    <div class="members-grid padded" id="categoryMembersGrid"></div>
+  </div>
+
+  <!-- ===== MEMBER MODAL (Bottom Sheet) ===== -->
+  <div class="modal-overlay" id="modalOverlay">
+    <div class="modal-sheet" id="modalSheet">
+      <div class="modal-handle"></div>
+      <button class="modal-close" id="modalClose" aria-label="닫기">✕</button>
+      <div class="modal-content" id="modalContent"></div>
+    </div>
+  </div>
+
+  <script src="js/members-data.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

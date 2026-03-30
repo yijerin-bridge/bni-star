@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BNI STAR 관리자</title>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/admin.css">
+</head>
+<body>
+
+<!-- LOGIN OVERLAY -->
+<div class="login-overlay" id="loginOverlay">
+  <div class="login-box">
+    <div class="login-logo">BNI ★ STAR <span>관리자</span></div>
+    <p class="login-sub">관리자 비밀번호를 입력하세요</p>
+    <input type="password" id="loginInput" class="login-input" placeholder="비밀번호" />
+    <div class="login-error" id="loginError">비밀번호가 올바르지 않습니다</div>
+    <button class="login-btn" id="loginBtn">로그인</button>
+  </div>
+</div>
+
+<!-- ADMIN APP -->
+<div class="admin-app" id="adminApp">
+
+  <!-- Header -->
+  <header class="admin-header">
+    <div class="admin-header-inner">
+      <div class="admin-logo">BNI ★ STAR <span>관리자</span></div>
+      <div class="admin-header-actions">
+        <a href="index.html" class="header-link" target="_blank">메인 사이트</a>
+        <button class="logout-btn" id="logoutBtn">로그아웃</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Content -->
+  <main class="admin-main">
+
+    <!-- Stats -->
+    <div class="stats-row" id="statsRow"></div>
+
+    <!-- Toolbar -->
+    <div class="toolbar">
+      <div class="toolbar-search">
+        <span class="toolbar-search-icon">🔍</span>
+        <input type="text" id="adminSearch" class="toolbar-search-input" placeholder="이름, 전문분야 검색...">
+      </div>
+      <select class="toolbar-filter" id="catFilter">
+        <option value="">전체 카테고리</option>
+      </select>
+    </div>
+
+    <button class="add-btn" id="addBtn">+ 새 회원 추가</button>
+
+    <!-- Member List -->
+    <div class="member-list" id="memberList"></div>
+
+  </main>
+</div>
+
+<!-- FORM MODAL -->
+<div class="form-overlay" id="formOverlay">
+  <div class="form-sheet" id="formSheet">
+    <div class="form-handle"></div>
+    <div class="form-header">
+      <h2 class="form-title" id="formTitle">회원 추가</h2>
+      <button class="form-close" id="formClose">✕</button>
+    </div>
+    <div class="form-body" id="formBody">
+      <!-- injected by JS -->
+    </div>
+  </div>
+</div>
+
+<!-- DELETE CONFIRM -->
+<div class="confirm-overlay" id="confirmOverlay">
+  <div class="confirm-box">
+    <div class="confirm-icon">🗑️</div>
+    <div class="confirm-text" id="confirmText">이 회원을 삭제하시겠습니까?</div>
+    <div class="confirm-buttons">
+      <button class="confirm-cancel" id="confirmCancel">취소</button>
+      <button class="confirm-ok" id="confirmOk">삭제</button>
+    </div>
+  </div>
+</div>
+
+<script src="js/members-data.js"></script>
+<script src="js/admin.js"></script>
+</body>
+</html>
