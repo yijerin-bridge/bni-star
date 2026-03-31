@@ -271,6 +271,7 @@ function pickSearch(id) {
 // ── Event wiring ──────────────────────────────────────────────
 $('modalClose').onclick    = closeModal;
 $('backBtn').onclick       = closeCatView;
+$('catCloseBtn').onclick   = closeCatView;
 $('searchBtn').onclick     = openSearch;
 $('searchClose').onclick   = closeSearch;
 $('searchClear').onclick   = () => { searchInput.value=''; searchInput.focus(); renderSearchResults(''); };

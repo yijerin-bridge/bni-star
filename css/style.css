@@ -326,6 +326,13 @@ img { max-width: 100%; display: block; }
   flex-shrink: 0;
 }
 .back-btn:active { background: rgba(255,255,255,.2); }
+.cat-close-btn {
+  width: 32px; height: 32px; border-radius: 50%;
+  color: white; font-size: 1rem; font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; opacity: .8;
+}
+.cat-close-btn:active { background: rgba(255,255,255,.2); opacity: 1; }
 .category-view-title { color: white; font-size: 1.05rem; font-weight: 700; flex: 1; }
 .category-count  { font-size: .8rem; color: rgba(255,255,255,.8); font-weight: 500; }
 
