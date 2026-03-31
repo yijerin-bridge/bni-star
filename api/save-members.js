@@ -99,7 +99,8 @@ const CATEGORIES = [
   { name: "건설/인테리어", emoji: "🔨", color: "#D35400" },
   { name: "식품/외식",    emoji: "🍽️", color: "#1D8348" },
   { name: "레저/스포츠",  emoji: "🏃",  color: "#1565C0" },
-  { name: "라이프/뷰티",  emoji: "💄",  color: "#AD1457" },
+  { name: "뷰티/패션",    emoji: "💄",  color: "#AD1457" },
+  { name: "라이프/여행",  emoji: "✈️",  color: "#0277BD" },
 ];
 
 // 샘플 프로필 사진 (실제 사진으로 교체 시 관리자에서 URL 입력)

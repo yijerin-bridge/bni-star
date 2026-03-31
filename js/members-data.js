@@ -124,7 +124,7 @@ const MEMBERS_DEFAULT = [
     color: "#117A8B", featured: true, photoUrl: ""
   },
   {
-    id: 13, name: "이지혜", company: "암웨이", category: "라이프/뷰티",
+    id: 13, name: "이지혜", company: "암웨이", category: "뷰티/패션",
     specialty: "화장품",
     headline: "거울 볼 때마다 피부 때문에 자신감이 떨어지시나요?",
     targetCustomer: "피부 트러블, 노화 방지, 미용에 관심 있는 분",
@@ -176,7 +176,8 @@ const CATEGORIES = [
   { name: "건설/인테리어", emoji: "🔨", color: "#D35400" },
   { name: "식품/외식",    emoji: "🍽️", color: "#1D8348" },
   { name: "레저/스포츠",  emoji: "🏃",  color: "#1565C0" },
-  { name: "라이프/뷰티",  emoji: "💄",  color: "#AD1457" },
+  { name: "뷰티/패션",    emoji: "💄",  color: "#AD1457" },
+  { name: "라이프/여행",  emoji: "✈️",  color: "#0277BD" },
 ];
 
 // 샘플 프로필 사진 (실제 사진으로 교체 시 관리자에서 URL 입력)
