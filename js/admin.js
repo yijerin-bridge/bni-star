@@ -2,6 +2,8 @@
    BNI STAR — Admin Panel
    ============================================================ */
 
+const ADMIN_ID   = 'yijerin';
+const ADMIN_PASS = '\uC774\uC7AC\uB9B01!'; // 이재린1!
 const COLOR_PRESETS = [
   '#C0392B','#8E44AD','#2980B9','#1ABC9C',
   '#27AE60','#F39C12','#D35400','#566573',
@@ -15,16 +17,96 @@ let filterQuery = '';
 let deleteTargetId = null;
 let currentColor = '#C0392B';
 let isFeatured = false;
-let currentPhotoData = ''; // base64 or URL
+let currentPhotoData = '';
 
 const $ = id => document.getElementById(id);
 
+// ── Auth ──────────────────────────────────────────────────────
+function checkLogin() {
+  if (sessionStorage.getItem('bnistar_admin') === '1') {
+    showAdmin();
+  }
+}
+function login() {
+  const id  = $('loginId').value.trim();
+  const pw  = $('loginPw').value;
+  if (id === ADMIN_ID && pw === ADMIN_PASS) {
+    sessionStorage.setItem('bnistar_admin', '1');
+    $('loginError').classList.remove('show');
+    $('loginOverlay').classList.add('hidden');
+    showAdmin();
+  } else {
+    $('loginError').classList.add('show');
+    $('loginPw').select();
+  }
+}
+function logout() {
+  sessionStorage.removeItem('bnistar_admin');
+  location.reload();
+}
+function showAdmin() {
+  $('adminApp').style.display = 'block';
+  init();
+}
+
 // ── Data ──────────────────────────────────────────────────────
 function loadData() {
-  members = loadMembers(); // from members-data.js
+  members = loadMembers();
 }
 function save() {
-  saveMembers(members); // from members-data.js
+  saveMembers(members);
+  pushToGitHub();
+}
+
+// ── GitHub Auto-Deploy ─────────────────────────────────────────
+let deployTimer = null;
+async function pushToGitHub() {
+  // debounce: wait 1s after last save before pushing
+  clearTimeout(deployTimer);
+  deployTimer = setTimeout(async () => {
+    showDeployBanner('배포 중...');
+    try {
+      const res = await fetch('/api/save-members', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ members: members.map(m => {
+          // base64 사진은 GitHub에 저장하지 않음 (용량 초과 방지)
+          const copy = { ...m };
+          if (copy.photoUrl && copy.photoUrl.startsWith('data:')) copy.photoUrl = '';
+          return copy;
+        }) })
+      });
+      if (res.ok) {
+        showDeployBanner('✓ 배포 완료 (~30초 후 반영)', true);
+      } else {
+        showDeployBanner('⚠️ 배포 실패 — 로컬 저장은 됐습니다', false, true);
+      }
+    } catch (e) {
+      showDeployBanner('⚠️ 네트워크 오류', false, true);
+    }
+  }, 1000);
+}
+
+function showDeployBanner(msg, success = false, error = false) {
+  let banner = document.getElementById('deployBanner');
+  if (!banner) {
+    banner = document.createElement('div');
+    banner.id = 'deployBanner';
+    banner.style.cssText = `
+      position:fixed; bottom:20px; left:50%; transform:translateX(-50%);
+      padding:10px 20px; border-radius:20px; font-size:.85rem; font-weight:700;
+      z-index:9999; transition:opacity .4s; box-shadow:0 4px 16px rgba(0,0,0,.2);
+      white-space:nowrap;
+    `;
+    document.body.appendChild(banner);
+  }
+  banner.textContent = msg;
+  banner.style.background = error ? '#E74C3C' : success ? '#27AE60' : '#1A1A2E';
+  banner.style.color = 'white';
+  banner.style.opacity = '1';
+  if (success || error) {
+    setTimeout(() => { banner.style.opacity = '0'; }, 3000);
+  }
 }
 
 // ── Render ────────────────────────────────────────────────────
@@ -137,7 +219,6 @@ function openForm(id = null) {
 
   $('formBody').innerHTML = buildFormHTML(m);
 
-  // color swatches
   document.querySelectorAll('.color-swatch').forEach(sw => {
     sw.addEventListener('click', () => {
       currentColor = sw.dataset.color;
@@ -147,10 +228,8 @@ function openForm(id = null) {
     if (sw.dataset.color === currentColor) sw.classList.add('active');
   });
 
-  // custom color input
   $('colorCustom').addEventListener('input', e => { currentColor = e.target.value; });
 
-  // featured toggle
   const toggleEl = $('featuredToggle');
   if (isFeatured) toggleEl.classList.add('on');
   toggleEl.addEventListener('click', () => {
@@ -158,7 +237,6 @@ function openForm(id = null) {
     toggleEl.classList.toggle('on', isFeatured);
   });
 
-  // photo upload
   $('fPhotoFile').addEventListener('change', e => {
     const file = e.target.files[0];
     if (!file) return;
@@ -177,7 +255,6 @@ function openForm(id = null) {
     reader.readAsDataURL(file);
   });
 
-  // photo url input
   $('fPhotoUrl').addEventListener('input', e => {
     const url = e.target.value.trim();
     currentPhotoData = url;
@@ -189,7 +266,6 @@ function openForm(id = null) {
     }
   });
 
-  // photo remove
   $('photoRemoveBtn').addEventListener('click', () => {
     currentPhotoData = '';
     $('fPhotoUrl').value = '';
@@ -333,7 +409,6 @@ function submitForm() {
   const specialty= $('fSpecialty').value.trim();
   const phone    = $('fPhone').value.trim();
 
-  // Validate required
   let valid = true;
   [$('fName'), $('fCompany'), $('fCategory'), $('fSpecialty'), $('fPhone')].forEach(el => {
     if (!el.value.trim()) { el.classList.add('error'); valid = false; }
@@ -371,6 +446,10 @@ function submitForm() {
 }
 
 // ── Event Wiring ──────────────────────────────────────────────
+$('loginBtn').onclick = login;
+$('loginId').addEventListener('keydown', e => { if (e.key === 'Enter') $('loginPw').focus(); });
+$('loginPw').addEventListener('keydown', e => { if (e.key === 'Enter') login(); });
+$('logoutBtn').onclick = logout;
 $('addBtn').onclick = () => openForm();
 $('formClose').onclick = closeForm;
 $('formOverlay').addEventListener('click', e => { if (e.target === $('formOverlay')) closeForm(); });
@@ -387,4 +466,5 @@ function init() {
 }
 
 // Start
-init();
+$('adminApp').style.display = 'none';
+checkLogin();
