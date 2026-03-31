@@ -201,24 +201,28 @@ const SAMPLE_PHOTOS = {
 };
 
 const STORAGE_KEY = 'bnistar_members';
+const DATA_TS = 1; // auto-updated on each admin deploy
+
 function loadMembers() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) {
-      const saved = JSON.parse(raw);
-      return saved.map(m => ({
-        ...m,
-        photoUrl: m.photoUrl || SAMPLE_PHOTOS[m.id] || ''
-      }));
+      const parsed = JSON.parse(raw);
+      if (parsed.ts === DATA_TS && Array.isArray(parsed.data)) {
+        return parsed.data.map(m => ({
+          ...m,
+          photoUrl: m.photoUrl || SAMPLE_PHOTOS[m.id] || ''
+        }));
+      }
     }
   } catch(e) {}
   const withPhotos = MEMBERS_DEFAULT.map(m => ({
     ...m,
     photoUrl: m.photoUrl || SAMPLE_PHOTOS[m.id] || ''
   }));
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(withPhotos));
+  localStorage.setItem(STORAGE_KEY, JSON.stringify({ ts: DATA_TS, data: withPhotos }));
   return withPhotos;
 }
 function saveMembers(list) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
+  localStorage.setItem(STORAGE_KEY, JSON.stringify({ ts: DATA_TS, data: list }));
 }
