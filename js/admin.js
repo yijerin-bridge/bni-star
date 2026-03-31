@@ -112,7 +112,7 @@ function showDeployBanner(msg, success = false, error = false) {
 // ── Render ────────────────────────────────────────────────────
 function renderStats() {
   const featured = members.filter(m => m.featured).length;
-  const cats = new Set(members.map(m => m.category)).size;
+  const cats = CATEGORIES.length;
   $('statsRow').innerHTML = `
     <div class="stat-card">
       <div class="stat-num">${members.length}</div>
