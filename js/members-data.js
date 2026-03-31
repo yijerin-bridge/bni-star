@@ -201,7 +201,7 @@ const SAMPLE_PHOTOS = {
 };
 
 const STORAGE_KEY = 'bnistar_members';
-const DATA_TS = 1; // auto-updated on each admin deploy
+const DATA_TS = 2; // auto-updated on each admin deploy
 
 function loadMembers() {
   try {
