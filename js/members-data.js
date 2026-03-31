@@ -24,33 +24,33 @@ const MEMBERS_DEFAULT = [
     color: "#6C3483", featured: true, photoUrl: "https://randomuser.me/api/portraits/women/44.jpg"
   },
   {
-    id: 3, name: "조현우", company: "현우노무법인", category: "법률/세무",
-    specialty: "인사노무·HR 컨설팅",
-    headline: "직원 문제로 밤잠 설치는 사장님, 계신가요?",
-    targetCustomer: "직원 채용·해고 문제 있는 사업주, 노무 관리가 필요한 중소기업",
-    description: "공인노무사 경력 12년. 취업규칙, 급여 체계 설계, 근로계약서, 해고·징계, 노동부 조사 대응 전문. 사업주와 근로자 모두 만족하는 건강한 노사관계를 만들어 드립니다.",
-    phone: "010-3579-1234", email: "cho@hw-labor.kr", address: "서울시 영등포구 여의도동 567",
-    instagram: "hw_labor", kakao: "hw_labor", website: "www.hw-labor.kr",
-    color: "#566573", featured: false, photoUrl: "https://randomuser.me/api/portraits/men/55.jpg"
+    id: 3, name: "신민재", company: "이차선술집", category: "식품/외식",
+    specialty: "요식업·주점",
+    headline: "분위기 좋은 술집에서 2차를!",
+    targetCustomer: "회식자리 찾는 분",
+    description: "맛있습니다.",
+    phone: "010-5003-6491", email: "", address: "",
+    instagram: "", kakao: "", website: "",
+    color: "#566573", featured: true, photoUrl: "https://randomuser.me/api/portraits/men/55.jpg"
   },
   {
-    id: 4, name: "박성훈", company: "KB손해보험 강남지점", category: "금융/보험",
-    specialty: "기업 리스크·보험 설계",
+    id: 4, name: "나성연", company: "KB손해보험", category: "금융/보험",
+    specialty: "화재보험·손해보험 설계",
     headline: "내 사업을 지켜줄 보험, 제대로 가입하셨나요?",
-    targetCustomer: "사업체 운영자, 직장인, 은퇴 준비 중인 분",
-    description: "보험업계 18년 경력. 기업 배상책임보험, 임원 D&O 보험, 개인 종합자산 관리까지. 복잡한 보험을 쉽게 설명하고 최적의 플랜을 설계해 드립니다.",
-    phone: "010-3456-7890", email: "park@kbins.kr", address: "서울시 강남구 역삼동 789",
-    instagram: "ins_seonghun", kakao: "insurance_park", website: "",
-    color: "#1F618D", featured: false, photoUrl: "https://randomuser.me/api/portraits/men/11.jpg"
+    targetCustomer: "사업체 운영자, 직장인, 은퇴 준비 중인 분, 간병 준비가 필요하신분",
+    description: "기업 배상책임보험, 간병인 보험 등 복잡한 보험을 쉽게 설명하고 최적의 플랜을 설계해 드립니다.",
+    phone: "010-8245-5258", email: "3282614@kbinsure.co.kr", address: "경기도 수원시 팔달구 경수대로 518, KB손해보험 8층",
+    instagram: "", kakao: "", website: "",
+    color: "#F39C12", featured: true, photoUrl: "https://randomuser.me/api/portraits/men/11.jpg"
   },
   {
-    id: 5, name: "최지현", company: "미래에셋증권 WM센터", category: "금융/보험",
-    specialty: "자산관리·투자 컨설팅",
-    headline: "열심히 버는데 자산이 제자리인 느낌이신가요?",
-    targetCustomer: "자산 10억 이상 개인, 법인 자산 운용이 필요한 CEO",
+    id: 5, name: "정영준", company: "와이즈앤밸류", category: "금융/보험",
+    specialty: "자산관리·생명보험",
+    headline: "건강한 노후를 준비할 수 있게 도와드립니다.",
+    targetCustomer: "노후 준비가 필요하신분",
     description: "금융 경력 20년의 PB(Private Banker). 국내외 주식·채권·부동산 펀드 포트폴리오 관리 전문. 세금 효율적인 자산 이전 전략까지 원스톱으로 제공합니다.",
-    phone: "010-4567-8901", email: "choi@mirae.kr", address: "서울시 중구 을지로 101",
-    instagram: "wealth_jihyun", kakao: "jihyun_wealth", website: "www.miraeasset.com",
+    phone: "010-2599-1901", email: "", address: "",
+    instagram: "", kakao: "", website: "",
     color: "#1E8449", featured: true, photoUrl: "https://randomuser.me/api/portraits/women/28.jpg"
   },
   {
@@ -64,14 +64,14 @@ const MEMBERS_DEFAULT = [
     color: "#D68910", featured: false, photoUrl: "https://randomuser.me/api/portraits/men/67.jpg"
   },
   {
-    id: 7, name: "한미래", company: "미래홈 공인중개사사무소", category: "부동산",
-    specialty: "아파트·주거 부동산",
-    headline: "내 집 마련, 이제 진짜 시작하실 때가 됐나요?",
-    targetCustomer: "내 집 마련 준비 중인 분, 이사 계획 중인 가족",
-    description: "주거 부동산 전문 공인중개사. 서울 주요 지역 아파트·빌라·오피스텔 매매·전세 전문. 청약 컨설팅부터 잔금 처리까지 안전하게 안내합니다.",
-    phone: "010-6789-0123", email: "han@mirae-home.kr", address: "서울시 송파구 잠실동 567",
-    instagram: "mirae_home_kr", kakao: "mirae_home", website: "",
-    color: "#148F77", featured: false, photoUrl: "https://randomuser.me/api/portraits/women/63.jpg"
+    id: 7, name: "문혜선", company: "인크루즈", category: "레저/스포츠",
+    specialty: "크루즈여행",
+    headline: "나만을 위한 여행, 이제 진짜 시작하실 때가 됐나요?",
+    targetCustomer: "크루즈 여행을 계획하시는 분, 즐거운 은퇴를 원하시는 분",
+    description: "크루즈 소개해드립니다.",
+    phone: "010-9016-2122", email: "nexy0316@naver.com", address: "",
+    instagram: "", kakao: "", website: "",
+    color: "#148F77", featured: true, photoUrl: "https://randomuser.me/api/portraits/women/63.jpg"
   },
   {
     id: 8, name: "오준혁", company: "디지털포스(주)", category: "IT/디지털",
@@ -124,13 +124,13 @@ const MEMBERS_DEFAULT = [
     color: "#117A8B", featured: false, photoUrl: "https://randomuser.me/api/portraits/women/52.jpg"
   },
   {
-    id: 13, name: "유지민", company: "지민피부과의원", category: "의료/건강",
-    specialty: "피부·미용 의료 시술",
+    id: 13, name: "이지혜", company: "암웨이", category: "뷰티/패션",
+    specialty: "화장품",
     headline: "거울 볼 때마다 피부 때문에 자신감이 떨어지시나요?",
-    targetCustomer: "피부 트러블, 노화 방지, 미용 시술에 관심 있는 분",
-    description: "피부과 전문의. 레이저 시술·보톡스·필러·피부 재생 등 다양한 미용 의료 시술 전문. 자연스럽고 건강한 피부를 위한 최적의 솔루션을 제안합니다.",
-    phone: "010-4680-2345", email: "yoo@jimin-skin.kr", address: "서울시 강남구 압구정동 890",
-    instagram: "dr_jimin_skin", kakao: "jimin_skin", website: "www.jimin-skin.kr",
+    targetCustomer: "피부 트러블, 노화 방지, 미용에 관심 있는 분",
+    description: "자연스럽고 건강한 피부를 위한 최적의 솔루션을 제안합니다.",
+    phone: "010-2275-2250", email: "fcm36000@gmail.com", address: "",
+    instagram: "No.659799", kakao: "", website: "www.amway.co.kr",
     color: "#A93226", featured: true, photoUrl: "https://randomuser.me/api/portraits/women/36.jpg"
   },
   {
