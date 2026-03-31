@@ -308,7 +308,7 @@ img { max-width: 100%; display: block; }
    ============================================================ */
 .category-view {
   position: fixed; inset: 0;
-  background: var(--bg); z-index: 50;
+  background: var(--bg); z-index: 110;
   transform: translateX(100%);
   transition: transform .32s var(--ease);
   overflow-y: auto; padding-bottom: 28px;
