@@ -200,29 +200,12 @@ const SAMPLE_PHOTOS = {
   16: 'https://randomuser.me/api/portraits/women/68.jpg',
 };
 
-const STORAGE_KEY = 'bnistar_members';
-const DATA_TS = 2; // auto-updated on each admin deploy
-
 function loadMembers() {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) {
-      const parsed = JSON.parse(raw);
-      if (parsed.ts === DATA_TS && Array.isArray(parsed.data)) {
-        return parsed.data.map(m => ({
-          ...m,
-          photoUrl: m.photoUrl || SAMPLE_PHOTOS[m.id] || ''
-        }));
-      }
-    }
-  } catch(e) {}
-  const withPhotos = MEMBERS_DEFAULT.map(m => ({
+  return MEMBERS_DEFAULT.map(m => ({
     ...m,
     photoUrl: m.photoUrl || SAMPLE_PHOTOS[m.id] || ''
   }));
-  localStorage.setItem(STORAGE_KEY, JSON.stringify({ ts: DATA_TS, data: withPhotos }));
-  return withPhotos;
 }
 function saveMembers(list) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify({ ts: DATA_TS, data: list }));
+  // no-op: data is persisted via GitHub API (api/save-members)
 }

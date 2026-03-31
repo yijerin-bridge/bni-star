@@ -123,27 +123,14 @@ const SAMPLE_PHOTOS = {
   16: 'https://randomuser.me/api/portraits/women/68.jpg',
 };
 
-const STORAGE_KEY = 'bnistar_members';
 function loadMembers() {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) {
-      const saved = JSON.parse(raw);
-      return saved.map(m => ({
-        ...m,
-        photoUrl: m.photoUrl || SAMPLE_PHOTOS[m.id] || ''
-      }));
-    }
-  } catch(e) {}
-  const withPhotos = MEMBERS_DEFAULT.map(m => ({
+  return MEMBERS_DEFAULT.map(m => ({
     ...m,
     photoUrl: m.photoUrl || SAMPLE_PHOTOS[m.id] || ''
   }));
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(withPhotos));
-  return withPhotos;
 }
 function saveMembers(list) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
+  // no-op: data is persisted via GitHub API (api/save-members)
 }
 `;
 }
