@@ -2,7 +2,6 @@
    BNI STAR — Admin Panel
    ============================================================ */
 
-const ADMIN_PASS = 'bnistar2024';
 const COLOR_PRESETS = [
   '#C0392B','#8E44AD','#2980B9','#1ABC9C',
   '#27AE60','#F39C12','#D35400','#566573',
@@ -19,34 +18,6 @@ let isFeatured = false;
 let currentPhotoData = ''; // base64 or URL
 
 const $ = id => document.getElementById(id);
-
-// ── Auth ──────────────────────────────────────────────────────
-function checkLogin() {
-  if (sessionStorage.getItem('bnistar_admin') === '1') {
-    showAdmin();
-  }
-}
-function login() {
-  const val = $('loginInput').value;
-  if (val === ADMIN_PASS) {
-    sessionStorage.setItem('bnistar_admin', '1');
-    $('loginError').classList.remove('show');
-    $('loginOverlay').classList.add('hidden');
-    showAdmin();
-  } else {
-    $('loginError').classList.add('show');
-    $('loginInput').select();
-  }
-}
-function logout() {
-  sessionStorage.removeItem('bnistar_admin');
-  location.reload();
-}
-function showAdmin() {
-  $('adminApp').style.display = 'block';
-  $('loginOverlay').style.display = 'none';
-  init();
-}
 
 // ── Data ──────────────────────────────────────────────────────
 function loadData() {
@@ -400,9 +371,6 @@ function submitForm() {
 }
 
 // ── Event Wiring ──────────────────────────────────────────────
-$('loginBtn').onclick = login;
-$('loginInput').addEventListener('keydown', e => { if (e.key === 'Enter') login(); });
-$('logoutBtn').onclick = logout;
 $('addBtn').onclick = () => openForm();
 $('formClose').onclick = closeForm;
 $('formOverlay').addEventListener('click', e => { if (e.target === $('formOverlay')) closeForm(); });
@@ -419,5 +387,4 @@ function init() {
 }
 
 // Start
-$('adminApp').style.display = 'none';
-checkLogin();
+init();
