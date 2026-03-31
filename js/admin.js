@@ -130,6 +130,7 @@ function renderStats() {
 
 function renderCatFilter() {
   const sel = $('catFilter');
+  sel.innerHTML = '<option value="">전체 카테고리</option>';
   CATEGORIES.forEach(c => {
     const opt = document.createElement('option');
     opt.value = c.name;
