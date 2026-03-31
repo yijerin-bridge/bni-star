@@ -3,7 +3,7 @@
    ============================================================ */
 
 const ADMIN_ID   = 'yijerin';
-const ADMIN_PASS = '이재린1!';
+const ADMIN_PASS = 'dlwofls1!';
 const COLOR_PRESETS = [
   '#C0392B','#8E44AD','#2980B9','#1ABC9C',
   '#27AE60','#F39C12','#D35400','#566573',
