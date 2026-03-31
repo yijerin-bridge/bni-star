@@ -8,10 +8,10 @@ const MEMBERS_DEFAULT = [
     specialty: "세무·절세 컨설팅",
     headline: "세금, 얼마나 더 줄일 수 있는지 알고 계신가요?",
     targetCustomer: "중소기업 대표, 스타트업 창업자, 프리랜서",
-    description: "공인세무사 경력 20년. 법인 설립부터 절세 전략 수립, 세무조사 대응, 개인사업자 기장까지 토탈 세무 서비스를 제공합니다.",
+    description: "공인세무사 경력 20년. 법인 설립부터 절세 전략 수립, 세무조사 대응, 개인사업자 기장까지 토탈 세무 서비스를 제공합니다. 고객의 비즈니스를 함께 성장시키는 세무 파트너를 찾고 계신다면 연락 주세요.",
     phone: "010-1234-5678", email: "kim@minjun-tax.kr", address: "서울시 강남구 테헤란로 123, 5층",
     instagram: "minjun_tax", kakao: "minjun_tax", website: "www.minjun-tax.kr",
-    color: "#C0392B", featured: true, photoUrl: ""
+    color: "#C0392B", featured: true, photoUrl: "https://randomuser.me/api/portraits/men/32.jpg"
   },
   {
     id: 2, name: "이수연", company: "수연법률사무소", category: "법률/세무",
@@ -21,37 +21,37 @@ const MEMBERS_DEFAULT = [
     description: "변호사 경력 15년. 기업 계약 검토, 부동산 분쟁, 상속, 이혼 등 다양한 법률 분야를 명쾌하게 해결합니다. 초기 상담은 무료로 진행하오니 편하게 연락 주세요.",
     phone: "010-2345-6789", email: "lee@suyeon-law.kr", address: "서울시 서초구 서초대로 456, 8층",
     instagram: "lawyer_suyeon", kakao: "suyeon_law", website: "www.suyeon-law.kr",
-    color: "#6C3483", featured: true, photoUrl: ""
+    color: "#6C3483", featured: true, photoUrl: "https://randomuser.me/api/portraits/women/44.jpg"
   },
   {
-    id: 3, name: "신민재", company: "이차선술집", category: "식품/외식",
-    specialty: "요식업·주점",
-    headline: "분위기 좋은 술집에서 2차를!",
-    targetCustomer: "회식자리 찾는 분",
-    description: "맛있습니다.",
-    phone: "010-5003-6491", email: "", address: "",
-    instagram: "", kakao: "", website: "",
-    color: "#566573", featured: true, photoUrl: ""
+    id: 3, name: "조현우", company: "현우노무법인", category: "법률/세무",
+    specialty: "인사노무·HR 컨설팅",
+    headline: "직원 문제로 밤잠 설치는 사장님, 계신가요?",
+    targetCustomer: "직원 채용·해고 문제 있는 사업주, 노무 관리가 필요한 중소기업",
+    description: "공인노무사 경력 12년. 취업규칙, 급여 체계 설계, 근로계약서, 해고·징계, 노동부 조사 대응 전문. 사업주와 근로자 모두 만족하는 건강한 노사관계를 만들어 드립니다.",
+    phone: "010-3579-1234", email: "cho@hw-labor.kr", address: "서울시 영등포구 여의도동 567",
+    instagram: "hw_labor", kakao: "hw_labor", website: "www.hw-labor.kr",
+    color: "#566573", featured: false, photoUrl: "https://randomuser.me/api/portraits/men/55.jpg"
   },
   {
-    id: 4, name: "나성연", company: "KB손해보험", category: "금융/보험",
-    specialty: "화재보험·손해보험 설계",
+    id: 4, name: "박성훈", company: "KB손해보험 강남지점", category: "금융/보험",
+    specialty: "기업 리스크·보험 설계",
     headline: "내 사업을 지켜줄 보험, 제대로 가입하셨나요?",
-    targetCustomer: "사업체 운영자, 직장인, 은퇴 준비 중인 분, 간병 준비가 필요하신분",
-    description: "기업 배상책임보험, 간병인 보험 등 복잡한 보험을 쉽게 설명하고 최적의 플랜을 설계해 드립니다.",
-    phone: "010-8245-5258", email: "3282614@kbinsure.co.kr", address: "경기도 수원시 팔달구 경수대로 518, KB손해보험 8층",
-    instagram: "", kakao: "", website: "",
-    color: "#F39C12", featured: true, photoUrl: ""
+    targetCustomer: "사업체 운영자, 직장인, 은퇴 준비 중인 분",
+    description: "보험업계 18년 경력. 기업 배상책임보험, 임원 D&O 보험, 개인 종합자산 관리까지. 복잡한 보험을 쉽게 설명하고 최적의 플랜을 설계해 드립니다.",
+    phone: "010-3456-7890", email: "park@kbins.kr", address: "서울시 강남구 역삼동 789",
+    instagram: "ins_seonghun", kakao: "insurance_park", website: "",
+    color: "#1F618D", featured: false, photoUrl: "https://randomuser.me/api/portraits/men/11.jpg"
   },
   {
-    id: 5, name: "정영준", company: "와이즈앤밸류", category: "금융/보험",
-    specialty: "자산관리·생명보험",
-    headline: "건강한 노후를 준비할 수 있게 도와드립니다.",
-    targetCustomer: "노후 준비가 필요하신분",
+    id: 5, name: "최지현", company: "미래에셋증권 WM센터", category: "금융/보험",
+    specialty: "자산관리·투자 컨설팅",
+    headline: "열심히 버는데 자산이 제자리인 느낌이신가요?",
+    targetCustomer: "자산 10억 이상 개인, 법인 자산 운용이 필요한 CEO",
     description: "금융 경력 20년의 PB(Private Banker). 국내외 주식·채권·부동산 펀드 포트폴리오 관리 전문. 세금 효율적인 자산 이전 전략까지 원스톱으로 제공합니다.",
-    phone: "010-2599-1901", email: "", address: "",
-    instagram: "", kakao: "", website: "",
-    color: "#1E8449", featured: true, photoUrl: ""
+    phone: "010-4567-8901", email: "choi@mirae.kr", address: "서울시 중구 을지로 101",
+    instagram: "wealth_jihyun", kakao: "jihyun_wealth", website: "www.miraeasset.com",
+    color: "#1E8449", featured: true, photoUrl: "https://randomuser.me/api/portraits/women/28.jpg"
   },
   {
     id: 6, name: "정동현", company: "동현부동산컨설팅", category: "부동산",
@@ -61,27 +61,27 @@ const MEMBERS_DEFAULT = [
     description: "부동산 컨설팅 12년. 강남권 상업용 부동산 전문. 투자 수익률 분석, 권리금 협상, 임대차 계약 검토까지 처음부터 끝까지 함께 합니다.",
     phone: "010-5678-9012", email: "jung@dh-realty.kr", address: "서울시 강남구 신사동 234",
     instagram: "realty_donghyun", kakao: "dh_realty", website: "www.dh-realty.kr",
-    color: "#D68910", featured: true, photoUrl: ""
+    color: "#D68910", featured: false, photoUrl: "https://randomuser.me/api/portraits/men/67.jpg"
   },
   {
-    id: 7, name: "문혜선", company: "인크루즈", category: "레저/스포츠",
-    specialty: "크루즈여행",
-    headline: "나만을 위한 여행, 이제 진짜 시작하실 때가 됐나요?",
-    targetCustomer: "크루즈 여행을 계획하시는 분, 즐거운 은퇴를 원하시는 분",
-    description: "크루즈 소개해드립니다.",
-    phone: "010-9016-2122", email: "nexy0316@naver.com", address: "",
-    instagram: "", kakao: "", website: "",
-    color: "#148F77", featured: true, photoUrl: ""
+    id: 7, name: "한미래", company: "미래홈 공인중개사사무소", category: "부동산",
+    specialty: "아파트·주거 부동산",
+    headline: "내 집 마련, 이제 진짜 시작하실 때가 됐나요?",
+    targetCustomer: "내 집 마련 준비 중인 분, 이사 계획 중인 가족",
+    description: "주거 부동산 전문 공인중개사. 서울 주요 지역 아파트·빌라·오피스텔 매매·전세 전문. 청약 컨설팅부터 잔금 처리까지 안전하게 안내합니다.",
+    phone: "010-6789-0123", email: "han@mirae-home.kr", address: "서울시 송파구 잠실동 567",
+    instagram: "mirae_home_kr", kakao: "mirae_home", website: "",
+    color: "#148F77", featured: false, photoUrl: "https://randomuser.me/api/portraits/women/63.jpg"
   },
   {
     id: 8, name: "오준혁", company: "디지털포스(주)", category: "IT/디지털",
     specialty: "홈페이지·쇼핑몰 개발",
     headline: "홈페이지 없이 사업하고 계신 건 아니죠?",
     targetCustomer: "온라인 진출 원하는 소상공인, 쇼핑몰 창업 준비 중인 분",
-    description: "개발 경력 10년. 반응형 홈페이지, 쇼핑몰, 모바일 앱 개발 전문. 기획부터 운영 지원까지 IT 전반을 담당합니다.",
+    description: "개발 경력 10년. 반응형 홈페이지, 쇼핑몰, 모바일 앱 개발 전문. 기획부터 운영 지원까지 IT 전반을 담당합니다. 합리적인 비용에 최고의 품질을 약속합니다.",
     phone: "010-7890-1234", email: "oh@digitalforce.kr", address: "서울시 마포구 합정동 890",
     instagram: "digitalforce_oh", kakao: "digitalforce", website: "www.digitalforce.kr",
-    color: "#212F3D", featured: true, photoUrl: ""
+    color: "#212F3D", featured: true, photoUrl: "https://randomuser.me/api/portraits/men/23.jpg"
   },
   {
     id: 9, name: "임서현", company: "서현디지털마케팅", category: "마케팅/광고",
@@ -91,17 +91,17 @@ const MEMBERS_DEFAULT = [
     description: "디지털 마케팅 전문가 8년 경력. 인스타그램·네이버·유튜브 채널 운영 및 광고 집행 전문. ROI 중심의 마케팅으로 실질적인 매출 성장을 만들어 드립니다.",
     phone: "010-8901-2345", email: "lim@shdm.kr", address: "서울시 성동구 성수동 123",
     instagram: "shdm_marketing", kakao: "shdm_official", website: "www.shdm.kr",
-    color: "#B03A2E", featured: true, photoUrl: ""
+    color: "#B03A2E", featured: false, photoUrl: "https://randomuser.me/api/portraits/women/17.jpg"
   },
   {
     id: 10, name: "강태양", company: "태양인테리어", category: "건설/인테리어",
     specialty: "상업공간·오피스 인테리어",
     headline: "공간 분위기가 매출을 좌우한다는 거 아시나요?",
     targetCustomer: "카페·음식점 창업자, 사무실 리뉴얼 원하는 기업",
-    description: "인테리어 디자이너 15년 경력. 상업 공간 특화 설계. 공간 기획부터 시공·가구 납품까지 원스톱 서비스.",
+    description: "인테리어 디자이너 15년 경력. 상업 공간 특화 설계. 공간 기획부터 시공·가구 납품까지 원스톱 서비스. 합리적인 비용으로 최고의 공간을 만들어 드립니다.",
     phone: "010-9012-3456", email: "kang@taeyang-int.kr", address: "서울시 강서구 마곡동 456",
     instagram: "taeyang_interior", kakao: "taeyang_int", website: "www.taeyang-int.kr",
-    color: "#D35400", featured: true, photoUrl: ""
+    color: "#D35400", featured: true, photoUrl: "https://randomuser.me/api/portraits/men/41.jpg"
   },
   {
     id: 11, name: "문성철", company: "그린건설", category: "건설/인테리어",
@@ -111,7 +111,7 @@ const MEMBERS_DEFAULT = [
     description: "건설업 20년 경력. 소규모 단독주택·근린생활시설 신축 및 리모델링 전문. 탄탄한 시공 품질과 투명한 견적으로 신뢰를 드립니다.",
     phone: "010-5791-3456", email: "moon@green-const.kr", address: "경기도 고양시 일산동구 장항동 123",
     instagram: "green_construction", kakao: "green_const", website: "www.green-const.kr",
-    color: "#1D8348", featured: true, photoUrl: ""
+    color: "#1D8348", featured: false, photoUrl: "https://randomuser.me/api/portraits/men/78.jpg"
   },
   {
     id: 12, name: "윤지영", company: "지영한의원", category: "의료/건강",
@@ -121,17 +121,17 @@ const MEMBERS_DEFAULT = [
     description: "한의학 박사. 한방 다이어트 시술 및 면역력 증진 전문. 개인 체질에 맞는 맞춤형 한방 치료로 근본적인 건강 관리를 도와드립니다.",
     phone: "010-0123-4567", email: "yoon@jiyoung-clinic.kr", address: "서울시 강남구 청담동 789",
     instagram: "dr_jiyoung", kakao: "jiyoung_clinic", website: "www.jiyoung-clinic.kr",
-    color: "#117A8B", featured: true, photoUrl: ""
+    color: "#117A8B", featured: false, photoUrl: "https://randomuser.me/api/portraits/women/52.jpg"
   },
   {
-    id: 13, name: "이지혜", company: "암웨이", category: "뷰티/패션",
-    specialty: "화장품",
+    id: 13, name: "유지민", company: "지민피부과의원", category: "의료/건강",
+    specialty: "피부·미용 의료 시술",
     headline: "거울 볼 때마다 피부 때문에 자신감이 떨어지시나요?",
-    targetCustomer: "피부 트러블, 노화 방지, 미용에 관심 있는 분",
-    description: "자연스럽고 건강한 피부를 위한 최적의 솔루션을 제안합니다.",
-    phone: "010-2275-2250", email: "fcm36000@gmail.com", address: "",
-    instagram: "No.659799", kakao: "", website: "www.amway.co.kr",
-    color: "#A93226", featured: true, photoUrl: ""
+    targetCustomer: "피부 트러블, 노화 방지, 미용 시술에 관심 있는 분",
+    description: "피부과 전문의. 레이저 시술·보톡스·필러·피부 재생 등 다양한 미용 의료 시술 전문. 자연스럽고 건강한 피부를 위한 최적의 솔루션을 제안합니다.",
+    phone: "010-4680-2345", email: "yoo@jimin-skin.kr", address: "서울시 강남구 압구정동 890",
+    instagram: "dr_jimin_skin", kakao: "jimin_skin", website: "www.jimin-skin.kr",
+    color: "#A93226", featured: true, photoUrl: "https://randomuser.me/api/portraits/women/36.jpg"
   },
   {
     id: 14, name: "신재호", company: "리더스코칭센터", category: "교육/컨설팅",
@@ -141,7 +141,7 @@ const MEMBERS_DEFAULT = [
     description: "국제코치연맹 인증 코치(PCC). 중소기업 대표 및 임원 대상 경영 코칭 전문. 목표 설정, 조직 문화 개선, 갈등 관리 등 비즈니스 전반을 코칭합니다.",
     phone: "010-1357-2468", email: "shin@leaders-coaching.kr", address: "서울시 종로구 광화문 101",
     instagram: "leaders_coaching", kakao: "leaders_jaeho", website: "www.leaders-coaching.kr",
-    color: "#784212", featured: true, photoUrl: ""
+    color: "#784212", featured: false, photoUrl: "https://randomuser.me/api/portraits/men/19.jpg"
   },
   {
     id: 15, name: "배수진", company: "수진케이터링", category: "식품/외식",
@@ -151,17 +151,17 @@ const MEMBERS_DEFAULT = [
     description: "케이터링 경력 10년. 기업 행사, 돌잔치, 각종 파티의 음식 준비 전문. 건강한 식재료로 만든 맛있는 요리를 합리적인 가격에 제공합니다.",
     phone: "010-2468-1357", email: "bae@sujin-catering.kr", address: "경기도 성남시 분당구 서현동 234",
     instagram: "sujin_catering", kakao: "sujin_catering", website: "www.sujin-catering.kr",
-    color: "#D68910", featured: true, photoUrl: ""
+    color: "#D68910", featured: false, photoUrl: "https://randomuser.me/api/portraits/women/81.jpg"
   },
   {
     id: 16, name: "이재린", company: "주식회사 브릿지자산관리", category: "금융/보험",
-    specialty: "해외펀드·해외보험",
-    headline: "아직도 원화로 투자를 하고계십니까?",
-    targetCustomer: "달러로 내 자산을 지키고 싶으신분",
-    description: "가즈아",
-    phone: "010-3127-6765", email: "yijerin@hanmail.net", address: "",
+    specialty: "해외보험",
+    headline: "",
+    targetCustomer: "",
+    description: "",
+    phone: "010-3127-6765", email: "", address: "",
     instagram: "", kakao: "", website: "",
-    color: "#117A8B", featured: true, photoUrl: ""
+    color: "#C0392B", featured: false, photoUrl: ""
   }
 ];
 
@@ -206,7 +206,6 @@ function loadMembers() {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) {
       const saved = JSON.parse(raw);
-      // photoUrl이 비어있으면 샘플 사진 자동 적용
       return saved.map(m => ({
         ...m,
         photoUrl: m.photoUrl || SAMPLE_PHOTOS[m.id] || ''
