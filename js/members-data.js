@@ -201,7 +201,7 @@ const MEMBERS_DEFAULT = [
     description: "",
     phone: "010-8852-5450", email: "", address: "경기도 수원시 권선구 동수원로 146번길 192-13, 102호",
     instagram: "", kakao: "", website: "",
-    color: "#C0392B", featured: false, photoUrl: ""
+    color: "#C0392B", featured: true, photoUrl: ""
   }
 ];
 
