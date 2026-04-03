@@ -21,7 +21,7 @@ const MEMBERS_DEFAULT = [
     description: "기업 배상책임보험, 간병인 보험 등 복잡한 보험을 쉽게 설명하고 최적의 플랜을 설계해 드립니다.",
     phone: "010-8245-5258", email: "3282614@kbinsure.co.kr", address: "경기도 수원시 팔달구 경수대로 518, KB손해보험 8층",
     instagram: "", kakao: "", website: "",
-    color: "#F39C12", featured: true, photoUrl: "https://randomuser.me/api/portraits/men/11.jpg"
+    color: "#F39C12", featured: true, photoUrl: ""
   },
   {
     id: 5, name: "정영준", company: "와이즈앤밸류", category: "금융/보험",
