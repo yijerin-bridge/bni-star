@@ -151,7 +151,7 @@ const MEMBERS_DEFAULT = [
     description: "케이터링 경력 10년. 기업 행사, 돌잔치, 각종 파티의 음식 준비 전문. 건강한 식재료로 만든 맛있는 요리를 합리적인 가격에 제공합니다.",
     phone: "010-2468-1357", email: "bae@sujin-catering.kr", address: "경기도 성남시 분당구 서현동 234",
     instagram: "sujin_catering", kakao: "sujin_catering", website: "www.sujin-catering.kr",
-    color: "#D68910", featured: false, photoUrl: "https://randomuser.me/api/portraits/women/81.jpg"
+    color: "#D68910", featured: true, photoUrl: "https://randomuser.me/api/portraits/women/81.jpg"
   },
   {
     id: 16, name: "이재린", company: "주식회사 브릿지자산관리", category: "금융/보험",
