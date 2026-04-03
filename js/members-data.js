@@ -201,7 +201,7 @@ const MEMBERS_DEFAULT = [
     description: "고기 한점 한점 정성을 담았습니다.",
     phone: "010-9928-0994", email: "", address: "경기도 수원시 권선구 권광로 91번길2 1층 (권선동 1038-6)",
     instagram: "", kakao: "https://pf.kakao.com/_kefxcC", website: "",
-    color: "#C0392B", featured: false, photoUrl: ""
+    color: "#C0392B", featured: true, photoUrl: ""
   }
 ];
 
@@ -242,7 +242,10 @@ const SAMPLE_PHOTOS = {
 };
 
 function loadMembers() {
-  return MEMBERS_DEFAULT.map(m => ({ ...m }));
+  return MEMBERS_DEFAULT.map(m => ({
+    ...m,
+    photoUrl: m.photoUrl || SAMPLE_PHOTOS[m.id] || ''
+  }));
 }
 function saveMembers(list) {
   // no-op: data is persisted via GitHub API (api/save-members)
