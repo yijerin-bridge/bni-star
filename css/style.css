@@ -48,8 +48,8 @@ img { max-width: 100%; display: block; }
    ============================================================ */
 .app-header {
   position: fixed; top: 0; left: 0; right: 0;
-  height: var(--hh); background: var(--red);
-  z-index: 100; box-shadow: 0 2px 12px rgba(204,0,0,.35);
+  height: var(--hh); background: white;
+  z-index: 100; box-shadow: 0 2px 12px rgba(0,0,0,.1);
 }
 .header-inner {
   display: flex; align-items: center; justify-content: space-between;
@@ -62,7 +62,7 @@ img { max-width: 100%; display: block; }
 }
 .logo-img { height: 32px; width: auto; object-fit: contain; }
 .logo-star-text {
-  font-size: 1.2rem; font-weight: 900; color: var(--gold-lt);
+  font-size: 1.2rem; font-weight: 900; color: var(--red);
   letter-spacing: .5px;
 }
 @keyframes star-beat {
@@ -71,12 +71,12 @@ img { max-width: 100%; display: block; }
 }
 .search-btn {
   width: 40px; height: 40px; border-radius: 50%;
-  color: white; display: flex; align-items: center; justify-content: center;
+  color: #333; display: flex; align-items: center; justify-content: center;
   transition: background .2s;
 }
-.search-btn:active { background: rgba(255,255,255,.2); }
-.admin-link { color: rgba(255,255,255,.5); width:36px;height:36px;display:flex;align-items:center;justify-content:center;border-radius:50%; }
-.admin-link:active { background:rgba(255,255,255,.15); }
+.search-btn:active { background: rgba(0,0,0,.08); }
+.admin-link { color: #999; width:36px;height:36px;display:flex;align-items:center;justify-content:center;border-radius:50%; }
+.admin-link:active { background:rgba(0,0,0,.08); }
 
 /* ============================================================
    MAIN
