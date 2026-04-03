@@ -181,7 +181,7 @@ const MEMBERS_DEFAULT = [
     description: "",
     phone: "010-5344-0255", email: "guswns0255@hanmail.net", address: "수원특례시 권선구 권광로 85",
     instagram: "", kakao: "", website: "www.volt-run.co.kr",
-    color: "#C0392B", featured: true, photoUrl: ""
+    color: "#C0392B", featured: true, photoUrl: "https://ocmnbwlhjovfycihyvnr.supabase.co/storage/v1/object/public/member-photos/member-1775191124054.jpg"
   },
   {
     id: 19, name: "윤명렬", company: "QY케어", category: "부동산/인테리어",
