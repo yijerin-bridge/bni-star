@@ -51,7 +51,7 @@ const MEMBERS_DEFAULT = [
     description: "쇼핑몰 무료 구축, QR결제 다양한 지원이 됩니다.",
     phone: "010-6532-3651", email: "imguisang@naver.com", address: "경기도 화성시 효행구 봉담읍 서봉산길 21-1",
     instagram: "", kakao: "", website: "",
-    color: "#B03A2E", featured: true, photoUrl: "https://randomuser.me/api/portraits/women/17.jpg"
+    color: "#B03A2E", featured: true, photoUrl: ""
   },
   {
     id: 10, name: "고 웅", company: "디자인 이안", category: "부동산/인테리어",
