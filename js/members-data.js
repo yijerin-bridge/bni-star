@@ -11,7 +11,7 @@ const MEMBERS_DEFAULT = [
     description: "맛있습니다.",
     phone: "010-5003-6491", email: "", address: "",
     instagram: "", kakao: "", website: "",
-    color: "#566573", featured: true, photoUrl: ""
+    color: "#566573", featured: true, photoUrl: "https://randomuser.me/api/portraits/men/55.jpg"
   },
   {
     id: 4, name: "나성연", company: "KB손해보험", category: "금융/보험",
@@ -192,6 +192,16 @@ const MEMBERS_DEFAULT = [
     phone: "010-8794-7273", email: "kkakkuchi@naver.com", address: "경기도 의왕시 왕곡로 216-12 (왕곡동)",
     instagram: "", kakao: "", website: "",
     color: "#8E44AD", featured: true, photoUrl: "https://ocmnbwlhjovfycihyvnr.supabase.co/storage/v1/object/public/member-photos/member-1775191777652.jpg"
+  },
+  {
+    id: 26, name: "이현희", company: "보쌈1979", category: "식품/외식",
+    specialty: "보쌈",
+    headline: "고기 한점 한점 정성을 담았습니다.",
+    targetCustomer: "단체 회식, 점심식사",
+    description: "고기 한점 한점 정성을 담았습니다.",
+    phone: "010-9928-0994", email: "", address: "경기도 수원시 권선구 권광로 91번길2 1층 (권선동 1038-6)",
+    instagram: "", kakao: "https://pf.kakao.com/_kefxcC", website: "",
+    color: "#C0392B", featured: false, photoUrl: ""
   }
 ];
 
