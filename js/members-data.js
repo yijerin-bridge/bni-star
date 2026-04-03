@@ -192,6 +192,16 @@ const MEMBERS_DEFAULT = [
     phone: "010-4899-1911", email: "", address: "경기도 수원시 권선구 권선로 720번길 23, 202호",
     instagram: "", kakao: "", website: "",
     color: "#C0392B", featured: true, photoUrl: ""
+  },
+  {
+    id: 20, name: "진성훈", company: "찐수제컵밥", category: "식품/외식",
+    specialty: "분식",
+    headline: "든든한 한끼",
+    targetCustomer: "단체 도시락, 소풍가는 고객",
+    description: "",
+    phone: "010-8852-5450", email: "", address: "경기도 수원시 권선구 동수원로 146번길 192-13, 102호",
+    instagram: "", kakao: "", website: "",
+    color: "#C0392B", featured: false, photoUrl: ""
   }
 ];
 
