@@ -111,7 +111,7 @@ const MEMBERS_DEFAULT = [
     description: "반갑습니다.",
     phone: "010-9532-0316", email: "sm-dos@daum.net", address: "경기도 수원시 권선구 곡선로 49번길 13-25, 한아름빌딩 1F",
     instagram: "", kakao: "", website: "",
-    color: "#C0392B", featured: true, photoUrl: "https://ocmnbwlhjovfycihyvnr.supabase.co/storage/v1/object/public/member-photos/member-1775186264851.jpg"
+    color: "#dbe972", featured: true, photoUrl: "https://ocmnbwlhjovfycihyvnr.supabase.co/storage/v1/object/public/member-photos/member-1775186264851.jpg"
   },
   {
     id: 18, name: "임현준", company: "볼트런", category: "자동차",
