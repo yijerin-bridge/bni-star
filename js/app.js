@@ -17,6 +17,15 @@ const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
   }
 })();
 
+function copyAddress(addr, el) {
+  if (!addr) return;
+  navigator.clipboard.writeText(addr).then(() => {
+    const label = el.querySelector('.c-label');
+    label.textContent = '✓ 복사됨!';
+    setTimeout(() => { label.textContent = '주소 (탭하면 복사)'; }, 1800);
+  });
+}
+
 function trackContact(targetId, targetName, actionType) {
   const ref = sessionStorage.getItem('bni_ref');
   sb.from('contact_actions').insert({
@@ -200,9 +209,9 @@ function openModal(id) {
           <div class="c-icon">✉️</div>
           <div><span class="c-label">이메일</span><span class="c-val">${m.email}</span></div>
         </a>
-        <div class="contact-row addr">
+        <div class="contact-row addr" onclick="copyAddress('${m.address.replace(/'/g,"\\'")}', this)" style="cursor:pointer">
           <div class="c-icon">📍</div>
-          <div><span class="c-label">주소</span><span class="c-val">${m.address}</span></div>
+          <div><span class="c-label">주소 (탭하면 복사)</span><span class="c-val">${m.address}</span></div>
         </div>
         ${m.kakao ? `
         <a href="https://open.kakao.com/search/${encodeURIComponent(m.kakao)}" class="contact-row kakao" target="_blank" rel="noopener" onclick="trackContact(${m.id},'${m.name}','kakao')">
