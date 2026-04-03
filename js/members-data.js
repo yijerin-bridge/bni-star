@@ -211,7 +211,7 @@ const MEMBERS_DEFAULT = [
     description: "마케팅 전문가 입니다.",
     phone: "010-2546-8295", email: "beasap32@gmail.com", address: "경기도 광주시 창뜰윗길 42-13, B1",
     instagram: "", kakao: "", website: "thssi.co.kr",
-    color: "#566573", featured: false, photoUrl: ""
+    color: "#566573", featured: true, photoUrl: ""
   }
 ];
 
