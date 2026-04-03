@@ -41,7 +41,7 @@ const MEMBERS_DEFAULT = [
     description: "크루즈 소개해드립니다.",
     phone: "010-9016-2122", email: "nexy0316@naver.com", address: "",
     instagram: "", kakao: "", website: "",
-    color: "#148F77", featured: true, photoUrl: "https://randomuser.me/api/portraits/women/63.jpg"
+    color: "#148F77", featured: true, photoUrl: ""
   },
   {
     id: 9, name: "임귀상", company: "아르페이", category: "IT/디지털",
