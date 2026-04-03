@@ -51,7 +51,7 @@ const MEMBERS_DEFAULT = [
     description: "쇼핑몰 무료 구축, QR결제 다양한 지원이 됩니다.",
     phone: "010-6532-3651", email: "imguisang@naver.com", address: "경기도 화성시 효행구 봉담읍 서봉산길 21-1",
     instagram: "", kakao: "", website: "",
-    color: "#B03A2E", featured: true, photoUrl: ""
+    color: "#B03A2E", featured: true, photoUrl: "https://randomuser.me/api/portraits/women/17.jpg"
   },
   {
     id: 10, name: "고 웅", company: "디자인 이안", category: "부동산/인테리어",
@@ -71,7 +71,7 @@ const MEMBERS_DEFAULT = [
     description: "균형잡힌 영양공급",
     phone: "010-3775-3612", email: "kbseok77@naver.com", address: "",
     instagram: "", kakao: "", website: "www.usana.com",
-    color: "#117A8B", featured: true, photoUrl: ""
+    color: "#117A8B", featured: true, photoUrl: "https://randomuser.me/api/portraits/women/52.jpg"
   },
   {
     id: 13, name: "이지혜", company: "암웨이", category: "뷰티/패션",
@@ -141,7 +141,7 @@ const MEMBERS_DEFAULT = [
     description: "",
     phone: "010-8852-5450", email: "", address: "경기도 수원시 권선구 동수원로 146번길 192-13, 102호",
     instagram: "", kakao: "", website: "",
-    color: "#C0392B", featured: true, photoUrl: ""
+    color: "#784212", featured: true, photoUrl: ""
   },
   {
     id: 21, name: "한관우", company: "더쓰임마케팅", category: "마케팅/광고",
@@ -192,16 +192,6 @@ const MEMBERS_DEFAULT = [
     phone: "010-8794-7273", email: "kkakkuchi@naver.com", address: "경기도 의왕시 왕곡로 216-12 (왕곡동)",
     instagram: "", kakao: "", website: "",
     color: "#8E44AD", featured: true, photoUrl: "https://ocmnbwlhjovfycihyvnr.supabase.co/storage/v1/object/public/member-photos/member-1775191777652.jpg"
-  },
-  {
-    id: 26, name: "이현희", company: "보쌈1979", category: "식품/외식",
-    specialty: "보쌈",
-    headline: "고기한점 한점에 정성을 담았습니다.",
-    targetCustomer: "회식, 점심 식사",
-    description: "수원 권선동에 위치한 보쌈 브랜드입니다. \n고기한점 한점에 정성을 담았습니다.",
-    phone: "010-9928-0994", email: "", address: "수원시 권선구 권광로 91번길2, 1층 (권선동 1038-6)",
-    instagram: "", kakao: "https://pf.kakao.com/_kefxcC", website: "",
-    color: "#F39C12", featured: true, photoUrl: ""
   }
 ];
 
