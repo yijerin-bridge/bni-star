@@ -222,6 +222,16 @@ const MEMBERS_DEFAULT = [
     phone: "010-9616-9294", email: "jsapark76@nate.com", address: "경기도 수원시 권선구 정조로 588, 1층",
     instagram: "", kakao: "", website: "",
     color: "#F39C12", featured: true, photoUrl: ""
+  },
+  {
+    id: 23, name: "이준수", company: "(주)미래온투어", category: "라이프/여행",
+    specialty: "여행사",
+    headline: "해외로 떠나고 싶은날",
+    targetCustomer: "골프여행, 해외테마여행",
+    description: "해외 현지 여행사와 하나투어 대리점을 운영중에 있습니다.",
+    phone: "010-9321-2625", email: "seoulmilk2013@gmail.com", address: "경기도 화성시 병점구 떡전골로 96-4 오피스밸리 244호",
+    instagram: "", kakao: "", website: "",
+    color: "#C0392B", featured: false, photoUrl: ""
   }
 ];
 
