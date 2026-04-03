@@ -54,7 +54,7 @@ const MEMBERS_DEFAULT = [
     color: "#1E8449", featured: true, photoUrl: "https://ocmnbwlhjovfycihyvnr.supabase.co/storage/v1/object/public/member-photos/member-1775186874538.jpg"
   },
   {
-    id: 6, name: "정동현", company: "동현부동산컨설팅", category: "부동산",
+    id: 6, name: "정동현", company: "동현부동산컨설팅", category: "자동차",
     specialty: "상가·오피스 투자 분석",
     headline: "수익 나는 상가 투자, 어디서 시작해야 할까요?",
     targetCustomer: "상가 투자 희망자, 사무실 이전 예정 기업",
@@ -94,7 +94,7 @@ const MEMBERS_DEFAULT = [
     color: "#B03A2E", featured: true, photoUrl: "https://randomuser.me/api/portraits/women/17.jpg"
   },
   {
-    id: 10, name: "고 웅", company: "디자인 이안", category: "건설/인테리어",
+    id: 10, name: "고 웅", company: "디자인 이안", category: "부동산/인테리어",
     specialty: "상업공간·주택 인테리어",
     headline: "공간 분위기가 매출을 좌우한다는 거 아시나요?",
     targetCustomer: "카페·음식점 창업자, 사무실 리뉴얼 원하는 기업",
@@ -104,7 +104,7 @@ const MEMBERS_DEFAULT = [
     color: "#D35400", featured: true, photoUrl: "https://randomuser.me/api/portraits/men/41.jpg"
   },
   {
-    id: 11, name: "문성철", company: "그린건설", category: "건설/인테리어",
+    id: 11, name: "문성철", company: "그린건설", category: "부동산/인테리어",
     specialty: "단독주택·리모델링 건축",
     headline: "내 집 짓고 싶은데 어디서 시작해야 할지 막막하신가요?",
     targetCustomer: "단독주택 신축·리모델링 원하는 분, 건물 외관 공사 필요한 분",
@@ -178,16 +178,17 @@ const MEMBERS_DEFAULT = [
 const CATEGORIES = [
   { name: "법률/세무",    emoji: "⚖️",  color: "#6C3483" },
   { name: "금융/보험",    emoji: "💰",  color: "#1F618D" },
-  { name: "부동산",       emoji: "🏠",  color: "#D68910" },
-  { name: "IT/디지털",   emoji: "💻",  color: "#212F3D" },
+  { name: "자동차",        emoji: "🚗",  color: "#D68910" },
+  { name: "IT/디지털",    emoji: "💻",  color: "#212F3D" },
   { name: "의료/건강",    emoji: "🏥",  color: "#117A8B" },
   { name: "교육/컨설팅",  emoji: "📚",  color: "#784212" },
   { name: "마케팅/광고",  emoji: "📣",  color: "#B03A2E" },
-  { name: "건설/인테리어", emoji: "🔨", color: "#D35400" },
+  { name: "부동산/인테리어", emoji: "🏠", color: "#D35400" },
   { name: "식품/외식",    emoji: "🍽️", color: "#1D8348" },
   { name: "레저/스포츠",  emoji: "🏃",  color: "#1565C0" },
   { name: "뷰티/패션",    emoji: "💄",  color: "#AD1457" },
   { name: "라이프/여행",  emoji: "✈️",  color: "#0277BD" },
+  { name: "제조/유통",    emoji: "🏭",  color: "#546E7A" },
 ];
 
 // 샘플 프로필 사진 (실제 사진으로 교체 시 관리자에서 URL 입력)
