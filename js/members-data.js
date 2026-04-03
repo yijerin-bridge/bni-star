@@ -9,7 +9,7 @@ const MEMBERS_DEFAULT = [
     headline: "분위기 좋은 술집에서 2차를!",
     targetCustomer: "회식자리 찾는 분",
     description: "맛있습니다.",
-    phone: "010-5003-6491", email: "", address: "",
+    phone: "010-5003-6491", email: "", address: "경기 수원시 영통구 영통로214번길 59 2층",
     instagram: "", kakao: "", website: "",
     color: "#566573", featured: true, photoUrl: "https://randomuser.me/api/portraits/men/55.jpg"
   },
