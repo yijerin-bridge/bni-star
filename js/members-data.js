@@ -155,13 +155,13 @@ const MEMBERS_DEFAULT = [
   },
   {
     id: 16, name: "이재린", company: "주식회사 브릿지자산관리", category: "금융/보험",
-    specialty: "해외보험",
-    headline: "",
-    targetCustomer: "",
-    description: "",
-    phone: "010-3127-6765", email: "", address: "",
-    instagram: "", kakao: "", website: "",
-    color: "#C0392B", featured: true, photoUrl: "https://randomuser.me/api/portraits/women/68.jpg"
+    specialty: "해외보험·해외투자",
+    headline: "아직도 원화로만 투자를 하고계십니까?",
+    targetCustomer: "달러와 비트코인을 중점으로 모으고 싶은 분",
+    description: "14년 경력의 다양한 투자, 자산관리 전문가입니다.",
+    phone: "010-3127-6765", email: "yijerin@hanmail.net", address: "",
+    instagram: "yijerin", kakao: "", website: "http://bridgeasset.kr",
+    color: "#566573", featured: true, photoUrl: "https://ocmnbwlhjovfycihyvnr.supabase.co/storage/v1/object/public/member-photos/member-1775190537938.jpg"
   },
   {
     id: 17, name: "김성미", company: "JK제빵소", category: "식품/외식",
