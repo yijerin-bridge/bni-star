@@ -34,16 +34,6 @@ const MEMBERS_DEFAULT = [
     color: "#1E8449", featured: true, photoUrl: "https://ocmnbwlhjovfycihyvnr.supabase.co/storage/v1/object/public/member-photos/member-1775186874538.jpg"
   },
   {
-    id: 6, name: "정동현", company: "동현부동산컨설팅", category: "부동산/인테리어",
-    specialty: "상가·오피스 투자 분석",
-    headline: "수익 나는 상가 투자, 어디서 시작해야 할까요?",
-    targetCustomer: "상가 투자 희망자, 사무실 이전 예정 기업",
-    description: "부동산 컨설팅 12년. 강남권 상업용 부동산 전문. 투자 수익률 분석, 권리금 협상, 임대차 계약 검토까지 처음부터 끝까지 함께 합니다.",
-    phone: "010-5678-9012", email: "jung@dh-realty.kr", address: "서울시 강남구 신사동 234",
-    instagram: "realty_donghyun", kakao: "dh_realty", website: "www.dh-realty.kr",
-    color: "#D68910", featured: true, photoUrl: "https://randomuser.me/api/portraits/men/67.jpg"
-  },
-  {
     id: 7, name: "문혜선", company: "인크루즈", category: "라이프/여행",
     specialty: "크루즈여행",
     headline: "나만을 위한 여행, 이제 진짜 시작하실 때가 됐나요?",
