@@ -84,14 +84,14 @@ const MEMBERS_DEFAULT = [
     color: "#212F3D", featured: true, photoUrl: "https://randomuser.me/api/portraits/men/23.jpg"
   },
   {
-    id: 9, name: "임서현", company: "서현디지털마케팅", category: "마케팅/광고",
-    specialty: "SNS·퍼포먼스 마케팅",
-    headline: "SNS 열심히 하는데 매출이 안 오르시나요?",
-    targetCustomer: "브랜드 인지도 높이고 싶은 소상공인, 매출 늘리고 싶은 분",
-    description: "디지털 마케팅 전문가 8년 경력. 인스타그램·네이버·유튜브 채널 운영 및 광고 집행 전문. ROI 중심의 마케팅으로 실질적인 매출 성장을 만들어 드립니다.",
-    phone: "010-8901-2345", email: "lim@shdm.kr", address: "서울시 성동구 성수동 123",
-    instagram: "shdm_marketing", kakao: "shdm_official", website: "www.shdm.kr",
-    color: "#B03A2E", featured: true, photoUrl: "https://randomuser.me/api/portraits/women/17.jpg"
+    id: 9, name: "임귀상", company: "아르페이", category: "금융/보험",
+    specialty: "카드단말기·POS",
+    headline: "초스피드로 결제되는 아르페이입니다.",
+    targetCustomer: "외식업, 소상공인",
+    description: "쇼핑몰 무료 구축, QR결제 다양한 지원이 됩니다.",
+    phone: "010-6532-3651", email: "imguisang@naver.com", address: "경기도 화성시 효행구 봉담읍 서봉산길 21-1",
+    instagram: "", kakao: "", website: "",
+    color: "#B03A2E", featured: true, photoUrl: ""
   },
   {
     id: 10, name: "고 웅", company: "디자인 이안", category: "부동산/인테리어",
