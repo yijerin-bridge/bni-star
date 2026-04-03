@@ -79,7 +79,7 @@ const MEMBERS_DEFAULT = [
     headline: "거울 볼 때마다 피부 때문에 자신감이 떨어지시나요?",
     targetCustomer: "피부 트러블, 노화 방지, 미용에 관심 있는 분",
     description: "자연스럽고 건강한 피부를 위한 최적의 솔루션을 제안합니다.\nNo.659799",
-    phone: "010-2275-2250", email: "fcm36000@gmail.com", address: "",
+    phone: "010-2275-2250", email: "fcmbyfreedom@gmail.com", address: "",
     instagram: "", kakao: "", website: "www.amway.co.kr",
     color: "#A93226", featured: true, photoUrl: "https://ocmnbwlhjovfycihyvnr.supabase.co/storage/v1/object/public/member-photos/member-1775186245990.jpg"
   },
