@@ -61,7 +61,7 @@ const MEMBERS_DEFAULT = [
     description: "인테리어 디자이너 15년 경력. 상업 공간 특화 설계. 공간 기획부터 시공·가구 납품까지 원스톱 서비스. 합리적인 비용으로 최고의 공간을 만들어 드립니다.",
     phone: "010-6314-8999", email: "ianko83@naver.com", address: "경기 수원시 영통구 영통로 174번길 12, 그대가센트럴파크상가 101호 (망포동 722)",
     instagram: "design_ian.ko", kakao: "", website: "",
-    color: "#D35400", featured: true, photoUrl: "https://randomuser.me/api/portraits/men/41.jpg"
+    color: "#D35400", featured: true, photoUrl: ""
   },
   {
     id: 12, name: "김봉석", company: "유사나헬스사이언스코리아", category: "의료/건강",
