@@ -182,6 +182,16 @@ const MEMBERS_DEFAULT = [
     phone: "010-5344-0255", email: "guswns0255@hanmail.net", address: "수원특례시 권선구 권광로 85",
     instagram: "", kakao: "", website: "www.volt-run.co.kr",
     color: "#C0392B", featured: true, photoUrl: ""
+  },
+  {
+    id: 19, name: "윤명렬", company: "QY케어", category: "부동산/인테리어",
+    specialty: "에어컨청소",
+    headline: "상쾌한 시원함",
+    targetCustomer: "관공서,학교, 사무실, 키즈카페",
+    description: "대규모 에어컨 청소 전문 기업 QY케어 입니다. \n주택부터 사무실까지 깨끗하게 청소합니다.",
+    phone: "010-4899-1911", email: "", address: "경기도 수원시 권선구 권선로 720번길 23, 202호",
+    instagram: "", kakao: "", website: "",
+    color: "#C0392B", featured: false, photoUrl: ""
   }
 ];
 
