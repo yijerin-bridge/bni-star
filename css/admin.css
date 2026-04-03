@@ -55,6 +55,59 @@ input, select, textarea { font-family: inherit; }
 }
 .login-btn:active { opacity: .85; }
 
+/* TABS */
+.admin-tabs {
+  display: flex; gap: 8px; padding: 0 16px 12px; margin-top: -4px;
+}
+.admin-tab {
+  flex: 1; height: 40px; border-radius: 10px;
+  font-size: .88rem; font-weight: 700; color: var(--text-sub);
+  background: var(--card); border: 2px solid var(--border);
+  transition: all .2s;
+}
+.admin-tab.active {
+  background: var(--red); color: white; border-color: var(--red);
+}
+
+/* ANALYTICS */
+.analytics-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 16px 12px;
+}
+.analytics-desc { font-size: .82rem; color: var(--text-sub); }
+.refresh-btn {
+  font-size: .82rem; color: var(--red); font-weight: 700;
+  padding: 6px 12px; border: 1.5px solid var(--red); border-radius: 8px;
+}
+.analytics-table-wrap { padding: 0 16px; overflow-x: auto; }
+.analytics-table {
+  width: 100%; border-collapse: collapse; background: var(--card);
+  border-radius: var(--r); overflow: hidden; font-size: .88rem;
+}
+.analytics-table th {
+  background: var(--navy); color: white; padding: 10px 12px;
+  text-align: left; font-size: .78rem;
+}
+.analytics-table td { padding: 10px 12px; border-bottom: 1px solid var(--border); }
+.analytics-table tr:last-child td { border-bottom: none; }
+.num-cell { text-align: center; font-weight: 700; font-size: 1rem; color: var(--red); }
+.copy-link-btn {
+  background: var(--navy); color: white;
+  padding: 5px 10px; border-radius: 8px; font-size: .78rem; font-weight: 700;
+}
+.copy-link-btn:active { opacity: .8; }
+.contact-breakdown { padding: 12px 16px 0; }
+.breakdown-title {
+  font-size: .78rem; font-weight: 700; color: var(--text-sub);
+  margin-bottom: 8px; text-transform: uppercase;
+}
+.breakdown-row {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 8px 12px; background: var(--card); border-radius: 8px;
+  margin-bottom: 6px; font-size: .83rem; flex-wrap: wrap; gap: 4px;
+}
+.brow-meta { font-size: .75rem; color: var(--text-sub); }
+
 /* ADMIN APP */
 .admin-app { min-height: 100vh; }
 

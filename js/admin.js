@@ -4,6 +4,9 @@
 
 const ADMIN_ID   = 'yijerin';
 const ADMIN_PASS = 'dlwofls1!';
+// ── Supabase ──────────────────────────────────────────────────
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+
 const COLOR_PRESETS = [
   '#C0392B','#8E44AD','#2980B9','#1ABC9C',
   '#27AE60','#F39C12','#D35400','#566573',
@@ -233,7 +236,7 @@ function openForm(id = null) {
     toggleEl.classList.toggle('on', isFeatured);
   });
 
-  $('fPhotoFile').addEventListener('change', e => {
+  $('fPhotoFile').addEventListener('change', async e => {
     const file = e.target.files[0];
     if (!file) return;
     if (file.size > 2 * 1024 * 1024) {
@@ -241,14 +244,20 @@ function openForm(id = null) {
       e.target.value = '';
       return;
     }
-    const reader = new FileReader();
-    reader.onload = ev => {
-      currentPhotoData = ev.target.result;
-      $('photoPreview').src = currentPhotoData;
-      $('photoPreviewWrap').style.display = 'block';
-      $('fPhotoUrl').value = '';
-    };
-    reader.readAsDataURL(file);
+    showDeployBanner('이미지 업로드 중...');
+    const ext = file.name.split('.').pop().toLowerCase();
+    const path = `member-${Date.now()}.${ext}`;
+    const { data, error } = await sb.storage.from('member-photos').upload(path, file, { upsert: true });
+    if (error) {
+      showDeployBanner('⚠️ 이미지 업로드 실패', false, true);
+      return;
+    }
+    const { data: { publicUrl } } = sb.storage.from('member-photos').getPublicUrl(data.path);
+    currentPhotoData = publicUrl;
+    $('photoPreview').src = publicUrl;
+    $('photoPreviewWrap').style.display = 'block';
+    $('fPhotoUrl').value = publicUrl;
+    showDeployBanner('✓ 이미지 업로드 완료', true);
   });
 
   $('fPhotoUrl').addEventListener('input', e => {
@@ -439,6 +448,62 @@ function submitForm() {
   }
 
   save(); refresh(); closeForm();
+}
+
+// ── Tabs ──────────────────────────────────────────────────────
+function switchTab(tab) {
+  const isMembers = tab === 'members';
+  $('panelMembers').style.display   = isMembers ? '' : 'none';
+  $('panelAnalytics').style.display = isMembers ? 'none' : '';
+  $('tabMembers').classList.toggle('active', isMembers);
+  $('tabAnalytics').classList.toggle('active', !isMembers);
+  if (!isMembers) loadAnalytics();
+}
+
+// ── Analytics ─────────────────────────────────────────────────
+async function loadAnalytics() {
+  $('analyticsBody').innerHTML = '<tr><td colspan="4" style="text-align:center;padding:24px;color:#aaa">로딩 중...</td></tr>';
+
+  const [{ data: visits }, { data: contacts }] = await Promise.all([
+    sb.from('referral_visits').select('ref_member_id'),
+    sb.from('contact_actions').select('ref_member_id, target_member_id, target_member_name, action_type, created_at'),
+  ]);
+
+  const visitMap = {};
+  (visits || []).forEach(v => { visitMap[v.ref_member_id] = (visitMap[v.ref_member_id] || 0) + 1; });
+
+  const contactMap = {};
+  (contacts || []).forEach(c => {
+    if (c.ref_member_id) contactMap[c.ref_member_id] = (contactMap[c.ref_member_id] || 0) + 1;
+  });
+
+  const baseUrl = location.origin;
+  $('analyticsBody').innerHTML = members.map(m => `
+    <tr>
+      <td><strong>${m.name}</strong><br><span style="font-size:.75rem;color:#999">${m.company}</span></td>
+      <td class="num-cell">${visitMap[m.id] || 0}</td>
+      <td class="num-cell">${contactMap[m.id] || 0}</td>
+      <td><button class="copy-link-btn" onclick="copyLink(${m.id},'${m.name}')">🔗 복사</button></td>
+    </tr>`).join('');
+
+  // 최근 컨택 현황
+  const recent = (contacts || []).slice(-20).reverse();
+  $('contactBreakdown').innerHTML = recent.length ? `
+    <div class="breakdown-title">최근 컨택 내역</div>
+    ${recent.map(c => {
+      const ref  = members.find(m => m.id === c.ref_member_id);
+      const icon = { phone:'📞', email:'✉️', kakao:'💬', instagram:'📷', website:'🌐' }[c.action_type] || '🔗';
+      const time = new Date(c.created_at).toLocaleString('ko-KR', { month:'numeric', day:'numeric', hour:'2-digit', minute:'2-digit' });
+      return `<div class="breakdown-row">
+        <span>${icon} <strong>${c.target_member_name}</strong> 에게 ${c.action_type} 컨택</span>
+        <span class="brow-meta">${ref ? `${ref.name} 링크 유입` : '직접 방문'} · ${time}</span>
+      </div>`;
+    }).join('')}` : '';
+}
+
+function copyLink(memberId, memberName) {
+  const url = `${location.origin}/?ref=${memberId}`;
+  navigator.clipboard.writeText(url).then(() => showDeployBanner(`✓ ${memberName} 링크 복사됨`, true));
 }
 
 // ── Event Wiring ──────────────────────────────────────────────

@@ -5,6 +5,28 @@
 // Member data is provided by members-data.js (loaded before this file)
 let MEMBERS = loadMembers();
 
+// ── Supabase Tracking ─────────────────────────────────────────
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+
+// 레퍼럴 링크로 들어온 경우 방문 기록
+(function () {
+  const ref = new URLSearchParams(location.search).get('ref');
+  if (ref) {
+    sessionStorage.setItem('bni_ref', ref);
+    sb.from('referral_visits').insert({ ref_member_id: parseInt(ref) }).then(() => {});
+  }
+})();
+
+function trackContact(targetId, targetName, actionType) {
+  const ref = sessionStorage.getItem('bni_ref');
+  sb.from('contact_actions').insert({
+    ref_member_id:      ref ? parseInt(ref) : null,
+    target_member_id:   targetId,
+    target_member_name: targetName,
+    action_type:        actionType,
+  }).then(() => {});
+}
+
 // ── State ────────────────────────────────────────────────────
 let slide = 0;
 let featured = [];
@@ -170,11 +192,11 @@ function openModal(id) {
     <div class="m-section">
       <div class="m-label">연락처</div>
       <div class="contact-list">
-        <a href="tel:${m.phone}" class="contact-row phone">
+        <a href="tel:${m.phone}" class="contact-row phone" onclick="trackContact(${m.id},'${m.name}','phone')">
           <div class="c-icon">📞</div>
           <div><span class="c-label">전화번호</span><span class="c-val">${m.phone}</span></div>
         </a>
-        <a href="mailto:${m.email}" class="contact-row email">
+        <a href="mailto:${m.email}" class="contact-row email" onclick="trackContact(${m.id},'${m.name}','email')">
           <div class="c-icon">✉️</div>
           <div><span class="c-label">이메일</span><span class="c-val">${m.email}</span></div>
         </a>
@@ -183,17 +205,17 @@ function openModal(id) {
           <div><span class="c-label">주소</span><span class="c-val">${m.address}</span></div>
         </div>
         ${m.kakao ? `
-        <a href="https://open.kakao.com/search/${encodeURIComponent(m.kakao)}" class="contact-row kakao" target="_blank" rel="noopener">
+        <a href="https://open.kakao.com/search/${encodeURIComponent(m.kakao)}" class="contact-row kakao" target="_blank" rel="noopener" onclick="trackContact(${m.id},'${m.name}','kakao')">
           <div class="c-icon">💬</div>
           <div><span class="c-label">카카오톡</span><span class="c-val">${m.kakao}</span></div>
         </a>` : ''}
         ${m.instagram ? `
-        <a href="https://instagram.com/${m.instagram}" class="contact-row insta" target="_blank" rel="noopener">
+        <a href="https://instagram.com/${m.instagram}" class="contact-row insta" target="_blank" rel="noopener" onclick="trackContact(${m.id},'${m.name}','instagram')">
           <div class="c-icon">📷</div>
           <div><span class="c-label">인스타그램</span><span class="c-val">@${m.instagram}</span></div>
         </a>` : ''}
         ${m.website ? `
-        <a href="https://${m.website}" class="contact-row web" target="_blank" rel="noopener">
+        <a href="https://${m.website}" class="contact-row web" target="_blank" rel="noopener" onclick="trackContact(${m.id},'${m.name}','website')">
           <div class="c-icon">🌐</div>
           <div><span class="c-label">웹사이트</span><span class="c-val">${m.website}</span></div>
         </a>` : ''}
@@ -201,10 +223,10 @@ function openModal(id) {
     </div>
 
     <div class="m-ctas">
-      <a href="tel:${m.phone}" class="m-cta prim" style="background:${m.color}">📞 전화하기</a>
+      <a href="tel:${m.phone}" class="m-cta prim" style="background:${m.color}" onclick="trackContact(${m.id},'${m.name}','phone')">📞 전화하기</a>
       ${m.kakao
-        ? `<a href="https://open.kakao.com/search/${encodeURIComponent(m.kakao)}" class="m-cta sec" target="_blank" rel="noopener">💬 카카오톡</a>`
-        : `<a href="mailto:${m.email}" class="m-cta sec">✉️ 이메일</a>`}
+        ? `<a href="https://open.kakao.com/search/${encodeURIComponent(m.kakao)}" class="m-cta sec" target="_blank" rel="noopener" onclick="trackContact(${m.id},'${m.name}','kakao')">💬 카카오톡</a>`
+        : `<a href="mailto:${m.email}" class="m-cta sec" onclick="trackContact(${m.id},'${m.name}','email')">✉️ 이메일</a>`}
     </div>`;
 
   modalOverlay.classList.add('open');

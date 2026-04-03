@@ -41,6 +41,14 @@
     <!-- Stats -->
     <div class="stats-row" id="statsRow"></div>
 
+    <!-- Tabs -->
+    <div class="admin-tabs">
+      <button class="admin-tab active" id="tabMembers" onclick="switchTab('members')">👥 회원 관리</button>
+      <button class="admin-tab" id="tabAnalytics" onclick="switchTab('analytics')">📊 바이럴 분석</button>
+    </div>
+
+    <!-- Member Panel -->
+    <div id="panelMembers">
     <!-- Toolbar -->
     <div class="toolbar">
       <div class="toolbar-search">
@@ -56,6 +64,31 @@
 
     <!-- Member List -->
     <div class="member-list" id="memberList"></div>
+    </div><!-- /panelMembers -->
+
+    <!-- Analytics Panel -->
+    <div id="panelAnalytics" style="display:none">
+      <div class="analytics-header">
+        <p class="analytics-desc">회원별 고유 링크로 유입된 방문자 수와 컨택 현황을 확인하세요.</p>
+        <button class="refresh-btn" onclick="loadAnalytics()">🔄 새로고침</button>
+      </div>
+      <div class="analytics-table-wrap">
+        <table class="analytics-table">
+          <thead>
+            <tr>
+              <th>회원</th>
+              <th>방문</th>
+              <th>컨택</th>
+              <th>고유 링크</th>
+            </tr>
+          </thead>
+          <tbody id="analyticsBody">
+            <tr><td colspan="4" style="text-align:center;padding:24px;color:#aaa">로딩 중...</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="contact-breakdown" id="contactBreakdown"></div>
+    </div><!-- /panelAnalytics -->
 
   </main>
 </div>
@@ -86,6 +119,8 @@
   </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/supabase-config.js"></script>
 <script src="js/members-data.js"></script>
 <script src="js/admin.js"></script>
 </body>
