@@ -242,6 +242,16 @@ const MEMBERS_DEFAULT = [
     phone: "010-7376-1111", email: "sean@in2epnt.com", address: "경기도 수원시 팔달구 행궁로 98 성장관 2층",
     instagram: "in2epnt_official", kakao: "", website: "",
     color: "#27AE60", featured: true, photoUrl: "https://ocmnbwlhjovfycihyvnr.supabase.co/storage/v1/object/public/member-photos/member-1775191113862.jpg"
+  },
+  {
+    id: 25, name: "민경록", company: "포도주류(유)", category: "제조/유통",
+    specialty: "주류 유통",
+    headline: "주류 세팅 도와드립니다.",
+    targetCustomer: "음식점, 창업 전 매장 등 B2B유통",
+    description: "수입맥주,위스키, 리큐르, 꼬냑, 와인, 사케, 소주, 맥주, 생맥주 모두 다루고 있습니ㅏㄷ.",
+    phone: "010-8794-7273", email: "kkakkuchi@naver.com", address: "경기도 의왕시 왕곡로 216-12 (왕곡동)",
+    instagram: "", kakao: "", website: "",
+    color: "#8E44AD", featured: true, photoUrl: "https://ocmnbwlhjovfycihyvnr.supabase.co/storage/v1/object/public/member-photos/member-1775191777652.jpg"
   }
 ];
 
