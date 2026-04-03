@@ -202,6 +202,16 @@ const MEMBERS_DEFAULT = [
     phone: "010-8852-5450", email: "", address: "경기도 수원시 권선구 동수원로 146번길 192-13, 102호",
     instagram: "", kakao: "", website: "",
     color: "#C0392B", featured: true, photoUrl: ""
+  },
+  {
+    id: 21, name: "한관우", company: "더쓰임마케팅", category: "마케팅/광고",
+    specialty: "SEO, 컨텐츠 컨설팅 교육",
+    headline: "실제 타겟에 맞는 효율적인 마케팅을 알려드립니다.",
+    targetCustomer: "광고효율이 안나오는 사업자, 제품력 좋은 브랜드",
+    description: "마케팅 전문가 입니다.",
+    phone: "010-2546-8295", email: "beasap32@gmail.com", address: "경기도 광주시 창뜰윗길 42-13, B1",
+    instagram: "", kakao: "", website: "thssi.co.kr",
+    color: "#566573", featured: false, photoUrl: ""
   }
 ];
 
