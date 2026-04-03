@@ -239,8 +239,8 @@ function openForm(id = null) {
   $('fPhotoFile').addEventListener('change', async e => {
     const file = e.target.files[0];
     if (!file) return;
-    if (file.size > 2 * 1024 * 1024) {
-      alert('파일 크기는 2MB 이하로 해주세요.');
+    if (file.size > 10 * 1024 * 1024) {
+      alert('파일 크기는 10MB 이하로 해주세요.');
       e.target.value = '';
       return;
     }
