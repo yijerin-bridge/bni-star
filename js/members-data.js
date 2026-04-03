@@ -165,7 +165,7 @@ const MEMBERS_DEFAULT = [
   },
   {
     id: 17, name: "김성미", company: "JK제빵소", category: "식품/외식",
-    specialty: "베이커리 카페",
+    specialty: "베이커리·카페",
     headline: "맛있는 치아바타와 커피",
     targetCustomer: "빵 좋아하시는분",
     description: "반갑습니다.",
