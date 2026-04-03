@@ -57,15 +57,14 @@ img { max-width: 100%; display: block; }
   max-width: 640px; margin: 0 auto;
 }
 .logo {
-  display: flex; align-items: center; gap: 3px;
-  color: white; font-weight: 900; letter-spacing: -.5px;
+  display: flex; align-items: center; gap: 8px;
+  color: white; font-weight: 900;
 }
-.logo-bni  { font-size: 1.45rem; font-weight: 900; }
-.logo-star {
-  font-size: 1.25rem; color: var(--gold-lt);
-  animation: star-beat 2.4s ease-in-out infinite;
+.logo-img { height: 32px; width: auto; object-fit: contain; }
+.logo-star-text {
+  font-size: 1.2rem; font-weight: 900; color: var(--gold-lt);
+  letter-spacing: .5px;
 }
-.logo-text { font-size: 1.45rem; font-weight: 900; }
 @keyframes star-beat {
   0%,100% { transform: scale(1); }
   50%      { transform: scale(1.25) rotate(10deg); }
