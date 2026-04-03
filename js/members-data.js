@@ -64,7 +64,7 @@ const MEMBERS_DEFAULT = [
     color: "#D68910", featured: true, photoUrl: "https://randomuser.me/api/portraits/men/67.jpg"
   },
   {
-    id: 7, name: "문혜선", company: "인크루즈", category: "레저/스포츠",
+    id: 7, name: "문혜선", company: "인크루즈", category: "라이프/여행",
     specialty: "크루즈여행",
     headline: "나만을 위한 여행, 이제 진짜 시작하실 때가 됐나요?",
     targetCustomer: "크루즈 여행을 계획하시는 분, 즐거운 은퇴를 원하시는 분",
