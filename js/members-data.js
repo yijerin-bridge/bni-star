@@ -231,7 +231,7 @@ const MEMBERS_DEFAULT = [
     description: "해외 현지 여행사와 하나투어 대리점을 운영중에 있습니다.",
     phone: "010-9321-2625", email: "seoulmilk2013@gmail.com", address: "경기도 화성시 병점구 떡전골로 96-4 오피스밸리 244호",
     instagram: "", kakao: "", website: "",
-    color: "#C0392B", featured: false, photoUrl: ""
+    color: "#C0392B", featured: true, photoUrl: ""
   }
 ];
 
