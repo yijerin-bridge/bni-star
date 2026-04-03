@@ -151,7 +151,7 @@ const MEMBERS_DEFAULT = [
     description: "회와 솥밥의 달인",
     phone: "010-3788-2414", email: "amiga1992@naver.com", address: "경기도 수원시 팔달구 효원로 249번길 18-5",
     instagram: "", kakao: "", website: "",
-    color: "#D68910", featured: true, photoUrl: ""
+    color: "#D68910", featured: true, photoUrl: "https://ocmnbwlhjovfycihyvnr.supabase.co/storage/v1/object/public/member-photos/member-1775191913169.jpg"
   },
   {
     id: 16, name: "이재린", company: "주식회사 브릿지자산관리", category: "금융/보험",
