@@ -465,8 +465,8 @@ async function loadAnalytics() {
   $('analyticsBody').innerHTML = '<tr><td colspan="4" style="text-align:center;padding:24px;color:#aaa">로딩 중...</td></tr>';
 
   const [{ data: visits }, { data: contacts }] = await Promise.all([
-    sb.from('referral_visits').select('ref_member_id'),
-    sb.from('contact_actions').select('ref_member_id, target_member_id, target_member_name, action_type, created_at'),
+    sb.from('referral_visits').select('ref_member_id').order('created_at', { ascending: false }),
+    sb.from('contact_actions').select('ref_member_id, target_member_id, target_member_name, action_type, created_at').order('created_at', { ascending: false }),
   ]);
 
   const visitMap = {};
@@ -477,7 +477,6 @@ async function loadAnalytics() {
     if (c.ref_member_id) contactMap[c.ref_member_id] = (contactMap[c.ref_member_id] || 0) + 1;
   });
 
-  const baseUrl = location.origin;
   $('analyticsBody').innerHTML = members.map(m => `
     <tr>
       <td><strong>${m.name}</strong><br><span style="font-size:.75rem;color:#999">${m.company}</span></td>
@@ -486,19 +485,24 @@ async function loadAnalytics() {
       <td><button class="copy-link-btn" onclick="copyLink(${m.id},'${m.name}')">🔗 복사</button></td>
     </tr>`).join('');
 
-  // 최근 컨택 현황
-  const recent = (contacts || []).slice(-20).reverse();
+  // 최근 컨택 내역 — 누구 링크로 → 누구에게 어떻게
+  const recent = (contacts || []).slice(0, 30);
+  const actionLabel = { phone:'전화', email:'이메일', kakao:'카카오톡', instagram:'인스타그램', website:'웹사이트' };
+  const actionIcon  = { phone:'📞', email:'✉️', kakao:'💬', instagram:'📷', website:'🌐' };
+
   $('contactBreakdown').innerHTML = recent.length ? `
-    <div class="breakdown-title">최근 컨택 내역</div>
+    <div class="breakdown-title">최근 컨택 내역 (${recent.length}건)</div>
     ${recent.map(c => {
       const ref  = members.find(m => m.id === c.ref_member_id);
-      const icon = { phone:'📞', email:'✉️', kakao:'💬', instagram:'📷', website:'🌐' }[c.action_type] || '🔗';
+      const icon = actionIcon[c.action_type] || '🔗';
+      const label = actionLabel[c.action_type] || c.action_type;
       const time = new Date(c.created_at).toLocaleString('ko-KR', { month:'numeric', day:'numeric', hour:'2-digit', minute:'2-digit' });
+      const refText = ref ? `<strong>${ref.name}</strong> 링크로 유입` : '직접 방문';
       return `<div class="breakdown-row">
-        <span>${icon} <strong>${c.target_member_name}</strong> 에게 ${c.action_type} 컨택</span>
-        <span class="brow-meta">${ref ? `${ref.name} 링크 유입` : '직접 방문'} · ${time}</span>
+        <div class="brow-main">${refText} → ${icon} <strong>${c.target_member_name}</strong>에게 ${label}</div>
+        <div class="brow-meta">${time}</div>
       </div>`;
-    }).join('')}` : '';
+    }).join('')}` : '<div style="padding:16px;text-align:center;color:#aaa;font-size:.85rem">아직 컨택 기록이 없습니다</div>';
 }
 
 function copyLink(memberId, memberName) {

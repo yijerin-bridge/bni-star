@@ -102,11 +102,12 @@ input, select, textarea { font-family: inherit; }
   margin-bottom: 8px; text-transform: uppercase;
 }
 .breakdown-row {
-  display: flex; justify-content: space-between; align-items: center;
-  padding: 8px 12px; background: var(--card); border-radius: 8px;
-  margin-bottom: 6px; font-size: .83rem; flex-wrap: wrap; gap: 4px;
+  display: flex; flex-direction: column;
+  padding: 10px 14px; background: var(--card); border-radius: 8px;
+  margin-bottom: 6px; gap: 2px;
 }
-.brow-meta { font-size: .75rem; color: var(--text-sub); }
+.brow-main { font-size: .85rem; }
+.brow-meta { font-size: .75rem; color: var(--text-sub); margin-top: 2px; }
 
 /* ADMIN APP */
 .admin-app { min-height: 100vh; }
