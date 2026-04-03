@@ -94,13 +94,13 @@ const MEMBERS_DEFAULT = [
     color: "#B03A2E", featured: true, photoUrl: "https://randomuser.me/api/portraits/women/17.jpg"
   },
   {
-    id: 10, name: "강태양", company: "태양인테리어", category: "건설/인테리어",
-    specialty: "상업공간·오피스 인테리어",
+    id: 10, name: "고 웅", company: "디자인 이안", category: "건설/인테리어",
+    specialty: "상업공간·주택 인테리어",
     headline: "공간 분위기가 매출을 좌우한다는 거 아시나요?",
     targetCustomer: "카페·음식점 창업자, 사무실 리뉴얼 원하는 기업",
     description: "인테리어 디자이너 15년 경력. 상업 공간 특화 설계. 공간 기획부터 시공·가구 납품까지 원스톱 서비스. 합리적인 비용으로 최고의 공간을 만들어 드립니다.",
-    phone: "010-9012-3456", email: "kang@taeyang-int.kr", address: "서울시 강서구 마곡동 456",
-    instagram: "taeyang_interior", kakao: "taeyang_int", website: "www.taeyang-int.kr",
+    phone: "010-6314-8999", email: "ianko83@naver.com", address: "경기 수원시 영통구 영통로 174번길 12, 그대가센트럴파크상가 101호 (망포동 722)",
+    instagram: "design_ian.ko", kakao: "", website: "",
     color: "#D35400", featured: true, photoUrl: "https://randomuser.me/api/portraits/men/41.jpg"
   },
   {
