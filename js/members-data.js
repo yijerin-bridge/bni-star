@@ -61,7 +61,7 @@ const MEMBERS_DEFAULT = [
     description: "부동산 컨설팅 12년. 강남권 상업용 부동산 전문. 투자 수익률 분석, 권리금 협상, 임대차 계약 검토까지 처음부터 끝까지 함께 합니다.",
     phone: "010-5678-9012", email: "jung@dh-realty.kr", address: "서울시 강남구 신사동 234",
     instagram: "realty_donghyun", kakao: "dh_realty", website: "www.dh-realty.kr",
-    color: "#D68910", featured: false, photoUrl: "https://randomuser.me/api/portraits/men/67.jpg"
+    color: "#D68910", featured: true, photoUrl: "https://randomuser.me/api/portraits/men/67.jpg"
   },
   {
     id: 7, name: "문혜선", company: "인크루즈", category: "레저/스포츠",
