@@ -201,18 +201,21 @@ function openModal(id) {
     <div class="m-section">
       <div class="m-label">연락처</div>
       <div class="contact-list">
+        ${m.phone ? `
         <a href="tel:${m.phone}" class="contact-row phone" onclick="trackContact(${m.id},'${m.name}','phone')">
           <div class="c-icon">📞</div>
           <div><span class="c-label">전화번호</span><span class="c-val">${m.phone}</span></div>
-        </a>
+        </a>` : ''}
+        ${m.email ? `
         <a href="mailto:${m.email}" class="contact-row email" onclick="trackContact(${m.id},'${m.name}','email')">
           <div class="c-icon">✉️</div>
           <div><span class="c-label">이메일</span><span class="c-val">${m.email}</span></div>
-        </a>
+        </a>` : ''}
+        ${m.address ? `
         <div class="contact-row addr" onclick="copyAddress('${m.address.replace(/'/g,"\\'")}', this)" style="cursor:pointer">
           <div class="c-icon">📍</div>
           <div><span class="c-label">주소 (탭하면 복사)</span><span class="c-val">${m.address}</span></div>
-        </div>
+        </div>` : ''}
         ${m.kakao ? `
         <a href="${m.kakao}" class="contact-row kakao" target="_blank" rel="noopener" onclick="trackContact(${m.id},'${m.name}','kakao')">
           <div class="c-icon">💬</div>
