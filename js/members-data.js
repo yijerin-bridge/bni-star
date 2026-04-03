@@ -11,7 +11,7 @@ const MEMBERS_DEFAULT = [
     description: "맛있습니다.",
     phone: "010-5003-6491", email: "", address: "",
     instagram: "", kakao: "", website: "",
-    color: "#566573", featured: true, photoUrl: "https://randomuser.me/api/portraits/men/55.jpg"
+    color: "#566573", featured: true, photoUrl: ""
   },
   {
     id: 4, name: "나성연", company: "KB손해보험", category: "금융/보험",
