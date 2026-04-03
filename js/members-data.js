@@ -84,7 +84,7 @@ const MEMBERS_DEFAULT = [
     color: "#212F3D", featured: true, photoUrl: "https://randomuser.me/api/portraits/men/23.jpg"
   },
   {
-    id: 9, name: "임귀상", company: "아르페이", category: "금융/보험",
+    id: 9, name: "임귀상", company: "아르페이", category: "IT/디지털",
     specialty: "카드단말기·POS",
     headline: "초스피드로 결제되는 아르페이입니다.",
     targetCustomer: "외식업, 소상공인",
