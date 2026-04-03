@@ -100,7 +100,7 @@ const MEMBERS_DEFAULT = [
     targetCustomer: "달러와 비트코인을 중점으로 모으고 싶은 분",
     description: "14년 경력의 다양한 투자, 자산관리 전문가입니다.",
     phone: "010-3127-6765", email: "yijerin@hanmail.net", address: "",
-    instagram: "yijerin", kakao: "yijerin", website: "bridgeasset.kr",
+    instagram: "yijerin", kakao: "https://open.kakao.com/me/yijerin", website: "bridgeasset.kr",
     color: "#566573", featured: true, photoUrl: "https://ocmnbwlhjovfycihyvnr.supabase.co/storage/v1/object/public/member-photos/member-1775190537938.jpg"
   },
   {
