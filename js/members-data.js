@@ -144,14 +144,14 @@ const MEMBERS_DEFAULT = [
     color: "#784212", featured: true, photoUrl: "https://randomuser.me/api/portraits/men/19.jpg"
   },
   {
-    id: 15, name: "배수진", company: "수진케이터링", category: "식품/외식",
-    specialty: "기업 행사·케이터링",
-    headline: "중요한 행사 음식, 믿고 맡길 곳이 없으셨나요?",
-    targetCustomer: "행사 음식 필요한 기업, 각종 파티·모임 주최자",
-    description: "케이터링 경력 10년. 기업 행사, 돌잔치, 각종 파티의 음식 준비 전문. 건강한 식재료로 만든 맛있는 요리를 합리적인 가격에 제공합니다.",
-    phone: "010-2468-1357", email: "bae@sujin-catering.kr", address: "경기도 성남시 분당구 서현동 234",
-    instagram: "sujin_catering", kakao: "sujin_catering", website: "www.sujin-catering.kr",
-    color: "#D68910", featured: true, photoUrl: "https://randomuser.me/api/portraits/women/81.jpg"
+    id: 15, name: "김성길", company: "바다예찬", category: "식품/외식",
+    specialty: "횟집",
+    headline: "단체회식 믿고 갈 수 있는 바다예찬입니다.",
+    targetCustomer: "각종 파티·모임 주최자",
+    description: "회와 솥밥의 달인",
+    phone: "010-3788-2414", email: "amiga1992@naver.com", address: "경기도 수원시 팔달구 효원로 249번길 18-5",
+    instagram: "", kakao: "", website: "",
+    color: "#D68910", featured: true, photoUrl: ""
   },
   {
     id: 16, name: "이재린", company: "주식회사 브릿지자산관리", category: "금융/보험",
