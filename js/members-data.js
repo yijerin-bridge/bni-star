@@ -212,6 +212,16 @@ const MEMBERS_DEFAULT = [
     phone: "010-2546-8295", email: "beasap32@gmail.com", address: "경기도 광주시 창뜰윗길 42-13, B1",
     instagram: "", kakao: "", website: "thssi.co.kr",
     color: "#566573", featured: true, photoUrl: "https://ocmnbwlhjovfycihyvnr.supabase.co/storage/v1/object/public/member-photos/member-1775189844021.jpg"
+  },
+  {
+    id: 22, name: "박희배", company: "에이치비인터내셔널", category: "IT/디지털",
+    specialty: "종합가전렌탈",
+    headline: "모든 가전을 책임집니다",
+    targetCustomer: "가전 교체, 맞춤형 컨설팅이 필요하신분",
+    description: "",
+    phone: "010-9616-9294", email: "jsapark76@nate.com", address: "경기도 수원시 권선구 정조로 588, 1층",
+    instagram: "", kakao: "", website: "",
+    color: "#F39C12", featured: true, photoUrl: ""
   }
 ];
 
