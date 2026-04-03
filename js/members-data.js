@@ -44,16 +44,6 @@ const MEMBERS_DEFAULT = [
     color: "#148F77", featured: true, photoUrl: "https://randomuser.me/api/portraits/women/63.jpg"
   },
   {
-    id: 8, name: "오준혁", company: "디지털포스(주)", category: "IT/디지털",
-    specialty: "홈페이지·쇼핑몰 개발",
-    headline: "홈페이지 없이 사업하고 계신 건 아니죠?",
-    targetCustomer: "온라인 진출 원하는 소상공인, 쇼핑몰 창업 준비 중인 분",
-    description: "개발 경력 10년. 반응형 홈페이지, 쇼핑몰, 모바일 앱 개발 전문. 기획부터 운영 지원까지 IT 전반을 담당합니다. 합리적인 비용에 최고의 품질을 약속합니다.",
-    phone: "010-7890-1234", email: "oh@digitalforce.kr", address: "서울시 마포구 합정동 890",
-    instagram: "digitalforce_oh", kakao: "digitalforce", website: "www.digitalforce.kr",
-    color: "#212F3D", featured: true, photoUrl: "https://randomuser.me/api/portraits/men/23.jpg"
-  },
-  {
     id: 9, name: "임귀상", company: "아르페이", category: "IT/디지털",
     specialty: "카드단말기·POS",
     headline: "초스피드로 결제되는 아르페이입니다.",
