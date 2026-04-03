@@ -51,7 +51,7 @@ const MEMBERS_DEFAULT = [
     description: "금융 경력 20년의 PB(Private Banker). 국내외 주식·채권·부동산 펀드 포트폴리오 관리 전문. 세금 효율적인 자산 이전 전략까지 원스톱으로 제공합니다.",
     phone: "010-2599-1901", email: "", address: "",
     instagram: "", kakao: "", website: "",
-    color: "#1E8449", featured: true, photoUrl: "https://randomuser.me/api/portraits/women/28.jpg"
+    color: "#1E8449", featured: true, photoUrl: "https://ocmnbwlhjovfycihyvnr.supabase.co/storage/v1/object/public/member-photos/member-1775186874538.jpg"
   },
   {
     id: 6, name: "정동현", company: "동현부동산컨설팅", category: "부동산",
