@@ -353,8 +353,8 @@ function buildFormHTML(m) {
         <input class="form-input" id="fInsta" value="${m ? (m.instagram || '') : ''}" placeholder="username">
       </div>
       <div class="form-group">
-        <label class="form-label">카카오톡 ID</label>
-        <input class="form-input" id="fKakao" value="${m ? (m.kakao || '') : ''}" placeholder="kakao_id">
+        <label class="form-label">카카오 오픈채팅 URL</label>
+        <input class="form-input" id="fKakao" value="${m ? (m.kakao || '') : ''}" placeholder="https://open.kakao.com/o/...">
       </div>
       <div class="form-group">
         <label class="form-label">웹사이트</label>

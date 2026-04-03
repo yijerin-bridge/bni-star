@@ -214,7 +214,7 @@ function openModal(id) {
           <div><span class="c-label">주소 (탭하면 복사)</span><span class="c-val">${m.address}</span></div>
         </div>
         ${m.kakao ? `
-        <a href="${m.kakao.startsWith('http') ? m.kakao : 'https://open.kakao.com/o/' + encodeURIComponent(m.kakao)}" class="contact-row kakao" target="_blank" rel="noopener" onclick="trackContact(${m.id},'${m.name}','kakao')">
+        <a href="${m.kakao}" class="contact-row kakao" target="_blank" rel="noopener" onclick="trackContact(${m.id},'${m.name}','kakao')">
           <div class="c-icon">💬</div>
           <div><span class="c-label">카카오톡</span><span class="c-val">${m.kakao}</span></div>
         </a>` : ''}
@@ -234,7 +234,7 @@ function openModal(id) {
     <div class="m-ctas">
       <a href="tel:${m.phone}" class="m-cta prim" style="background:${m.color}" onclick="trackContact(${m.id},'${m.name}','phone')">📞 전화하기</a>
       ${m.kakao
-        ? `<a href="${m.kakao.startsWith('http') ? m.kakao : 'https://open.kakao.com/o/' + encodeURIComponent(m.kakao)}" class="m-cta sec" target="_blank" rel="noopener" onclick="trackContact(${m.id},'${m.name}','kakao')">💬 카카오톡</a>`
+        ? `<a href="${m.kakao}" class="m-cta sec" target="_blank" rel="noopener" onclick="trackContact(${m.id},'${m.name}','kakao')">💬 카카오톡</a>`
         : `<a href="mailto:${m.email}" class="m-cta sec" onclick="trackContact(${m.id},'${m.name}','email')">✉️ 이메일</a>`}
     </div>`;
 
