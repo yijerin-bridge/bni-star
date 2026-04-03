@@ -91,7 +91,7 @@ const MEMBERS_DEFAULT = [
     description: "디지털 마케팅 전문가 8년 경력. 인스타그램·네이버·유튜브 채널 운영 및 광고 집행 전문. ROI 중심의 마케팅으로 실질적인 매출 성장을 만들어 드립니다.",
     phone: "010-8901-2345", email: "lim@shdm.kr", address: "서울시 성동구 성수동 123",
     instagram: "shdm_marketing", kakao: "shdm_official", website: "www.shdm.kr",
-    color: "#B03A2E", featured: false, photoUrl: "https://randomuser.me/api/portraits/women/17.jpg"
+    color: "#B03A2E", featured: true, photoUrl: "https://randomuser.me/api/portraits/women/17.jpg"
   },
   {
     id: 10, name: "강태양", company: "태양인테리어", category: "건설/인테리어",
@@ -111,7 +111,7 @@ const MEMBERS_DEFAULT = [
     description: "건설업 20년 경력. 소규모 단독주택·근린생활시설 신축 및 리모델링 전문. 탄탄한 시공 품질과 투명한 견적으로 신뢰를 드립니다.",
     phone: "010-5791-3456", email: "moon@green-const.kr", address: "경기도 고양시 일산동구 장항동 123",
     instagram: "green_construction", kakao: "green_const", website: "www.green-const.kr",
-    color: "#1D8348", featured: false, photoUrl: "https://randomuser.me/api/portraits/men/78.jpg"
+    color: "#1D8348", featured: true, photoUrl: "https://randomuser.me/api/portraits/men/78.jpg"
   },
   {
     id: 12, name: "윤지영", company: "지영한의원", category: "의료/건강",
@@ -121,7 +121,7 @@ const MEMBERS_DEFAULT = [
     description: "한의학 박사. 한방 다이어트 시술 및 면역력 증진 전문. 개인 체질에 맞는 맞춤형 한방 치료로 근본적인 건강 관리를 도와드립니다.",
     phone: "010-0123-4567", email: "yoon@jiyoung-clinic.kr", address: "서울시 강남구 청담동 789",
     instagram: "dr_jiyoung", kakao: "jiyoung_clinic", website: "www.jiyoung-clinic.kr",
-    color: "#117A8B", featured: false, photoUrl: "https://randomuser.me/api/portraits/women/52.jpg"
+    color: "#117A8B", featured: true, photoUrl: "https://randomuser.me/api/portraits/women/52.jpg"
   },
   {
     id: 13, name: "이지혜", company: "암웨이", category: "뷰티/패션",
@@ -141,7 +141,7 @@ const MEMBERS_DEFAULT = [
     description: "국제코치연맹 인증 코치(PCC). 중소기업 대표 및 임원 대상 경영 코칭 전문. 목표 설정, 조직 문화 개선, 갈등 관리 등 비즈니스 전반을 코칭합니다.",
     phone: "010-1357-2468", email: "shin@leaders-coaching.kr", address: "서울시 종로구 광화문 101",
     instagram: "leaders_coaching", kakao: "leaders_jaeho", website: "www.leaders-coaching.kr",
-    color: "#784212", featured: false, photoUrl: "https://randomuser.me/api/portraits/men/19.jpg"
+    color: "#784212", featured: true, photoUrl: "https://randomuser.me/api/portraits/men/19.jpg"
   },
   {
     id: 15, name: "배수진", company: "수진케이터링", category: "식품/외식",
