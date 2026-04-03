@@ -54,7 +54,7 @@ const MEMBERS_DEFAULT = [
     color: "#1E8449", featured: true, photoUrl: "https://ocmnbwlhjovfycihyvnr.supabase.co/storage/v1/object/public/member-photos/member-1775186874538.jpg"
   },
   {
-    id: 6, name: "정동현", company: "동현부동산컨설팅", category: "자동차",
+    id: 6, name: "정동현", company: "동현부동산컨설팅", category: "부동산/인테리어",
     specialty: "상가·오피스 투자 분석",
     headline: "수익 나는 상가 투자, 어디서 시작해야 할까요?",
     targetCustomer: "상가 투자 희망자, 사무실 이전 예정 기업",
