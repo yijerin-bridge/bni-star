@@ -4,16 +4,6 @@
 
 const MEMBERS_DEFAULT = [
   {
-    id: 1, name: "김민준", company: "민준세무법인", category: "법률/세무",
-    specialty: "세무·절세 컨설팅",
-    headline: "세금, 얼마나 더 줄일 수 있는지 알고 계신가요?",
-    targetCustomer: "중소기업 대표, 스타트업 창업자, 프리랜서",
-    description: "공인세무사 경력 20년. 법인 설립부터 절세 전략 수립, 세무조사 대응, 개인사업자 기장까지 토탈 세무 서비스를 제공합니다. 고객의 비즈니스를 함께 성장시키는 세무 파트너를 찾고 계신다면 연락 주세요.",
-    phone: "010-1234-5678", email: "kim@minjun-tax.kr", address: "서울시 강남구 테헤란로 123, 5층",
-    instagram: "minjun_tax", kakao: "minjun_tax", website: "www.minjun-tax.kr",
-    color: "#C0392B", featured: true, photoUrl: "https://randomuser.me/api/portraits/men/32.jpg"
-  },
-  {
     id: 2, name: "이수연", company: "수연법률사무소", category: "법률/세무",
     specialty: "기업·부동산 법률 자문",
     headline: "억울한 계약 분쟁, 혼자 해결하려 하지 마세요",
