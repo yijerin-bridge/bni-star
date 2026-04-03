@@ -64,16 +64,6 @@ const MEMBERS_DEFAULT = [
     color: "#D35400", featured: true, photoUrl: "https://randomuser.me/api/portraits/men/41.jpg"
   },
   {
-    id: 11, name: "문성철", company: "그린건설", category: "부동산/인테리어",
-    specialty: "단독주택·리모델링 건축",
-    headline: "내 집 짓고 싶은데 어디서 시작해야 할지 막막하신가요?",
-    targetCustomer: "단독주택 신축·리모델링 원하는 분, 건물 외관 공사 필요한 분",
-    description: "건설업 20년 경력. 소규모 단독주택·근린생활시설 신축 및 리모델링 전문. 탄탄한 시공 품질과 투명한 견적으로 신뢰를 드립니다.",
-    phone: "010-5791-3456", email: "moon@green-const.kr", address: "경기도 고양시 일산동구 장항동 123",
-    instagram: "green_construction", kakao: "green_const", website: "www.green-const.kr",
-    color: "#1D8348", featured: true, photoUrl: "https://randomuser.me/api/portraits/men/78.jpg"
-  },
-  {
     id: 12, name: "김봉석", company: "유사나헬스사이언스코리아", category: "의료/건강",
     specialty: "건강기능식품",
     headline: "Your Health, Your Life, Your Way",
