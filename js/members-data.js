@@ -221,7 +221,7 @@ const MEMBERS_DEFAULT = [
     description: "",
     phone: "010-9616-9294", email: "jsapark76@nate.com", address: "경기도 수원시 권선구 정조로 588, 1층",
     instagram: "", kakao: "", website: "",
-    color: "#F39C12", featured: true, photoUrl: ""
+    color: "#F39C12", featured: true, photoUrl: "https://ocmnbwlhjovfycihyvnr.supabase.co/storage/v1/object/public/member-photos/member-1775190969972.jpg"
   },
   {
     id: 23, name: "이준수", company: "(주)미래온투어", category: "라이프/여행",
