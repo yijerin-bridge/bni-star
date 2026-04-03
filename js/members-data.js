@@ -161,7 +161,7 @@ const MEMBERS_DEFAULT = [
     description: "",
     phone: "010-3127-6765", email: "", address: "",
     instagram: "", kakao: "", website: "",
-    color: "#C0392B", featured: false, photoUrl: "https://randomuser.me/api/portraits/women/68.jpg"
+    color: "#C0392B", featured: true, photoUrl: "https://randomuser.me/api/portraits/women/68.jpg"
   },
   {
     id: 17, name: "김성미", company: "JK제빵소", category: "식품/외식",
@@ -171,7 +171,7 @@ const MEMBERS_DEFAULT = [
     description: "반갑습니다.",
     phone: "010-9532-0316", email: "sm-dos@daum.net", address: "경기도 수원시 권선구 곡선로 49번길 13-25, 한아름빌딩 1F",
     instagram: "", kakao: "", website: "",
-    color: "#C0392B", featured: false, photoUrl: ""
+    color: "#C0392B", featured: true, photoUrl: ""
   }
 ];
 
