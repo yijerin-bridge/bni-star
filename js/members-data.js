@@ -232,6 +232,16 @@ const MEMBERS_DEFAULT = [
     phone: "010-9321-2625", email: "seoulmilk2013@gmail.com", address: "경기도 화성시 병점구 떡전골로 96-4 오피스밸리 244호",
     instagram: "", kakao: "", website: "",
     color: "#784212", featured: true, photoUrl: ""
+  },
+  {
+    id: 24, name: "황성호", company: "인투이피앤티", category: "제조/유통",
+    specialty: "친환경패키지",
+    headline: "포장재, 박스가 필요하시다면",
+    targetCustomer: "B2C 제품 패키지가 필요하신분",
+    description: "친환경 패키지를 다룹니다.",
+    phone: "010-7376-1111", email: "sean@in2epnt.com", address: "경기도 수원시 팔달구 행궁로 98 성장관 2층",
+    instagram: "in2epnt_official", kakao: "", website: "",
+    color: "#27AE60", featured: false, photoUrl: ""
   }
 ];
 
