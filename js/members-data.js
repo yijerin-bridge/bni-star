@@ -172,6 +172,16 @@ const MEMBERS_DEFAULT = [
     phone: "010-9532-0316", email: "sm-dos@daum.net", address: "경기도 수원시 권선구 곡선로 49번길 13-25, 한아름빌딩 1F",
     instagram: "", kakao: "", website: "",
     color: "#C0392B", featured: true, photoUrl: "https://ocmnbwlhjovfycihyvnr.supabase.co/storage/v1/object/public/member-photos/member-1775186264851.jpg"
+  },
+  {
+    id: 18, name: "임현준", company: "볼트런", category: "자동차",
+    specialty: "자동차튜닝(자동차전압안정기)",
+    headline: "강력한 자동차 전압 안정기",
+    targetCustomer: "영업용 차량, 택시, 화물차",
+    description: "",
+    phone: "010-5344-0255", email: "guswns0255@hanmail.net", address: "수원특례시 권선구 권광로 85",
+    instagram: "", kakao: "", website: "www.volt-run.co.kr",
+    color: "#C0392B", featured: true, photoUrl: ""
   }
 ];
 
