@@ -106,11 +106,11 @@ const MEMBERS_DEFAULT = [
   {
     id: 17, name: "김성미", company: "JK제빵소", category: "식품/외식",
     specialty: "베이커리·카페",
-    headline: "맛있는 치아바타와 커피",
-    targetCustomer: "빵 좋아하시는분",
-    description: "반갑습니다.",
+    headline: "천현발효종으로 만든 빵과 신선한 원두로 만든 커피와 함께하세요.",
+    targetCustomer: "학원,병원,어린이집등 단체주문,답례품등 맛있는 빵과 커피를  찾는분들",
+    description: "천연발효종으로 만든 식사대용으로 즐길수있는 빵부터 페스츄리,디저트까지~\n신선한 원두로 커피와 음료도 다양하게 즐길 수 있습니다.",
     phone: "010-9532-0316", email: "sm-dos@daum.net", address: "경기도 수원시 권선구 곡선로 49번길 13-25, 한아름빌딩 1F",
-    instagram: "", kakao: "", website: "",
+    instagram: "", kakao: "https://open.kakao.com/o/s8pwFPuh", website: "",
     color: "#dbe972", featured: true, photoUrl: "https://ocmnbwlhjovfycihyvnr.supabase.co/storage/v1/object/public/member-photos/member-1775186264851.jpg"
   },
   {
