@@ -241,7 +241,7 @@ const MEMBERS_DEFAULT = [
     description: "친환경 패키지를 다룹니다.",
     phone: "010-7376-1111", email: "sean@in2epnt.com", address: "경기도 수원시 팔달구 행궁로 98 성장관 2층",
     instagram: "in2epnt_official", kakao: "", website: "",
-    color: "#27AE60", featured: false, photoUrl: ""
+    color: "#27AE60", featured: true, photoUrl: ""
   }
 ];
 
