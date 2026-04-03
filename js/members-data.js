@@ -206,12 +206,12 @@ const MEMBERS_DEFAULT = [
   {
     id: 21, name: "한관우", company: "더쓰임마케팅", category: "마케팅/광고",
     specialty: "SEO, 컨텐츠 컨설팅 교육",
-    headline: "실제 타겟에 맞는 효율적인 마케팅을 알려드립니다.",
+    headline: "광고는 집행이 아니라 설계입니다.",
     targetCustomer: "광고효율이 안나오는 사업자, 제품력 좋은 브랜드",
-    description: "마케팅 전문가 입니다.",
+    description: "실제 타겟에 맞는 효율적인 마케팅을 알려드립니다.",
     phone: "010-2546-8295", email: "beasap32@gmail.com", address: "경기도 광주시 창뜰윗길 42-13, B1",
     instagram: "", kakao: "", website: "thssi.co.kr",
-    color: "#566573", featured: true, photoUrl: ""
+    color: "#566573", featured: true, photoUrl: "https://ocmnbwlhjovfycihyvnr.supabase.co/storage/v1/object/public/member-photos/member-1775189844021.jpg"
   }
 ];
 
