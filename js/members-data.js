@@ -21,7 +21,7 @@ const MEMBERS_DEFAULT = [
     description: "기업 배상책임보험, 간병인 보험 등 복잡한 보험을 쉽게 설명하고 최적의 플랜을 설계해 드립니다.",
     phone: "010-8245-5258", email: "3282614@kbinsure.co.kr", address: "경기도 수원시 팔달구 경수대로 518, KB손해보험 8층",
     instagram: "", kakao: "", website: "",
-    color: "#F39C12", featured: true, photoUrl: ""
+    color: "#F39C12", featured: true, photoUrl: "https://randomuser.me/api/portraits/men/11.jpg"
   },
   {
     id: 5, name: "정영준", company: "와이즈앤밸류", category: "금융/보험",
@@ -41,7 +41,7 @@ const MEMBERS_DEFAULT = [
     description: "크루즈 소개해드립니다.",
     phone: "010-9016-2122", email: "nexy0316@naver.com", address: "",
     instagram: "", kakao: "", website: "",
-    color: "#148F77", featured: true, photoUrl: ""
+    color: "#148F77", featured: true, photoUrl: "https://randomuser.me/api/portraits/women/63.jpg"
   },
   {
     id: 9, name: "임귀상", company: "아르페이", category: "IT/디지털",
@@ -51,7 +51,7 @@ const MEMBERS_DEFAULT = [
     description: "쇼핑몰 무료 구축, QR결제 다양한 지원이 됩니다.",
     phone: "010-6532-3651", email: "imguisang@naver.com", address: "경기도 화성시 효행구 봉담읍 서봉산길 21-1",
     instagram: "", kakao: "", website: "",
-    color: "#B03A2E", featured: true, photoUrl: ""
+    color: "#B03A2E", featured: true, photoUrl: "https://randomuser.me/api/portraits/women/17.jpg"
   },
   {
     id: 10, name: "고 웅", company: "디자인 이안", category: "부동산/인테리어",
@@ -61,7 +61,7 @@ const MEMBERS_DEFAULT = [
     description: "인테리어 디자이너 15년 경력. 상업 공간 특화 설계. 공간 기획부터 시공·가구 납품까지 원스톱 서비스. 합리적인 비용으로 최고의 공간을 만들어 드립니다.",
     phone: "010-6314-8999", email: "ianko83@naver.com", address: "경기 수원시 영통구 영통로 174번길 12, 그대가센트럴파크상가 101호 (망포동 722)",
     instagram: "design_ian.ko", kakao: "", website: "",
-    color: "#D35400", featured: true, photoUrl: ""
+    color: "#D35400", featured: true, photoUrl: "https://randomuser.me/api/portraits/men/41.jpg"
   },
   {
     id: 12, name: "김봉석", company: "유사나헬스사이언스코리아", category: "의료/건강",
@@ -71,7 +71,7 @@ const MEMBERS_DEFAULT = [
     description: "균형잡힌 영양공급",
     phone: "010-3775-3612", email: "kbseok77@naver.com", address: "",
     instagram: "", kakao: "", website: "www.usana.com",
-    color: "#117A8B", featured: true, photoUrl: ""
+    color: "#117A8B", featured: true, photoUrl: "https://randomuser.me/api/portraits/women/52.jpg"
   },
   {
     id: 13, name: "이지혜", company: "암웨이", category: "뷰티/패션",
