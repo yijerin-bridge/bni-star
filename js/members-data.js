@@ -4,16 +4,6 @@
 
 const MEMBERS_DEFAULT = [
   {
-    id: 2, name: "이수연", company: "수연법률사무소", category: "법률/세무",
-    specialty: "기업·부동산 법률 자문",
-    headline: "억울한 계약 분쟁, 혼자 해결하려 하지 마세요",
-    targetCustomer: "계약 분쟁 사업주, 상속·이혼 문제 있는 분",
-    description: "변호사 경력 15년. 기업 계약 검토, 부동산 분쟁, 상속, 이혼 등 다양한 법률 분야를 명쾌하게 해결합니다. 초기 상담은 무료로 진행하오니 편하게 연락 주세요.",
-    phone: "010-2345-6789", email: "lee@suyeon-law.kr", address: "서울시 서초구 서초대로 456, 8층",
-    instagram: "lawyer_suyeon", kakao: "suyeon_law", website: "www.suyeon-law.kr",
-    color: "#6C3483", featured: true, photoUrl: "https://randomuser.me/api/portraits/women/44.jpg"
-  },
-  {
     id: 3, name: "신민재", company: "이차선술집", category: "식품/외식",
     specialty: "요식업·주점",
     headline: "분위기 좋은 술집에서 2차를!",
