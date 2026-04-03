@@ -114,14 +114,14 @@ const MEMBERS_DEFAULT = [
     color: "#1D8348", featured: true, photoUrl: "https://randomuser.me/api/portraits/men/78.jpg"
   },
   {
-    id: 12, name: "윤지영", company: "지영한의원", category: "의료/건강",
-    specialty: "한방 다이어트·면역 관리",
-    headline: "다이어트, 이번엔 정말 제대로 해보고 싶으신가요?",
-    targetCustomer: "다이어트 원하는 분, 만성 피로·소화 문제로 고생하는 분",
-    description: "한의학 박사. 한방 다이어트 시술 및 면역력 증진 전문. 개인 체질에 맞는 맞춤형 한방 치료로 근본적인 건강 관리를 도와드립니다.",
-    phone: "010-0123-4567", email: "yoon@jiyoung-clinic.kr", address: "서울시 강남구 청담동 789",
-    instagram: "dr_jiyoung", kakao: "jiyoung_clinic", website: "www.jiyoung-clinic.kr",
-    color: "#117A8B", featured: true, photoUrl: "https://randomuser.me/api/portraits/women/52.jpg"
+    id: 12, name: "김봉석", company: "유사나헬스사이언스코리아", category: "의료/건강",
+    specialty: "건강기능식품",
+    headline: "Your Health, Your Life, Your Way",
+    targetCustomer: "면역력이 낮아진분, 다이어트를 하고 싶으신분",
+    description: "균형잡힌 영양공급",
+    phone: "010-3775-3612", email: "kbseok77@naver.com", address: "",
+    instagram: "", kakao: "", website: "www.usana.com",
+    color: "#117A8B", featured: true, photoUrl: ""
   },
   {
     id: 13, name: "이지혜", company: "암웨이", category: "뷰티/패션",
