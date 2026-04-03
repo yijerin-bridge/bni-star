@@ -131,7 +131,7 @@ const MEMBERS_DEFAULT = [
     description: "자연스럽고 건강한 피부를 위한 최적의 솔루션을 제안합니다.",
     phone: "010-2275-2250", email: "fcm36000@gmail.com", address: "",
     instagram: "No.659799", kakao: "", website: "www.amway.co.kr",
-    color: "#A93226", featured: true, photoUrl: ""
+    color: "#A93226", featured: true, photoUrl: "https://ocmnbwlhjovfycihyvnr.supabase.co/storage/v1/object/public/member-photos/member-1775186245990.jpg"
   },
   {
     id: 14, name: "신재호", company: "리더스코칭센터", category: "교육/컨설팅",
