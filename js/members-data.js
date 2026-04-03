@@ -84,16 +84,6 @@ const MEMBERS_DEFAULT = [
     color: "#A93226", featured: true, photoUrl: "https://ocmnbwlhjovfycihyvnr.supabase.co/storage/v1/object/public/member-photos/member-1775186245990.jpg"
   },
   {
-    id: 14, name: "신재호", company: "리더스코칭센터", category: "교육/컨설팅",
-    specialty: "경영 코칭·리더십 개발",
-    headline: "열심히 일하는데 회사가 성장하지 않는 느낌이신가요?",
-    targetCustomer: "성장하고 싶은 CEO, 리더십 개발이 필요한 팀장급 이상",
-    description: "국제코치연맹 인증 코치(PCC). 중소기업 대표 및 임원 대상 경영 코칭 전문. 목표 설정, 조직 문화 개선, 갈등 관리 등 비즈니스 전반을 코칭합니다.",
-    phone: "010-1357-2468", email: "shin@leaders-coaching.kr", address: "서울시 종로구 광화문 101",
-    instagram: "leaders_coaching", kakao: "leaders_jaeho", website: "www.leaders-coaching.kr",
-    color: "#784212", featured: true, photoUrl: "https://randomuser.me/api/portraits/men/19.jpg"
-  },
-  {
     id: 15, name: "김성길", company: "바다예찬", category: "식품/외식",
     specialty: "횟집",
     headline: "단체회식 믿고 갈 수 있는 바다예찬입니다.",
