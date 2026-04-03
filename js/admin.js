@@ -69,12 +69,7 @@ async function pushToGitHub() {
       const res = await fetch('/api/save-members', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ members: members.map(m => {
-          // base64 사진은 GitHub에 저장하지 않음 (용량 초과 방지)
-          const copy = { ...m };
-          if (copy.photoUrl && copy.photoUrl.startsWith('data:')) copy.photoUrl = '';
-          return copy;
-        }) })
+        body: JSON.stringify({ members })
       });
       if (res.ok) {
         showDeployBanner('✓ 배포 완료 (~30초 후 반영)', true);
