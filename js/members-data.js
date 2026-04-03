@@ -138,7 +138,7 @@ const MEMBERS_DEFAULT = [
     specialty: "분식",
     headline: "든든한 한끼",
     targetCustomer: "단체 도시락, 소풍가는 고객",
-    description: "",
+    description: "베풀 진(陳)이라 쓰고 찐이라 읽습니다.",
     phone: "010-8852-5450", email: "", address: "경기도 수원시 권선구 동수원로 146번길 192-13, 102호",
     instagram: "", kakao: "", website: "",
     color: "#784212", featured: true, photoUrl: ""
