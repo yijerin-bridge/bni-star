@@ -242,10 +242,7 @@ const SAMPLE_PHOTOS = {
 };
 
 function loadMembers() {
-  return MEMBERS_DEFAULT.map(m => ({
-    ...m,
-    photoUrl: m.photoUrl || SAMPLE_PHOTOS[m.id] || ''
-  }));
+  return MEMBERS_DEFAULT.map(m => ({ ...m }));
 }
 function saveMembers(list) {
   // no-op: data is persisted via GitHub API (api/save-members)
