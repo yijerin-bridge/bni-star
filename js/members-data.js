@@ -28,7 +28,7 @@ const MEMBERS_DEFAULT = [
     specialty: "자산관리·생명보험",
     headline: "건강한 노후를 준비할 수 있게 도와드립니다.",
     targetCustomer: "노후 준비가 필요하신분",
-    description: "금융 경력 20년의 PB(Private Banker). 국내외 주식·채권·부동산 펀드 포트폴리오 관리 전문. 세금 효율적인 자산 이전 전략까지 원스톱으로 제공합니다.",
+    description: "생명보험 & 재무설계 전문가로 여러 보험상품과 금융상품을 전반적으로 컨설팅하여 더 나은 노후, 더 나은 미래를 도와드립니다.",
     phone: "010-2599-1901", email: "", address: "",
     instagram: "", kakao: "", website: "",
     color: "#1E8449", featured: true, photoUrl: "https://ocmnbwlhjovfycihyvnr.supabase.co/storage/v1/object/public/member-photos/member-1775186874538.jpg"
@@ -41,7 +41,7 @@ const MEMBERS_DEFAULT = [
     description: "크루즈 소개해드립니다.",
     phone: "010-9016-2122", email: "nexy0316@naver.com", address: "",
     instagram: "", kakao: "", website: "",
-    color: "#148F77", featured: true, photoUrl: ""
+    color: "#148F77", featured: true, photoUrl: "https://randomuser.me/api/portraits/women/63.jpg"
   },
   {
     id: 9, name: "임귀상", company: "아르페이", category: "IT/디지털",
