@@ -71,7 +71,7 @@ const MEMBERS_DEFAULT = [
     description: "균형잡힌 영양공급",
     phone: "010-3775-3612", email: "kbseok77@naver.com", address: "",
     instagram: "", kakao: "", website: "www.usana.com",
-    color: "#117A8B", featured: true, photoUrl: "https://randomuser.me/api/portraits/women/52.jpg"
+    color: "#117A8B", featured: true, photoUrl: "https://ocmnbwlhjovfycihyvnr.supabase.co/storage/v1/object/public/member-photos/member-1775310685175.jpg"
   },
   {
     id: 13, name: "이지혜", company: "암웨이", category: "뷰티/패션",
