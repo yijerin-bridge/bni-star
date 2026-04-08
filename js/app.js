@@ -194,7 +194,7 @@ function openModal(id) {
     </div>
 
     <div class="m-section">
-      <div class="m-label">찾는 고객 유형</div>
+      <div class="m-label">이런 분께 추천드려요</div>
       <div class="m-target">🎯 ${m.targetCustomer}</div>
     </div>
 

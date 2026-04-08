@@ -321,7 +321,7 @@ function buildFormHTML(m) {
         <input class="form-input" id="fHeadline" value="${m ? (m.headline || '') : ''}" placeholder="고객의 고민을 건드리는 한 문장">
       </div>
       <div class="form-group">
-        <label class="form-label">찾는 고객 유형</label>
+        <label class="form-label">이런 분께 추천드려요</label>
         <input class="form-input" id="fTarget" value="${m ? m.targetCustomer : ''}" placeholder="중소기업 대표, 스타트업 창업자">
       </div>
       <div class="form-group">
