@@ -131,7 +131,7 @@ const MEMBERS_DEFAULT = [
     description: "대규모 에어컨 청소 전문 기업 QY케어 입니다. \n주택부터 사무실까지 깨끗하게 청소합니다.",
     phone: "010-4899-1911", email: "", address: "경기도 수원시 권선구 권선로 720번길 23, 202호",
     instagram: "", kakao: "", website: "",
-    color: "#C0392B", featured: true, photoUrl: ""
+    color: "#C0392B", featured: true, photoUrl: "https://ocmnbwlhjovfycihyvnr.supabase.co/storage/v1/object/public/member-photos/member-1775643105191.jpg"
   },
   {
     id: 20, name: "진성훈", company: "찐수제컵밥", category: "식품/외식",
