@@ -110,8 +110,6 @@ function initCarousel() {
     if (Math.abs(dx) > 48) { gotoSlide(dx > 0 ? slide+1 : slide-1); resetTimer(); }
   }, { passive: true });
 
-  $('carouselPrev').onclick = () => { gotoSlide(slide-1); resetTimer(); };
-  $('carouselNext').onclick = () => { gotoSlide(slide+1); resetTimer(); };
 }
 
 function gotoSlide(n) {
