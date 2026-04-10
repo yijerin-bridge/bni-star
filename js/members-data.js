@@ -40,7 +40,7 @@ const MEMBERS_DEFAULT = [
     targetCustomer: "크루즈 여행을 계획하시는 분, 즐거운 은퇴를 원하시는 분",
     description: "크루즈 소개해드립니다.",
     phone: "010-9016-2122", email: "nexy0316@naver.com", address: "",
-    instagram: "", kakao: "", website: "",
+    instagram: "", kakao: "https://open.kakao.com/o/sIDTmV5", website: "",
     color: "#148F77", featured: true, photoUrl: "https://randomuser.me/api/portraits/women/63.jpg"
   },
   {
