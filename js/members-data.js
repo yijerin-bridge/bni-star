@@ -30,7 +30,7 @@ const MEMBERS_DEFAULT = [
     targetCustomer: "노후 준비가 필요하신분",
     description: "생명보험 & 재무설계 전문가로 여러 보험상품과 금융상품을 전반적으로 컨설팅하여 더 나은 노후, 더 나은 미래를 도와드립니다.",
     phone: "010-2599-1901", email: "", address: "",
-    instagram: "", kakao: "", website: "",
+    instagram: "", kakao: "https://open.kakao.com/o/sVdeyYli", website: "",
     color: "#1E8449", featured: true, photoUrl: "https://ocmnbwlhjovfycihyvnr.supabase.co/storage/v1/object/public/member-photos/member-1775186874538.jpg"
   },
   {
