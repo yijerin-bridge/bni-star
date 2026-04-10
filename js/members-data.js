@@ -70,7 +70,7 @@ const MEMBERS_DEFAULT = [
     targetCustomer: "면역력이 낮아진분, 다이어트를 하고 싶으신분",
     description: "균형잡힌 영양공급",
     phone: "010-3775-3612", email: "kbseok77@naver.com", address: "",
-    instagram: "", kakao: "", website: "www.usana.com",
+    instagram: "", kakao: "https://open.kakao.com/o/s4J5gnci", website: "www.usana.com",
     color: "#117A8B", featured: true, photoUrl: "https://ocmnbwlhjovfycihyvnr.supabase.co/storage/v1/object/public/member-photos/member-1775310685175.jpg"
   },
   {
