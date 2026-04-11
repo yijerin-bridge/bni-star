@@ -318,6 +318,41 @@ function pickSearch(id) {
   setTimeout(() => openModal(id), 280);
 }
 
+// ── Testimonials ──────────────────────────────────────────────
+function renderTestimonials() {
+  const track = $('testimonialsTrack');
+  const section = $('testimonialsSection');
+
+  // 후기 있는 멤버만, 후기 배열 펼쳐서 [{ member, testimonial }, ...] 형태로
+  const items = [];
+  MEMBERS.forEach(m => {
+    if (m.testimonials && m.testimonials.length) {
+      m.testimonials.forEach(t => items.push({ m, t }));
+    }
+  });
+
+  if (!items.length) { section.style.display = 'none'; return; }
+  section.style.display = '';
+
+  track.innerHTML = items.map(({ m, t }) => `
+    <div class="t-card" onclick="openModal(${m.id})" style="cursor:pointer">
+      <div class="t-badge" style="background:${m.color}20;color:${m.color}">${m.category}</div>
+      <div class="t-metric">${t.metric || ''}</div>
+      ${t.quote ? `<div class="t-story">"${t.quote}"</div>` : ''}
+      <div class="t-expert">
+        <div class="t-expert-avatar" style="background:${m.color}">
+          ${m.photoUrl ? `<img src="${m.photoUrl}" alt="${m.name}">` : initial(m.name)}
+        </div>
+        <div class="t-expert-info">
+          <div class="t-expert-label">컨설팅 전문가</div>
+          <div class="t-expert-name">${m.name}</div>
+          <div class="t-expert-spec">${m.specialty}</div>
+        </div>
+      </div>
+      ${t.author ? `<div class="t-author-line">— ${t.author}</div>` : ''}
+    </div>`).join('');
+}
+
 // ── Problem search ─────────────────────────────────────────────
 const KEYWORD_MAP = [
   { keywords: ['세금','절세','법인세','소득세','세무','세무사','부가세','신고'], categories: ['법률/세무'] },
@@ -402,6 +437,7 @@ document.addEventListener('keydown', e => {
 // ── Init ──────────────────────────────────────────────────────
 function init() {
   initCarousel();
+  renderTestimonials();
   renderCategories();
   renderMembers();
 }
