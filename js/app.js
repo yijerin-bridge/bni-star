@@ -339,6 +339,7 @@ function renderTestimonials() {
       <div class="t-badge" style="background:${m.color}20;color:${m.color}">${m.category}</div>
       <div class="t-metric">${t.metric || ''}</div>
       ${t.quote ? `<div class="t-story">"${t.quote}"</div>` : ''}
+      ${t.author ? `<div class="t-author-line">— ${t.author}</div>` : ''}
       <div class="t-expert">
         <div class="t-expert-avatar" style="background:${m.color}">
           ${m.photoUrl ? `<img src="${m.photoUrl}" alt="${m.name}">` : initial(m.name)}
@@ -349,7 +350,6 @@ function renderTestimonials() {
           <div class="t-expert-spec">${m.specialty}</div>
         </div>
       </div>
-      ${t.author ? `<div class="t-author-line">— ${t.author}</div>` : ''}
     </div>`).join('');
 }
 

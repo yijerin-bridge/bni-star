@@ -356,7 +356,12 @@ img { max-width: 100%; display: block; }
 .t-expert-label { font-size: .6rem; color: var(--text-mute); font-weight: 600; letter-spacing: .3px; margin-bottom: 1px; }
 .t-expert-name  { font-size: .82rem; font-weight: 700; color: var(--text); }
 .t-expert-spec  { font-size: .68rem; color: var(--text-sub); }
-.t-author-line  { font-size: .7rem; color: var(--text-mute); padding-top: 6px; }
+.t-author-line  {
+  font-size: .72rem; color: var(--text-mute);
+  padding: 8px 0 6px;
+  border-top: 1px solid var(--border);
+  margin-top: 4px;
+}
 
 /* ============================================================
    CATEGORY SECTION
