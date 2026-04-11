@@ -353,7 +353,7 @@ function renderTestimonials() {
     </div>`).join('');
 }
 
-// ── Problem search ─────────────────────────────────────────────
+// ── Keyword map (재활용) ────────────────────────────────────────
 const KEYWORD_MAP = [
   { keywords: ['세금','절세','법인세','소득세','세무','세무사','부가세','신고'], categories: ['법률/세무'] },
   { keywords: ['보험','대출','금융','자금','투자','은행','대부'], categories: ['금융/보험'] },
@@ -370,51 +370,89 @@ const KEYWORD_MAP = [
   { keywords: ['제조','유통','공장','납품','물류'], categories: ['제조/유통'] },
 ];
 
-function setProblem(text) {
-  document.getElementById('problemInput').value = text;
-  searchProblem();
+// ── Chatbot ────────────────────────────────────────────────────
+function cbOpen() {
+  $('cbPanel').classList.add('open');
+  $('cbBackdrop').classList.add('open');
+  if (!$('cbMessages').children.length) cbReset();
+  setTimeout(() => $('cbInput').focus(), 350);
 }
 
-function searchProblem() {
-  const q = document.getElementById('problemInput').value.trim();
-  const res = document.getElementById('problemResults');
-  if (!q) { res.innerHTML = ''; return; }
+function cbClose() {
+  $('cbPanel').classList.remove('open');
+  $('cbBackdrop').classList.remove('open');
+}
 
-  const ql = q.toLowerCase();
+function cbReset() {
+  $('cbMessages').innerHTML = '';
+  cbAddBot('안녕하세요! 어떤 도움이 필요하신가요? 👋<div class="cb-chips">' +
+    ['세금 절감|세금이 너무 많이 나와요','사업 보험|사업 보험이 필요해요',
+     '마케팅|마케팅이 잘 안돼요','법률 상담|법률 문제가 생겼어요',
+     '부동산|부동산 투자 상담이 필요해요','IT 구축|IT 시스템을 구축하고 싶어요',
+     '대출/자금|대출/자금 조달이 필요해요','HR 채용|직원 채용이 고민이에요']
+    .map(s => { const [label, val] = s.split('|');
+      return `<button class="cb-chip" onclick="cbSend('${val}')">${label}</button>`; })
+    .join('') + '</div>');
+}
+
+function cbAddBot(html) {
+  const row = document.createElement('div');
+  row.className = 'cb-bot-row';
+  row.innerHTML = `<div class="cb-bot-bubble">${html}</div>`;
+  $('cbMessages').appendChild(row);
+  $('cbMessages').scrollTop = $('cbMessages').scrollHeight;
+}
+
+function cbAddUser(text) {
+  const row = document.createElement('div');
+  row.className = 'cb-user-row';
+  row.innerHTML = `<div class="cb-user-bubble">${text}</div>`;
+  $('cbMessages').appendChild(row);
+  $('cbMessages').scrollTop = $('cbMessages').scrollHeight;
+}
+
+function cbSend(text) {
+  text = text || $('cbInput').value.trim();
+  if (!text) return;
+  $('cbInput').value = '';
+  cbAddUser(text);
+
+  const ql = text.toLowerCase();
   const matchedCats = new Set();
   KEYWORD_MAP.forEach(entry => {
     if (entry.keywords.some(k => ql.includes(k))) {
       entry.categories.forEach(c => matchedCats.add(c));
     }
   });
+  const hits = matchedCats.size
+    ? MEMBERS.filter(m => matchedCats.has(m.category))
+    : MEMBERS.filter(m =>
+        m.specialty.toLowerCase().includes(ql) ||
+        m.description.toLowerCase().includes(ql) ||
+        m.targetCustomer.toLowerCase().includes(ql)
+      ).slice(0, 5);
 
-  const hits = MEMBERS.filter(m =>
-    (matchedCats.size > 0 && matchedCats.has(m.category)) ||
-    m.specialty.toLowerCase().includes(ql) ||
-    m.description.toLowerCase().includes(ql) ||
-    m.targetCustomer.toLowerCase().includes(ql)
-  ).slice(0, 5);
-
-  if (!hits.length) {
-    res.innerHTML = `<div class="p-no-result">맞는 전문가를 찾지 못했어요. 검색창에서 찾아보세요 🔍</div>`;
-    return;
-  }
-
-  res.innerHTML = `
-    <div class="p-result-label">✨ 추천 전문가 ${hits.length}명</div>
-    <div class="p-result-list">
-      ${hits.map(m => `
-        <div class="p-result-item" onclick="openModal(${m.id})">
-          <div class="p-result-avatar" style="background:${m.color}">
-            ${m.photoUrl ? `<img src="${m.photoUrl}" alt="${m.name}">` : initial(m.name)}
+  setTimeout(() => {
+    if (!hits.length) {
+      cbAddBot('죄송해요, 말씀하신 내용과 맞는 전문가를 찾기 어렵네요 😥<br>다른 키워드로 다시 시도해보세요!<br>' +
+        '<button class="cb-reset-btn" onclick="cbReset()">🔄 다시 문의하기</button>');
+    } else {
+      const cards = hits.map(m =>
+        `<div class="cb-expert-card" onclick="cbClose();openModal(${m.id})">
+          <div class="cb-expert-avatar" style="background:${m.color}">
+            ${m.photoUrl ? `<img src="${m.photoUrl}" alt="${m.name}">` : m.name.charAt(0)}
           </div>
           <div>
-            <div class="p-result-name">${m.name}</div>
-            <div class="p-result-spec">${m.specialty} · ${m.category}</div>
+            <div class="cb-expert-name">${m.name}</div>
+            <div class="cb-expert-spec">${m.specialty}</div>
           </div>
-          <span class="p-result-arr">›</span>
-        </div>`).join('')}
-    </div>`;
+          <span class="cb-expert-arr">›</span>
+        </div>`).join('');
+      cbAddBot(`${hits.length}명의 전문가를 찾았어요! 👇${cards}` +
+        '<br><button class="cb-reset-btn" onclick="cbReset()">🔄 다른 문의하기</button>');
+    }
+    $('cbMessages').scrollTop = $('cbMessages').scrollHeight;
+  }, 380);
 }
 
 // ── Event wiring ──────────────────────────────────────────────
@@ -425,8 +463,8 @@ $('searchBtn').onclick     = openSearch;
 $('searchClose').onclick   = closeSearch;
 $('searchClear').onclick   = () => { searchInput.value=''; searchInput.focus(); renderSearchResults(''); };
 searchInput.addEventListener('input', e => renderSearchResults(e.target.value));
-document.getElementById('problemInput').addEventListener('keydown', e => { if (e.key === 'Enter') searchProblem(); });
-document.getElementById('problemInput').addEventListener('input', e => { if (!e.target.value.trim()) document.getElementById('problemResults').innerHTML = ''; });
+$('cbInput').addEventListener('keydown', e => { if (e.key === 'Enter') cbSend(); });
+$('cbSend').addEventListener('click', () => cbSend());
 
 modalOverlay.addEventListener('click', e => { if (e.target === modalOverlay) closeModal(); });
 
