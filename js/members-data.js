@@ -22,7 +22,7 @@ const MEMBERS_DEFAULT = [
     phone: "010-8245-5258", email: "3282614@kbinsure.co.kr", address: "경기도 수원시 팔달구 경수대로 518, KB손해보험 8층",
     instagram: "", kakao: "https://open.kakao.com/o/seO0n8ei", website: "",
     color: "#F39C12", featured: true, photoUrl: "https://ocmnbwlhjovfycihyvnr.supabase.co/storage/v1/object/public/member-photos/member-1775641531227.jpg",
-    testimonial: { metric: "보험료 월 42만원 절약", quote: "단체보험 갱신 때 기존 계약을 꼼꼼히 분석해줬어요. 불필요한 항목을 정리하고 보장은 더 좋아졌는데 보험료가 많이 줄었습니다." }
+    testimonials: [{ metric: "보험료 월 42만원 절약", quote: "단체보험 갱신 때 기존 계약을 꼼꼼히 분석해줬어요. 불필요한 항목을 정리하고 보장은 더 좋아졌는데 보험료가 많이 줄었습니다.", author: "이○○ 이사님 · IT 스타트업" }]
   },
   {
     id: 5, name: "정영준", company: "와이즈앤밸류", category: "금융/보험",
@@ -33,7 +33,7 @@ const MEMBERS_DEFAULT = [
     phone: "010-2599-1901", email: "", address: "",
     instagram: "", kakao: "https://open.kakao.com/o/sVdeyYli", website: "",
     color: "#1E8449", featured: true, photoUrl: "https://ocmnbwlhjovfycihyvnr.supabase.co/storage/v1/object/public/member-photos/member-1775186874538.jpg",
-    testimonial: { metric: "노후 준비 완료, 월 수령액 2.3배 증가", quote: "막연하게 걱정만 했는데 재무 플랜을 짜주니까 눈에 보이더라고요. 언제 얼마를 받을 수 있는지 명확해졌습니다." }
+    testimonials: [{ metric: "노후 준비 완료, 월 수령액 2.3배 증가", quote: "막연하게 걱정만 했는데 재무 플랜을 짜주니까 눈에 보이더라고요. 언제 얼마를 받을 수 있는지 명확해졌습니다." }]
   },
   {
     id: 7, name: "문혜선", company: "인크루즈", category: "라이프/여행",
@@ -64,7 +64,7 @@ const MEMBERS_DEFAULT = [
     phone: "010-6314-8999", email: "ianko83@naver.com", address: "경기 수원시 영통구 영통로 174번길 12, 그대가센트럴파크상가 101호 (망포동 722)",
     instagram: "design_ian.ko", kakao: "https://open.kakao.com/o/soUVe1Tc", website: "",
     color: "#D35400", featured: true, photoUrl: "https://randomuser.me/api/portraits/men/41.jpg",
-    testimonial: { metric: "인테리어 후 카페 매출 30% 상승", quote: "오픈 전 공간 기획부터 맡겼는데 손님들이 분위기 때문에 또 온다고 하더라고요. 인테리어가 마케팅이었어요." }
+    testimonials: [{ metric: "인테리어 후 카페 매출 30% 상승", quote: "오픈 전 공간 기획부터 맡겼는데 손님들이 분위기 때문에 또 온다고 하더라고요. 인테리어가 마케팅이었어요." }]
   },
   {
     id: 12, name: "김봉석", company: "유사나헬스사이언스코리아", category: "의료/건강",
@@ -105,7 +105,7 @@ const MEMBERS_DEFAULT = [
     phone: "010-3127-6765", email: "yijerin@hanmail.net", address: "",
     instagram: "yijerin", kakao: "https://open.kakao.com/me/yijerin", website: "bridgeasset.kr",
     color: "#566573", featured: true, photoUrl: "https://ocmnbwlhjovfycihyvnr.supabase.co/storage/v1/object/public/member-photos/member-1775190537938.jpg",
-    testimonial: { metric: "달러 자산 비중 40% 달성, 환차익 포함 연 11% 수익", quote: "원화로만 갖고 있던 자산을 달러로 분산하고 나서 환율 오를 때마다 수익이 생기더라고요." }
+    testimonials: [{ metric: "달러 자산 비중 40% 달성, 환차익 포함 연 11% 수익", quote: "원화로만 갖고 있던 자산을 달러로 분산하고 나서 환율 오를 때마다 수익이 생기더라고요." }]
   },
   {
     id: 17, name: "김성미", company: "JK제빵소", category: "식품/외식",
@@ -156,7 +156,7 @@ const MEMBERS_DEFAULT = [
     phone: "010-2546-8295", email: "beasap32@gmail.com", address: "경기도 광주시 창뜰윗길 42-13, B1",
     instagram: "", kakao: "", website: "thssi.co.kr",
     color: "#566573", featured: true, photoUrl: "https://ocmnbwlhjovfycihyvnr.supabase.co/storage/v1/object/public/member-photos/member-1775189844021.jpg",
-    testimonial: { metric: "블로그 월 방문자 3배 증가", quote: "SEO 설계 후 2개월 만에 네이버 검색 1페이지에 올라갔어요. 광고비 없이 유입이 생기니까 체감이 확실히 달랐습니다." }
+    testimonials: [{ metric: "블로그 월 방문자 3배 증가", quote: "SEO 설계 후 2개월 만에 네이버 검색 1페이지에 올라갔어요. 광고비 없이 유입이 생기니까 체감이 확실히 달랐습니다." }]
   },
   {
     id: 22, name: "박희배", company: "에이치비인터내셔널", category: "IT/디지털",
@@ -252,6 +252,6 @@ function loadMembers() {
     photoUrl: m.photoUrl || SAMPLE_PHOTOS[m.id] || ''
   }));
 }
-function saveMembers(list) {
+function saveMembers() {
   // no-op: data is persisted via GitHub API (api/save-members)
 }

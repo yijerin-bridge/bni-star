@@ -328,14 +328,6 @@ function buildFormHTML(m) {
         <label class="form-label">소개</label>
         <textarea class="form-textarea" id="fDesc" placeholder="전문가 소개를 입력하세요">${m ? m.description : ''}</textarea>
       </div>
-      <div class="form-group">
-        <label class="form-label">성과 수치 <span class="form-hint">예: 법인세 1,200만원 절감</span></label>
-        <input class="form-input" id="fTestimonialMetric" value="${m && m.testimonial ? m.testimonial.metric : ''}" placeholder="세금 30% 절감 · 매출 2배 등">
-      </div>
-      <div class="form-group">
-        <label class="form-label">고객 후기 한 줄</label>
-        <textarea class="form-textarea" id="fTestimonialQuote" placeholder="실제 고객의 말을 직접 인용하거나 결과를 요약하세요" style="min-height:72px">${m && m.testimonial ? m.testimonial.quote : ''}</textarea>
-      </div>
     </div>
 
     <div class="form-section">
@@ -445,11 +437,6 @@ function submitForm() {
     photoUrl:      currentPhotoData,
     color:         currentColor,
     featured:      isFeatured,
-    testimonial:   (() => {
-      const metric = $('fTestimonialMetric').value.trim();
-      const quote  = $('fTestimonialQuote').value.trim();
-      return (metric || quote) ? { metric, quote } : null;
-    })(),
   };
 
   if (editingId) {
@@ -465,12 +452,124 @@ function submitForm() {
 
 // ── Tabs ──────────────────────────────────────────────────────
 function switchTab(tab) {
-  const isMembers = tab === 'members';
-  $('panelMembers').style.display   = isMembers ? '' : 'none';
-  $('panelAnalytics').style.display = isMembers ? 'none' : '';
-  $('tabMembers').classList.toggle('active', isMembers);
-  $('tabAnalytics').classList.toggle('active', !isMembers);
-  if (!isMembers) loadAnalytics();
+  ['Members','Testimonials','Analytics'].forEach(t => {
+    $('panel'+t).style.display = (tab === t.toLowerCase()) ? '' : 'none';
+    $('tab'+t).classList.toggle('active', tab === t.toLowerCase());
+  });
+  if (tab === 'analytics') loadAnalytics();
+  if (tab === 'testimonials') initTestimonialsTab();
+}
+
+// ── Testimonials Tab ───────────────────────────────────────────
+let tEditingMemberId = null;
+let tEditingIdx = null;
+
+function initTestimonialsTab() {
+  const sel = $('tMemberSelect');
+  sel.innerHTML = '<option value="">— 회원 선택 —</option>';
+  [...members].sort((a,b) => a.name.localeCompare(b.name)).forEach(m => {
+    const opt = document.createElement('option');
+    opt.value = m.id;
+    opt.textContent = m.name + ' · ' + m.specialty;
+    sel.appendChild(opt);
+  });
+  $('tList').innerHTML = '';
+  $('tAddBtn').style.display = 'none';
+}
+
+function loadTestimonialsForMember() {
+  const id = parseInt($('tMemberSelect').value);
+  tEditingMemberId = id || null;
+  $('tAddBtn').style.display = id ? '' : 'none';
+  const m = members.find(x => x.id === id);
+  const list = m ? (m.testimonials || []) : [];
+  if (!id) { $('tList').innerHTML = ''; return; }
+  if (!list.length) {
+    $('tList').innerHTML = `<div class="t-empty">아직 후기가 없습니다. + 후기 추가를 눌러주세요.</div>`;
+    return;
+  }
+  $('tList').innerHTML = list.map((t, i) => `
+    <div class="t-admin-card">
+      <div class="t-admin-metric">${t.metric || ''}</div>
+      ${t.quote ? `<div class="t-admin-quote">"${t.quote}"</div>` : ''}
+      ${t.author ? `<div class="t-admin-author">— ${t.author}</div>` : ''}
+      <div class="t-admin-actions">
+        <button class="action-btn edit" onclick="openTestimonialForm(${i})">✏️ 수정</button>
+        <button class="action-btn del" onclick="deleteTestimonial(${i})">🗑️ 삭제</button>
+      </div>
+    </div>`).join('');
+}
+
+function openTestimonialForm(idx = null) {
+  tEditingIdx = idx;
+  const m = members.find(x => x.id === tEditingMemberId);
+  const t = (idx !== null && m) ? (m.testimonials || [])[idx] : null;
+  const overlay = document.createElement('div');
+  overlay.id = 'tFormOverlay';
+  overlay.className = 'form-overlay open';
+  overlay.innerHTML = `
+    <div class="form-sheet" style="max-height:70dvh">
+      <div class="form-handle"></div>
+      <div class="form-header">
+        <h2 class="form-title">${t ? '후기 수정' : '후기 추가'}</h2>
+        <button class="form-close" onclick="closeTestimonialForm()">✕</button>
+      </div>
+      <div class="form-body">
+        <div class="form-section">
+          <div class="form-group">
+            <label class="form-label">성과 수치 <span class="form-hint">예: 매출 2배 · 세금 1,200만원 절감</span></label>
+            <input class="form-input" id="tMetric" value="${t ? (t.metric || '') : ''}" placeholder="매출 2배 달성">
+          </div>
+          <div class="form-group">
+            <label class="form-label">고객 후기</label>
+            <textarea class="form-textarea" id="tQuote" style="min-height:80px" placeholder="실제 고객의 말을 인용하세요">${t ? (t.quote || '') : ''}</textarea>
+          </div>
+          <div class="form-group">
+            <label class="form-label">후기 작성자 <span class="form-hint">예: 김○○ 대표님 · 업종</span></label>
+            <input class="form-input" id="tAuthor" value="${t ? (t.author || '') : ''}" placeholder="김○○ 대표님 · 수원 제조업체">
+          </div>
+        </div>
+        <div class="form-submit-row">
+          <button class="btn-cancel" onclick="closeTestimonialForm()">취소</button>
+          <button class="btn-save" onclick="saveTestimonial()">저장</button>
+        </div>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+  document.body.style.overflow = 'hidden';
+}
+
+function closeTestimonialForm() {
+  const el = $('tFormOverlay');
+  if (el) el.remove();
+  document.body.style.overflow = '';
+}
+
+function saveTestimonial() {
+  const metric = $('tMetric').value.trim();
+  const quote  = $('tQuote').value.trim();
+  const author = $('tAuthor').value.trim();
+  if (!metric && !quote) return;
+  const m = members.find(x => x.id === tEditingMemberId);
+  if (!m) return;
+  if (!m.testimonials) m.testimonials = [];
+  const entry = { metric, quote, author };
+  if (tEditingIdx !== null) {
+    m.testimonials[tEditingIdx] = entry;
+  } else {
+    m.testimonials.push(entry);
+  }
+  save();
+  closeTestimonialForm();
+  loadTestimonialsForMember();
+}
+
+function deleteTestimonial(idx) {
+  const m = members.find(x => x.id === tEditingMemberId);
+  if (!m || !m.testimonials) return;
+  m.testimonials.splice(idx, 1);
+  save();
+  loadTestimonialsForMember();
 }
 
 // ── Analytics ─────────────────────────────────────────────────

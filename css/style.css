@@ -580,6 +580,9 @@ img { max-width: 100%; display: block; }
 .contact-row.kakao .c-icon   { background: #FFFDE7; }
 .contact-row.web   .c-icon   { background: #F3E5F5; }
 
+/* Testimonials list in modal */
+.m-testimonials-list { display: flex; flex-direction: column; gap: 12px; }
+
 /* Testimonial inside modal — matches main page t-card style */
 .m-testimonial {
   background: var(--bg);
@@ -607,6 +610,25 @@ img { max-width: 100%; display: block; }
   border-top: 1px solid var(--border);
   margin-top: 2px;
 }
+.m-t-author {
+  display: flex; align-items: center; gap: 8px;
+  margin-top: 10px; padding-top: 10px;
+  border-top: 1px solid var(--border);
+}
+.m-t-author-dot {
+  width: 28px; height: 28px; border-radius: 50%;
+  background: var(--border); flex-shrink: 0;
+  position: relative; overflow: hidden;
+}
+.m-t-author-dot::after {
+  content: '👤'; position: absolute;
+  inset: 0; display: flex; align-items: center;
+  justify-content: center; font-size: .85rem;
+}
+.m-t-author-name {
+  font-size: .75rem; color: var(--text-mute);
+}
+.m-t-author-name strong { color: var(--text-sub); font-weight: 700; }
 
 /* CTA Buttons */
 .m-ctas {

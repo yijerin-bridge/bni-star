@@ -45,6 +45,7 @@
     <!-- Tabs -->
     <div class="admin-tabs">
       <button class="admin-tab active" id="tabMembers" onclick="switchTab('members')">👥 회원 관리</button>
+      <button class="admin-tab" id="tabTestimonials" onclick="switchTab('testimonials')">⭐ 후기 관리</button>
       <button class="admin-tab" id="tabAnalytics" onclick="switchTab('analytics')">📊 바이럴 분석</button>
     </div>
 
@@ -66,6 +67,17 @@
     <!-- Member List -->
     <div class="member-list" id="memberList"></div>
     </div><!-- /panelMembers -->
+
+    <!-- Testimonials Panel -->
+    <div id="panelTestimonials" style="display:none">
+      <div class="t-admin-header">
+        <select class="toolbar-filter" id="tMemberSelect" onchange="loadTestimonialsForMember()">
+          <option value="">— 회원 선택 —</option>
+        </select>
+        <button class="add-btn" id="tAddBtn" onclick="openTestimonialForm()" style="display:none">+ 후기 추가</button>
+      </div>
+      <div id="tList"></div>
+    </div><!-- /panelTestimonials -->
 
     <!-- Analytics Panel -->
     <div id="panelAnalytics" style="display:none">

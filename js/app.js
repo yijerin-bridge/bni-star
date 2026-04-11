@@ -232,11 +232,22 @@ function openModal(id) {
       </div>
     </div>
 
-    ${m.testimonial && (m.testimonial.metric || m.testimonial.quote) ? `
-    <div class="m-section m-testimonial">
-      <div class="m-t-badge">⭐ 실제 성과</div>
-      ${m.testimonial.metric ? `<div class="m-t-metric"><span>${m.testimonial.metric}</span></div>` : ''}
-      ${m.testimonial.quote  ? `<div class="m-t-quote">"${m.testimonial.quote}"</div>` : ''}
+    ${(m.testimonials && m.testimonials.length) ? `
+    <div class="m-section">
+      <div class="m-label">실제 성과 후기</div>
+      <div class="m-testimonials-list">
+        ${m.testimonials.map(t => `
+        <div class="m-testimonial">
+          <div class="m-t-badge">⭐ 실제 성과</div>
+          ${t.metric ? `<div class="m-t-metric"><span>${t.metric}</span></div>` : ''}
+          ${t.quote  ? `<div class="m-t-quote">"${t.quote}"</div>` : ''}
+          ${t.author ? `
+          <div class="m-t-author">
+            <div class="m-t-author-dot"></div>
+            <span class="m-t-author-name">후기 남긴 <strong>${t.author}</strong></span>
+          </div>` : ''}
+        </div>`).join('')}
+      </div>
     </div>` : ''}
 
     <div class="m-ctas">

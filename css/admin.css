@@ -69,6 +69,36 @@ input, select, textarea { font-family: inherit; }
   background: var(--red); color: white; border-color: var(--red);
 }
 
+/* TESTIMONIALS TAB */
+.t-admin-header {
+  display: flex; align-items: center; gap: 12px;
+  padding: 0 16px 16px; flex-wrap: wrap;
+}
+.t-empty {
+  text-align: center; padding: 40px 20px;
+  color: #aaa; font-size: .88rem;
+}
+.t-admin-card {
+  background: white; border-radius: 12px;
+  padding: 16px; margin: 0 16px 12px;
+  border: 1px solid #eee; box-shadow: 0 2px 8px rgba(0,0,0,.06);
+}
+.t-admin-metric {
+  font-size: 1rem; font-weight: 800; color: #CC0000;
+  margin-bottom: 6px;
+}
+.t-admin-quote {
+  font-size: .82rem; color: #555; line-height: 1.6;
+  margin-bottom: 6px;
+}
+.t-admin-author {
+  font-size: .75rem; color: #999; margin-bottom: 10px;
+}
+.t-admin-actions {
+  display: flex; gap: 8px; padding-top: 10px;
+  border-top: 1px solid #f0f0f0;
+}
+
 /* ANALYTICS */
 .analytics-header {
   display: flex; align-items: center; justify-content: space-between;
