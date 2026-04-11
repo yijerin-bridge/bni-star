@@ -234,7 +234,8 @@ function openModal(id) {
 
     ${m.testimonial && (m.testimonial.metric || m.testimonial.quote) ? `
     <div class="m-section m-testimonial">
-      ${m.testimonial.metric ? `<div class="m-t-metric">${m.testimonial.metric}</div>` : ''}
+      <div class="m-t-badge">⭐ 실제 성과</div>
+      ${m.testimonial.metric ? `<div class="m-t-metric"><span>${m.testimonial.metric}</span></div>` : ''}
       ${m.testimonial.quote  ? `<div class="m-t-quote">"${m.testimonial.quote}"</div>` : ''}
     </div>` : ''}
 
