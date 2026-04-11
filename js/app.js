@@ -323,7 +323,6 @@ function renderTestimonials() {
   const track = $('testimonialsTrack');
   const section = $('testimonialsSection');
 
-  // 후기 있는 멤버만, 후기 배열 펼쳐서 [{ member, testimonial }, ...] 형태로
   const items = [];
   MEMBERS.forEach(m => {
     if (m.testimonials && m.testimonials.length) {
@@ -335,7 +334,7 @@ function renderTestimonials() {
   section.style.display = '';
 
   track.innerHTML = items.map(({ m, t }) => `
-    <div class="t-card" onclick="openModal(${m.id})" style="cursor:pointer">
+    <div class="t-card" data-id="${m.id}">
       <div class="t-badge" style="background:${m.color}20;color:${m.color}">${m.category}</div>
       <div class="t-metric">${t.metric || ''}</div>
       ${t.quote ? `<div class="t-story">"${t.quote}"</div>` : ''}
@@ -351,6 +350,33 @@ function renderTestimonials() {
         </div>
       </div>
     </div>`).join('');
+
+  // PC 마우스 드래그 스크롤
+  let isDragging = false, startX = 0, scrollLeft = 0, hasDragged = false;
+
+  track.addEventListener('mousedown', e => {
+    isDragging = true; hasDragged = false;
+    startX = e.pageX - track.offsetLeft;
+    scrollLeft = track.scrollLeft;
+    track.classList.add('dragging');
+  });
+  window.addEventListener('mouseup', () => {
+    isDragging = false;
+    track.classList.remove('dragging');
+  });
+  track.addEventListener('mousemove', e => {
+    if (!isDragging) return;
+    e.preventDefault();
+    const x = e.pageX - track.offsetLeft;
+    const dist = x - startX;
+    if (Math.abs(dist) > 4) hasDragged = true;
+    track.scrollLeft = scrollLeft - dist;
+  });
+  track.addEventListener('click', e => {
+    if (hasDragged) { e.stopPropagation(); e.preventDefault(); return; }
+    const card = e.target.closest('.t-card');
+    if (card) openModal(parseInt(card.dataset.id));
+  }, true);
 }
 
 // ── Chatbot ────────────────────────────────────────────────────

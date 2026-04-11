@@ -352,8 +352,10 @@ img { max-width: 100%; display: block; }
   scroll-snap-type: x mandatory;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
+  cursor: grab;
 }
 .testimonials-track::-webkit-scrollbar { display: none; }
+.testimonials-track.dragging { cursor: grabbing; user-select: none; }
 .t-card {
   flex-shrink: 0; width: 260px;
   background: var(--bg); border-radius: var(--r-lg);
