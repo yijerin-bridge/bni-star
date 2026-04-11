@@ -231,7 +231,7 @@ const MEMBERS_DEFAULT = [
     description: "",
     phone: "010-3264-9026", email: "", address: "",
     instagram: "", kakao: "https://open.kakao.com/o/shEa7Hpi", website: "",
-    color: "#117A8B", featured: false, photoUrl: "",
+    color: "#117A8B", featured: true, photoUrl: "",
     testimonials: []
   }
 ];
