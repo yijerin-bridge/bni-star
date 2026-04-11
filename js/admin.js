@@ -77,10 +77,13 @@ async function pushToGitHub() {
       if (res.ok) {
         showDeployBanner('✓ 배포 완료 (~30초 후 반영)', true);
       } else {
-        showDeployBanner('⚠️ 배포 실패 — 로컬 저장은 됐습니다', false, true);
+        const errText = await res.text().catch(() => '');
+        console.error('[BNI Admin] save-members API error:', res.status, errText);
+        showDeployBanner(`⚠️ 배포 실패 (${res.status})`, false, true);
       }
     } catch (e) {
-      showDeployBanner('⚠️ 네트워크 오류', false, true);
+      console.error('[BNI Admin] pushToGitHub error:', e);
+      showDeployBanner('⚠️ 네트워크 오류: ' + e.message, false, true);
     }
   }, 1000);
 }
