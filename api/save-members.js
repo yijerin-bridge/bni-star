@@ -76,7 +76,8 @@ function generateMembersDataJs(members) {
     description: ${JSON.stringify(m.description || '')},
     phone: ${JSON.stringify(m.phone || '')}, email: ${JSON.stringify(m.email || '')}, address: ${JSON.stringify(m.address || '')},
     instagram: ${JSON.stringify(m.instagram || '')}, kakao: ${JSON.stringify(m.kakao || '')}, website: ${JSON.stringify(m.website || '')},
-    color: ${JSON.stringify(m.color || '#C0392B')}, featured: ${m.featured ? 'true' : 'false'}, photoUrl: ${JSON.stringify(m.photoUrl || '')}
+    color: ${JSON.stringify(m.color || '#C0392B')}, featured: ${m.featured ? 'true' : 'false'}, photoUrl: ${JSON.stringify(m.photoUrl || '')},
+    testimonial: ${m.testimonial ? JSON.stringify(m.testimonial) : 'null'}
   }`;
   }).join(',\n');
 

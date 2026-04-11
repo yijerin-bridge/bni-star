@@ -232,6 +232,12 @@ function openModal(id) {
       </div>
     </div>
 
+    ${m.testimonial && (m.testimonial.metric || m.testimonial.quote) ? `
+    <div class="m-section m-testimonial">
+      ${m.testimonial.metric ? `<div class="m-t-metric">${m.testimonial.metric}</div>` : ''}
+      ${m.testimonial.quote  ? `<div class="m-t-quote">"${m.testimonial.quote}"</div>` : ''}
+    </div>` : ''}
+
     <div class="m-ctas">
       <a href="tel:${m.phone}" class="m-cta prim" style="background:${m.color}" onclick="trackContact(${m.id},'${m.name}','phone')">📞 전화하기</a>
       ${m.kakao

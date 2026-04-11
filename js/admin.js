@@ -328,6 +328,14 @@ function buildFormHTML(m) {
         <label class="form-label">소개</label>
         <textarea class="form-textarea" id="fDesc" placeholder="전문가 소개를 입력하세요">${m ? m.description : ''}</textarea>
       </div>
+      <div class="form-group">
+        <label class="form-label">성과 수치 <span class="form-hint">예: 법인세 1,200만원 절감</span></label>
+        <input class="form-input" id="fTestimonialMetric" value="${m && m.testimonial ? m.testimonial.metric : ''}" placeholder="세금 30% 절감 · 매출 2배 등">
+      </div>
+      <div class="form-group">
+        <label class="form-label">고객 후기 한 줄</label>
+        <textarea class="form-textarea" id="fTestimonialQuote" placeholder="실제 고객의 말을 직접 인용하거나 결과를 요약하세요" style="min-height:72px">${m && m.testimonial ? m.testimonial.quote : ''}</textarea>
+      </div>
     </div>
 
     <div class="form-section">
@@ -437,6 +445,11 @@ function submitForm() {
     photoUrl:      currentPhotoData,
     color:         currentColor,
     featured:      isFeatured,
+    testimonial:   (() => {
+      const metric = $('fTestimonialMetric').value.trim();
+      const quote  = $('fTestimonialQuote').value.trim();
+      return (metric || quote) ? { metric, quote } : null;
+    })(),
   };
 
   if (editingId) {
