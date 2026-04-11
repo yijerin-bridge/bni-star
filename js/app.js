@@ -353,23 +353,6 @@ function renderTestimonials() {
     </div>`).join('');
 }
 
-// ── Keyword map (재활용) ────────────────────────────────────────
-const KEYWORD_MAP = [
-  { keywords: ['세금','절세','법인세','소득세','세무','세무사','부가세','신고'], categories: ['법률/세무'] },
-  { keywords: ['보험','대출','금융','자금','투자','은행','대부'], categories: ['금융/보험'] },
-  { keywords: ['마케팅','광고','sns','홍보','브랜딩','유튜브','인스타'], categories: ['마케팅/광고'] },
-  { keywords: ['법률','법적','계약','소송','분쟁','상표','특허','법'], categories: ['법률/세무'] },
-  { keywords: ['부동산','아파트','상가','임대','토지','건물','인테리어'], categories: ['부동산/인테리어'] },
-  { keywords: ['it','앱','소프트웨어','홈페이지','시스템','개발','디지털'], categories: ['IT/디지털'] },
-  { keywords: ['차','자동차','리스','차량','렌트'], categories: ['자동차'] },
-  { keywords: ['병원','의원','건강','의료','치료'], categories: ['의료/건강'] },
-  { keywords: ['교육','컨설팅','코칭','강의','멘토'], categories: ['교육/컨설팅'] },
-  { keywords: ['뷰티','패션','헤어','피부','스타일'], categories: ['뷰티/패션'] },
-  { keywords: ['음식','카페','식당','외식','식품'], categories: ['식품/외식'] },
-  { keywords: ['여행','레저','숙박','관광','라이프'], categories: ['라이프/여행'] },
-  { keywords: ['제조','유통','공장','납품','물류'], categories: ['제조/유통'] },
-];
-
 // ── Chatbot ────────────────────────────────────────────────────
 function cbOpen() {
   $('cbPanel').classList.add('open');
@@ -385,7 +368,7 @@ function cbClose() {
 
 function cbReset() {
   $('cbMessages').innerHTML = '';
-  cbAddBot('안녕하세요! 어떤 도움이 필요하신가요? 👋<div class="cb-chips">' +
+  cbAddBot('안녕하세요! 어떤 비즈니스 고민이 있으신가요? 👋<div class="cb-chips">' +
     ['세금 절감|세금이 너무 많이 나와요','사업 보험|사업 보험이 필요해요',
      '마케팅|마케팅이 잘 안돼요','법률 상담|법률 문제가 생겼어요',
      '부동산|부동산 투자 상담이 필요해요','IT 구축|IT 시스템을 구축하고 싶어요',
@@ -401,6 +384,7 @@ function cbAddBot(html) {
   row.innerHTML = `<div class="cb-bot-bubble">${html}</div>`;
   $('cbMessages').appendChild(row);
   $('cbMessages').scrollTop = $('cbMessages').scrollHeight;
+  return row;
 }
 
 function cbAddUser(text) {
@@ -411,48 +395,63 @@ function cbAddUser(text) {
   $('cbMessages').scrollTop = $('cbMessages').scrollHeight;
 }
 
-function cbSend(text) {
+function cbShowTyping() {
+  const row = document.createElement('div');
+  row.className = 'cb-bot-row'; row.id = 'cbTyping';
+  row.innerHTML = '<div class="cb-bot-bubble"><div class="cb-typing"><span></span><span></span><span></span></div></div>';
+  $('cbMessages').appendChild(row);
+  $('cbMessages').scrollTop = $('cbMessages').scrollHeight;
+}
+
+function cbHideTyping() {
+  const t = $('cbTyping');
+  if (t) t.remove();
+}
+
+function cbExpertCards(ids) {
+  return MEMBERS
+    .filter(m => ids.includes(m.id))
+    .map(m => `<div class="cb-expert-card" onclick="cbClose();openModal(${m.id})">
+      <div class="cb-expert-avatar" style="background:${m.color}">
+        ${m.photoUrl ? `<img src="${m.photoUrl}" alt="${m.name}">` : m.name.charAt(0)}
+      </div>
+      <div>
+        <div class="cb-expert-name">${m.name}</div>
+        <div class="cb-expert-spec">${m.specialty}</div>
+      </div>
+      <span class="cb-expert-arr">›</span>
+    </div>`).join('');
+}
+
+async function cbSend(text) {
   text = text || $('cbInput').value.trim();
   if (!text) return;
   $('cbInput').value = '';
   cbAddUser(text);
+  cbShowTyping();
 
-  const ql = text.toLowerCase();
-  const matchedCats = new Set();
-  KEYWORD_MAP.forEach(entry => {
-    if (entry.keywords.some(k => ql.includes(k))) {
-      entry.categories.forEach(c => matchedCats.add(c));
-    }
-  });
-  const hits = matchedCats.size
-    ? MEMBERS.filter(m => matchedCats.has(m.category))
-    : MEMBERS.filter(m =>
-        m.specialty.toLowerCase().includes(ql) ||
-        m.description.toLowerCase().includes(ql) ||
-        m.targetCustomer.toLowerCase().includes(ql)
-      ).slice(0, 5);
+  const members = MEMBERS.map(m => ({
+    id: m.id, name: m.name, category: m.category,
+    specialty: m.specialty, description: m.description,
+    targetCustomer: m.targetCustomer,
+  }));
 
-  setTimeout(() => {
-    if (!hits.length) {
-      cbAddBot('죄송해요, 말씀하신 내용과 맞는 전문가를 찾기 어렵네요 😥<br>다른 키워드로 다시 시도해보세요!<br>' +
-        '<button class="cb-reset-btn" onclick="cbReset()">🔄 다시 문의하기</button>');
-    } else {
-      const cards = hits.map(m =>
-        `<div class="cb-expert-card" onclick="cbClose();openModal(${m.id})">
-          <div class="cb-expert-avatar" style="background:${m.color}">
-            ${m.photoUrl ? `<img src="${m.photoUrl}" alt="${m.name}">` : m.name.charAt(0)}
-          </div>
-          <div>
-            <div class="cb-expert-name">${m.name}</div>
-            <div class="cb-expert-spec">${m.specialty}</div>
-          </div>
-          <span class="cb-expert-arr">›</span>
-        </div>`).join('');
-      cbAddBot(`${hits.length}명의 전문가를 찾았어요! 👇${cards}` +
-        '<br><button class="cb-reset-btn" onclick="cbReset()">🔄 다른 문의하기</button>');
-    }
-    $('cbMessages').scrollTop = $('cbMessages').scrollHeight;
-  }, 380);
+  try {
+    const res = await fetch('/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message: text, members }),
+    });
+    const data = await res.json();
+    cbHideTyping();
+    const cards = cbExpertCards(data.memberIds || []);
+    cbAddBot(data.reply + (cards ? '<br>' + cards : '') +
+      '<br><button class="cb-reset-btn" onclick="cbReset()">🔄 다른 문의하기</button>');
+  } catch {
+    cbHideTyping();
+    cbAddBot('잠시 오류가 생겼어요. 다시 시도해주세요 😥<br>' +
+      '<button class="cb-reset-btn" onclick="cbReset()">🔄 다시 문의하기</button>');
+  }
 }
 
 // ── Event wiring ──────────────────────────────────────────────
