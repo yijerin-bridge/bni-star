@@ -69,10 +69,6 @@ async function pushToGitHub() {
   deployTimer = setTimeout(async () => {
     showDeployBanner('배포 중...');
     try {
-      // 함수 도달 가능 여부 먼저 확인
-      const ping = await fetch('/api/save-members').catch(e => { throw new Error('API 연결 실패: ' + e.message); });
-      if (!ping.ok) throw new Error('API 응답 오류: ' + ping.status);
-
       const res = await fetch('/api/save-members', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -81,13 +77,10 @@ async function pushToGitHub() {
       if (res.ok) {
         showDeployBanner('✓ 배포 완료 (~30초 후 반영)', true);
       } else {
-        const errText = await res.text().catch(() => '');
-        console.error('[BNI Admin] save-members API error:', res.status, errText);
-        showDeployBanner(`⚠️ 배포 실패 (${res.status})`, false, true);
+        showDeployBanner('⚠️ 배포 실패 — 로컬 저장은 됐습니다', false, true);
       }
     } catch (e) {
-      console.error('[BNI Admin] pushToGitHub error:', e);
-      showDeployBanner('⚠️ 네트워크 오류: ' + e.message, false, true);
+      showDeployBanner('⚠️ 네트워크 오류', false, true);
     }
   }, 1000);
 }
