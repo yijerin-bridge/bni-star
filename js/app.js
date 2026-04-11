@@ -332,6 +332,7 @@ function renderTestimonials() {
 
   if (!items.length) { section.style.display = 'none'; return; }
   section.style.display = '';
+  items.sort(() => Math.random() - .5);
 
   track.innerHTML = items.map(({ m, t }) => `
     <div class="t-card" data-id="${m.id}">
