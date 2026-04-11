@@ -69,6 +69,10 @@ async function pushToGitHub() {
   deployTimer = setTimeout(async () => {
     showDeployBanner('배포 중...');
     try {
+      // 함수 도달 가능 여부 먼저 확인
+      const ping = await fetch('/api/save-members').catch(e => { throw new Error('API 연결 실패: ' + e.message); });
+      if (!ping.ok) throw new Error('API 응답 오류: ' + ping.status);
+
       const res = await fetch('/api/save-members', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
