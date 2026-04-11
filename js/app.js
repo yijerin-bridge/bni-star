@@ -300,6 +300,70 @@ function pickSearch(id) {
   setTimeout(() => openModal(id), 280);
 }
 
+// ── Problem search ─────────────────────────────────────────────
+const KEYWORD_MAP = [
+  { keywords: ['세금','절세','법인세','소득세','세무','세무사','부가세','신고'], categories: ['법률/세무'] },
+  { keywords: ['보험','대출','금융','자금','투자','은행','대부'], categories: ['금융/보험'] },
+  { keywords: ['마케팅','광고','sns','홍보','브랜딩','유튜브','인스타'], categories: ['마케팅/광고'] },
+  { keywords: ['법률','법적','계약','소송','분쟁','상표','특허','법'], categories: ['법률/세무'] },
+  { keywords: ['부동산','아파트','상가','임대','토지','건물','인테리어'], categories: ['부동산/인테리어'] },
+  { keywords: ['it','앱','소프트웨어','홈페이지','시스템','개발','디지털'], categories: ['IT/디지털'] },
+  { keywords: ['차','자동차','리스','차량','렌트'], categories: ['자동차'] },
+  { keywords: ['병원','의원','건강','의료','치료'], categories: ['의료/건강'] },
+  { keywords: ['교육','컨설팅','코칭','강의','멘토'], categories: ['교육/컨설팅'] },
+  { keywords: ['뷰티','패션','헤어','피부','스타일'], categories: ['뷰티/패션'] },
+  { keywords: ['음식','카페','식당','외식','식품'], categories: ['식품/외식'] },
+  { keywords: ['여행','레저','숙박','관광','라이프'], categories: ['라이프/여행'] },
+  { keywords: ['제조','유통','공장','납품','물류'], categories: ['제조/유통'] },
+];
+
+function setProblem(text) {
+  document.getElementById('problemInput').value = text;
+  searchProblem();
+}
+
+function searchProblem() {
+  const q = document.getElementById('problemInput').value.trim();
+  const res = document.getElementById('problemResults');
+  if (!q) { res.innerHTML = ''; return; }
+
+  const ql = q.toLowerCase();
+  const matchedCats = new Set();
+  KEYWORD_MAP.forEach(entry => {
+    if (entry.keywords.some(k => ql.includes(k))) {
+      entry.categories.forEach(c => matchedCats.add(c));
+    }
+  });
+
+  const hits = MEMBERS.filter(m =>
+    (matchedCats.size > 0 && matchedCats.has(m.category)) ||
+    m.specialty.toLowerCase().includes(ql) ||
+    m.description.toLowerCase().includes(ql) ||
+    m.targetCustomer.toLowerCase().includes(ql)
+  ).slice(0, 5);
+
+  if (!hits.length) {
+    res.innerHTML = `<div class="p-no-result">맞는 전문가를 찾지 못했어요. 검색창에서 찾아보세요 🔍</div>`;
+    return;
+  }
+
+  res.innerHTML = `
+    <div class="p-result-label">✨ 추천 전문가 ${hits.length}명</div>
+    <div class="p-result-list">
+      ${hits.map(m => `
+        <div class="p-result-item" onclick="openModal(${m.id})">
+          <div class="p-result-avatar" style="background:${m.color}">
+            ${m.photoUrl ? `<img src="${m.photoUrl}" alt="${m.name}">` : initial(m.name)}
+          </div>
+          <div>
+            <div class="p-result-name">${m.name}</div>
+            <div class="p-result-spec">${m.specialty} · ${m.category}</div>
+          </div>
+          <span class="p-result-arr">›</span>
+        </div>`).join('')}
+    </div>`;
+}
+
 // ── Event wiring ──────────────────────────────────────────────
 $('modalClose').onclick    = closeModal;
 $('backBtn').onclick       = closeCatView;
@@ -308,6 +372,8 @@ $('searchBtn').onclick     = openSearch;
 $('searchClose').onclick   = closeSearch;
 $('searchClear').onclick   = () => { searchInput.value=''; searchInput.focus(); renderSearchResults(''); };
 searchInput.addEventListener('input', e => renderSearchResults(e.target.value));
+document.getElementById('problemInput').addEventListener('keydown', e => { if (e.key === 'Enter') searchProblem(); });
+document.getElementById('problemInput').addEventListener('input', e => { if (!e.target.value.trim()) document.getElementById('problemResults').innerHTML = ''; });
 
 modalOverlay.addEventListener('click', e => { if (e.target === modalOverlay) closeModal(); });
 
