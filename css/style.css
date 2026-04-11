@@ -204,8 +204,13 @@ img { max-width: 100%; display: block; }
   box-shadow: 0 4px 16px rgba(220,38,38,.38);
   display: flex; align-items: center; justify-content: center;
   z-index: 200; transition: transform .2s, box-shadow .2s;
+  animation: cbFabPop .5s cubic-bezier(.34,1.56,.64,1) both;
 }
-.cb-fab:active { transform: scale(.92); box-shadow: 0 2px 8px rgba(220,38,38,.25); }
+.cb-fab:active { transform: scale(.88); box-shadow: 0 2px 8px rgba(220,38,38,.25); }
+@keyframes cbFabPop {
+  0%   { transform: scale(0); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
 
 .cb-backdrop {
   display: none; position: fixed; inset: 0;
