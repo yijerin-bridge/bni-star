@@ -12,7 +12,7 @@ const MEMBERS_DEFAULT = [
     phone: "010-5003-6491", email: "", address: "경기 수원시 영통구 영통로214번길 59 2층",
     instagram: "", kakao: "", website: "",
     color: "#566573", featured: true, photoUrl: "https://randomuser.me/api/portraits/men/55.jpg",
-    testimonials: []
+    testimonials: [{"metric":"회식 만족도 5.0, 단골 팀 3팀 확보","quote":"회사 회식 장소 고민이 많았는데 분위기도 좋고 가격도 합리적이에요. 팀원들이 너무 좋아해서 벌써 세 번째 방문입니다.","author":"박○○ 팀장님 · 제조업"}]
   },
   {
     id: 4, name: "나성연", company: "KB손해보험", category: "금융/보험",
@@ -23,7 +23,10 @@ const MEMBERS_DEFAULT = [
     phone: "010-8245-5258", email: "3282614@kbinsure.co.kr", address: "경기도 수원시 팔달구 경수대로 518, KB손해보험 8층",
     instagram: "", kakao: "https://open.kakao.com/o/seO0n8ei", website: "",
     color: "#F39C12", featured: true, photoUrl: "https://ocmnbwlhjovfycihyvnr.supabase.co/storage/v1/object/public/member-photos/member-1775641531227.jpg",
-    testimonials: [{"metric":"보험료 월 42만원 절약","quote":"단체보험 갱신 때 기존 계약을 꼼꼼히 분석해줬어요. 불필요한 항목을 정리하고 보장은 더 좋아졌는데 보험료가 많이 줄었습니다.","author":"이○○ 이사님 · IT 스타트업"}]
+    testimonials: [
+      {"metric":"보험료 월 42만원 절약","quote":"단체보험 갱신 때 기존 계약을 꼼꼼히 분석해줬어요. 불필요한 항목을 정리하고 보장은 더 좋아졌는데 보험료가 많이 줄었습니다.","author":"이○○ 이사님 · IT 스타트업"},
+      {"metric":"법인 보험 사각지대 완전 해소","quote":"법인을 만들고 어떤 보험이 필요한지 아무것도 몰랐는데 사업 구조를 보고 딱 맞는 보험을 설계해줬어요. 얼마나 많은 위험이 노출돼 있었는지 알게 됐습니다.","author":"오○○ 대표님 · 음식점"}
+    ]
   },
   {
     id: 5, name: "정영준", company: "와이즈앤밸류", category: "금융/보험",
@@ -34,7 +37,10 @@ const MEMBERS_DEFAULT = [
     phone: "010-2599-1901", email: "", address: "",
     instagram: "", kakao: "https://open.kakao.com/o/sVdeyYli", website: "",
     color: "#1E8449", featured: true, photoUrl: "https://ocmnbwlhjovfycihyvnr.supabase.co/storage/v1/object/public/member-photos/member-1775186874538.jpg",
-    testimonials: [{"metric":"노후 준비 완료, 월 수령액 2.3배 증가","quote":"막연하게 걱정만 했는데 재무 플랜을 짜주니까 눈에 보이더라고요. 언제 얼마를 받을 수 있는지 명확해졌습니다."}]
+    testimonials: [
+      {"metric":"노후 준비 완료, 월 수령액 2.3배 증가","quote":"막연하게 걱정만 했는데 재무 플랜을 짜주니까 눈에 보이더라고요. 언제 얼마를 받을 수 있는지 명확해졌습니다."},
+      {"metric":"기존 보험 리모델링 후 수령액 1.8배","quote":"갖고 있던 보험을 그냥 유지하고 있었는데 리모델링하고 나서 같은 금액에 받을 수 있는 게 훨씬 많아졌어요. 진작 상담했어야 했나 싶었습니다.","author":"이○○ 부장님 · 제조업"}
+    ]
   },
   {
     id: 7, name: "문혜선", company: "인크루즈", category: "라이프/여행",
@@ -45,7 +51,7 @@ const MEMBERS_DEFAULT = [
     phone: "010-9016-2122", email: "nexy0316@naver.com", address: "",
     instagram: "", kakao: "https://open.kakao.com/o/sIDTmV5", website: "",
     color: "#148F77", featured: true, photoUrl: "https://randomuser.me/api/portraits/women/63.jpg",
-    testimonials: []
+    testimonials: [{"metric":"크루즈 첫 경험, 만족도 100%","quote":"크루즈가 처음이라 걱정이 많았는데 하나하나 친절하게 설명해주셔서 편하게 다녀왔어요. 식사도 관광도 모두 완벽했습니다.","author":"최○○ 대표님 · 서비스업"}]
   },
   {
     id: 9, name: "임귀상", company: "아르페이", category: "IT/디지털",
@@ -56,7 +62,10 @@ const MEMBERS_DEFAULT = [
     phone: "010-6532-3651", email: "imguisang@naver.com", address: "경기도 화성시 효행구 봉담읍 서봉산길 21-1",
     instagram: "", kakao: "", website: "",
     color: "#B03A2E", featured: true, photoUrl: "https://randomuser.me/api/portraits/women/17.jpg",
-    testimonials: []
+    testimonials: [
+      {"metric":"카드 수수료 월 18% 절감","quote":"기존 단말기 수수료가 생각보다 높았는데 비교해보니 많이 차이가 났어요. 전환 과정도 간단하고 POS 연동도 바로 됐습니다.","author":"강○○ 사장님 · 음식점"},
+      {"metric":"매장 오픈 당일 결제 시스템 완벽 세팅","quote":"창업 준비하면서 결제 시스템 걱정이 컸는데 오픈 전날 방문해서 모든 세팅을 마쳐줬어요. 덕분에 첫날부터 불편함 없이 운영했습니다.","author":"윤○○ 원장님 · 학원"}
+    ]
   },
   {
     id: 10, name: "고 웅", company: "디자인 이안", category: "부동산/인테리어",
@@ -67,7 +76,10 @@ const MEMBERS_DEFAULT = [
     phone: "010-6314-8999", email: "ianko83@naver.com", address: "경기 수원시 영통구 영통로 174번길 12, 그대가센트럴파크상가 101호 (망포동 722)",
     instagram: "design_ian.ko", kakao: "https://open.kakao.com/o/soUVe1Tc", website: "",
     color: "#D35400", featured: true, photoUrl: "https://randomuser.me/api/portraits/men/41.jpg",
-    testimonials: [{"metric":"인테리어 후 카페 매출 30% 상승","quote":"오픈 전 공간 기획부터 맡겼는데 손님들이 분위기 때문에 또 온다고 하더라고요. 인테리어가 마케팅이었어요."}]
+    testimonials: [
+      {"metric":"인테리어 후 카페 매출 30% 상승","quote":"오픈 전 공간 기획부터 맡겼는데 손님들이 분위기 때문에 또 온다고 하더라고요. 인테리어가 마케팅이었어요."},
+      {"metric":"사무실 리모델링 후 직원 만족도 95%","quote":"낡은 사무실을 바꾸고 싶었는데 예산이 빠듯했어요. 예산 안에서 최대한 이뻐 보이게 설계해줬고 직원들도 출근이 즐겁다고 하더라고요.","author":"최○○ 팀장님 · 스타트업"}
+    ]
   },
   {
     id: 12, name: "김봉석", company: "유사나헬스사이언스코리아", category: "의료/건강",
@@ -78,7 +90,7 @@ const MEMBERS_DEFAULT = [
     phone: "010-3775-3612", email: "kbseok77@naver.com", address: "",
     instagram: "", kakao: "https://open.kakao.com/o/s4J5gnci", website: "www.usana.com",
     color: "#117A8B", featured: true, photoUrl: "https://ocmnbwlhjovfycihyvnr.supabase.co/storage/v1/object/public/member-photos/member-1775310685175.jpg",
-    testimonials: []
+    testimonials: [{"metric":"3개월 만에 면역력 회복, 잦은 감기 사라짐","quote":"매년 겨울마다 감기로 고생했는데 영양 제품 꾸준히 챙기고 나서 올 겨울은 한 번도 아프지 않았어요.","author":"정○○ 이사님 · 유통업"}]
   },
   {
     id: 13, name: "이지혜", company: "암웨이", category: "뷰티/패션",
@@ -89,7 +101,10 @@ const MEMBERS_DEFAULT = [
     phone: "010-2275-2250", email: "fcmbyfreedom@gmail.com", address: "",
     instagram: "", kakao: "", website: "www.amway.co.kr",
     color: "#A93226", featured: true, photoUrl: "https://ocmnbwlhjovfycihyvnr.supabase.co/storage/v1/object/public/member-photos/member-1775186245990.jpg",
-    testimonials: []
+    testimonials: [
+      {"metric":"피부 트러블 4주 만에 80% 개선","quote":"오랫동안 피부 트러블로 고생했는데 제품 추천과 사용법까지 꼼꼼하게 알려주셔서 정말 빠르게 나아졌어요. 지금은 주변에도 많이 소개하고 있습니다.","author":"김○○ 대표님 · 뷰티샵"},
+      {"metric":"고객 답례 선물 후 재방문율 2배","quote":"고객 선물로 드렸더니 반응이 너무 좋았어요. 제품이 이렇게 좋은 줄 몰랐다고 하시는 분들이 많아서 저도 놀랐습니다.","author":"오○○ 원장님 · 헤어샵"}
+    ]
   },
   {
     id: 15, name: "김성길", company: "바다예찬", category: "식품/외식",
@@ -100,7 +115,10 @@ const MEMBERS_DEFAULT = [
     phone: "010-3788-2414", email: "amiga1992@naver.com", address: "경기도 수원시 팔달구 효원로 249번길 18-5",
     instagram: "", kakao: "", website: "",
     color: "#D68910", featured: true, photoUrl: "https://ocmnbwlhjovfycihyvnr.supabase.co/storage/v1/object/public/member-photos/member-1775191913169.jpg",
-    testimonials: []
+    testimonials: [
+      {"metric":"단체 손님 20명, 만족도 5.0","quote":"생일 파티 자리였는데 회 퀄리티가 정말 좋았어요. 솥밥도 맛있고 서비스까지 배려해주셔서 기억에 남는 자리가 됐습니다.","author":"나○○ 사장님 · 서비스업"},
+      {"metric":"거래처 접대 후 계약 성사","quote":"중요한 거래처 접대 자리에서 식사 퀄리티에 감동받으셨다고 하더라고요. 맛있는 밥 한 끼가 계약을 만들었습니다.","author":"허○○ 대표님 · 제조업"}
+    ]
   },
   {
     id: 16, name: "이재린", company: "주식회사 브릿지자산관리", category: "금융/보험",
@@ -111,7 +129,10 @@ const MEMBERS_DEFAULT = [
     phone: "010-3127-6765", email: "yijerin@hanmail.net", address: "",
     instagram: "yijerin", kakao: "https://open.kakao.com/me/yijerin", website: "bridgeasset.kr",
     color: "#566573", featured: true, photoUrl: "https://ocmnbwlhjovfycihyvnr.supabase.co/storage/v1/object/public/member-photos/member-1775190537938.jpg",
-    testimonials: [{"metric":"달러 자산 비중 40% 달성, 환차익 포함 연 11% 수익","quote":"원화로만 갖고 있던 자산을 달러로 분산하고 나서 환율 오를 때마다 수익이 생기더라고요."}]
+    testimonials: [
+      {"metric":"달러 자산 비중 40% 달성, 환차익 포함 연 11% 수익","quote":"원화로만 갖고 있던 자산을 달러로 분산하고 나서 환율 오를 때마다 수익이 생기더라고요."},
+      {"metric":"해외 연금보험으로 노후 달러 수령 준비 완료","quote":"국내 보험만 있었는데 달러로 받는 해외 연금 이야기를 듣고 바로 결정했어요. 환율 리스크까지 헤지가 되니 마음이 편해졌습니다.","author":"박○○ 원장님 · 의료"}
+    ]
   },
   {
     id: 17, name: "김성미", company: "JK제빵소", category: "식품/외식",
@@ -122,7 +143,7 @@ const MEMBERS_DEFAULT = [
     phone: "010-9532-0316", email: "sm-dos@daum.net", address: "경기도 수원시 권선구 곡선로 49번길 13-25, 한아름빌딩 1F",
     instagram: "", kakao: "https://open.kakao.com/o/s8pwFPuh", website: "",
     color: "#dbe972", featured: true, photoUrl: "https://ocmnbwlhjovfycihyvnr.supabase.co/storage/v1/object/public/member-photos/member-1775186264851.jpg",
-    testimonials: []
+    testimonials: [{"metric":"어린이집 간식 납품, 학부모 만족도 4.9","quote":"천연발효종 빵을 아이들 간식으로 주문했는데 학부모님들한테 좋다는 피드백이 쏟아졌어요. 맛도 맛이지만 성분이 깨끗한 게 제일 좋아요.","author":"박○○ 원장님 · 어린이집"}]
   },
   {
     id: 18, name: "임현준", company: "볼트런", category: "자동차",
@@ -133,7 +154,7 @@ const MEMBERS_DEFAULT = [
     phone: "010-5344-0255", email: "guswns0255@hanmail.net", address: "수원특례시 권선구 권광로 85",
     instagram: "", kakao: "", website: "www.volt-run.co.kr",
     color: "#C0392B", featured: true, photoUrl: "https://ocmnbwlhjovfycihyvnr.supabase.co/storage/v1/object/public/member-photos/member-1775191124054.jpg",
-    testimonials: []
+    testimonials: [{"metric":"택시 연료효율 12% 향상, 배터리 수명 2배","quote":"영업용으로 하루 300km 이상 달리는데 전압 안정기 달고 나서 연비가 눈에 띄게 좋아졌어요. 배터리도 훨씬 오래 갑니다.","author":"최○○ 기사님 · 개인택시"}]
   },
   {
     id: 19, name: "윤명렬", company: "QY케어", category: "부동산/인테리어",
@@ -144,7 +165,7 @@ const MEMBERS_DEFAULT = [
     phone: "010-4899-1911", email: "", address: "경기도 수원시 권선구 권선로 720번길 23, 202호",
     instagram: "", kakao: "", website: "",
     color: "#C0392B", featured: true, photoUrl: "https://ocmnbwlhjovfycihyvnr.supabase.co/storage/v1/object/public/member-photos/member-1775643105191.jpg",
-    testimonials: []
+    testimonials: [{"metric":"사무실 에어컨 24대 청소, 전기료 8% 절감","quote":"여름 전 사무실 전체 에어컨 청소를 맡겼어요. 냉방 효율이 확실히 달라지고 직원들이 쾌적하다고 좋아했어요. 다음 해도 예약했습니다.","author":"이○○ 총무팀장 · 기업"}]
   },
   {
     id: 20, name: "진성훈", company: "찐수제컵밥", category: "식품/외식",
@@ -155,7 +176,7 @@ const MEMBERS_DEFAULT = [
     phone: "010-8852-5450", email: "", address: "경기도 수원시 권선구 동수원로 146번길 192-13, 102호",
     instagram: "", kakao: "", website: "",
     color: "#784212", featured: true, photoUrl: "",
-    testimonials: []
+    testimonials: [{"metric":"소풍 도시락 50인분, 남김없이 완판","quote":"회사 야유회 도시락을 주문했는데 직원들이 맛있다고 난리났어요. 컵밥이라 먹기도 편하고 양도 넉넉해서 다들 만족했습니다.","author":"장○○ 팀장님 · IT기업"}]
   },
   {
     id: 21, name: "한관우", company: "더쓰임마케팅", category: "마케팅/광고",
@@ -166,7 +187,10 @@ const MEMBERS_DEFAULT = [
     phone: "010-2546-8295", email: "beasap32@gmail.com", address: "경기도 광주시 창뜰윗길 42-13, B1",
     instagram: "", kakao: "", website: "thssi.co.kr",
     color: "#566573", featured: true, photoUrl: "https://ocmnbwlhjovfycihyvnr.supabase.co/storage/v1/object/public/member-photos/member-1775189844021.jpg",
-    testimonials: [{"metric":"블로그 월 방문자 3배 증가","quote":"SEO 설계 후 2개월 만에 네이버 검색 1페이지에 올라갔어요. 광고비 없이 유입이 생기니까 체감이 확실히 달랐습니다."}]
+    testimonials: [
+      {"metric":"블로그 월 방문자 3배 증가","quote":"SEO 설계 후 2개월 만에 네이버 검색 1페이지에 올라갔어요. 광고비 없이 유입이 생기니까 체감이 확실히 달랐습니다."},
+      {"metric":"유튜브 3개월 만에 구독자 1만 돌파","quote":"콘텐츠는 있었는데 알고리즘을 몰라서 조회수가 안 났어요. 키워드 전략과 썸네일 방향을 잡아준 뒤 첫 영상에서 조회수가 20배 뛰었습니다.","author":"최○○ 대표님 · 교육업"}
+    ]
   },
   {
     id: 22, name: "박희배", company: "에이치비인터내셔널", category: "IT/디지털",
@@ -177,7 +201,7 @@ const MEMBERS_DEFAULT = [
     phone: "010-9616-9294", email: "jsapark76@nate.com", address: "경기도 수원시 권선구 정조로 588, 1층",
     instagram: "", kakao: "", website: "",
     color: "#F39C12", featured: true, photoUrl: "https://ocmnbwlhjovfycihyvnr.supabase.co/storage/v1/object/public/member-photos/member-1775190969972.jpg",
-    testimonials: []
+    testimonials: [{"metric":"사무실 가전 일괄 렌탈, 초기비용 70% 절감","quote":"신규 사무실 세팅할 때 가전 구매비가 부담이었는데 렌탈로 해결했어요. 유지보수까지 포함이라 관리 걱정이 없어졌습니다.","author":"송○○ 대표님 · 스타트업"}]
   },
   {
     id: 23, name: "이준수", company: "(주)미래온투어", category: "라이프/여행",
@@ -188,7 +212,7 @@ const MEMBERS_DEFAULT = [
     phone: "010-9321-2625", email: "seoulmilk2013@gmail.com", address: "경기도 화성시 병점구 떡전골로 96-4 오피스밸리 244호",
     instagram: "", kakao: "", website: "",
     color: "#784212", featured: true, photoUrl: "https://ocmnbwlhjovfycihyvnr.supabase.co/storage/v1/object/public/member-photos/member-1775190979758.jpg",
-    testimonials: []
+    testimonials: [{"metric":"골프 해외투어 8명, 현지 만족도 최고","quote":"처음으로 해외 골프 투어를 기획했는데 라운딩 예약부터 숙소까지 완벽하게 준비해줬어요. 다음엔 인원 더 늘려서 또 가기로 했습니다.","author":"김○○ 대표님 · 건설업"}]
   },
   {
     id: 24, name: "황성호", company: "인투이피앤티", category: "제조/유통",
@@ -199,7 +223,7 @@ const MEMBERS_DEFAULT = [
     phone: "010-7376-1111", email: "sean@in2epnt.com", address: "경기도 수원시 팔달구 행궁로 98 성장관 2층",
     instagram: "in2epnt_official", kakao: "", website: "",
     color: "#27AE60", featured: true, photoUrl: "https://ocmnbwlhjovfycihyvnr.supabase.co/storage/v1/object/public/member-photos/member-1775191113862.jpg",
-    testimonials: []
+    testimonials: [{"metric":"친환경 패키지 전환 후 브랜드 호감도 40% 상승","quote":"친환경 패키지로 바꾸고 나서 고객 반응이 달라졌어요. 제품 품질은 그대로인데 '환경 생각하는 브랜드'라는 이미지가 생겼습니다.","author":"조○○ 대표님 · 식품업"}]
   },
   {
     id: 25, name: "민경록", company: "포도주류(유)", category: "제조/유통",
@@ -210,7 +234,7 @@ const MEMBERS_DEFAULT = [
     phone: "010-8794-7273", email: "kkakkuchi@naver.com", address: "경기도 의왕시 왕곡로 216-12 (왕곡동)",
     instagram: "", kakao: "", website: "",
     color: "#8E44AD", featured: true, photoUrl: "https://ocmnbwlhjovfycihyvnr.supabase.co/storage/v1/object/public/member-photos/member-1775191777652.jpg",
-    testimonials: []
+    testimonials: [{"metric":"주류 라인업 최적화, 주류 매출 25% 상승","quote":"어떤 주류를 어떻게 구성해야 할지 몰랐는데 업종과 고객층을 분석해서 라인업을 추천해줬어요. 적중률이 높았는지 주류 회전율이 많이 올랐습니다.","author":"윤○○ 사장님 · 음식점"}]
   },
   {
     id: 26, name: "이현희", company: "보쌈1979", category: "식품/외식",
@@ -221,7 +245,7 @@ const MEMBERS_DEFAULT = [
     phone: "010-9928-0994", email: "", address: "경기도 수원시 권선구 권광로 91번길2 1층 (권선동 1038-6)",
     instagram: "", kakao: "https://pf.kakao.com/_kefxcC", website: "",
     color: "#C0392B", featured: true, photoUrl: "",
-    testimonials: []
+    testimonials: [{"metric":"팀 정기 점심 단골, 만족도 5.0","quote":"우리 팀 점심 단골 맛집입니다. 보쌈 하나로 반찬 걱정 없이 한 상 차려지고 가격도 착하고 늘 신선해요.","author":"함○○ 팀장님 · 공공기관"}]
   },
   {
     id: 27, name: "이명재", company: "세무법인 건율", category: "법률/세무",
@@ -232,7 +256,10 @@ const MEMBERS_DEFAULT = [
     phone: "010-3264-9026", email: "", address: "",
     instagram: "", kakao: "https://open.kakao.com/o/shEa7Hpi", website: "",
     color: "#117A8B", featured: true, photoUrl: "",
-    testimonials: []
+    testimonials: [
+      {"metric":"증여세 합법 절세, 세금 2,800만원 절감","quote":"부모님께 상가 건물을 증여받을 때 세금 걱정이 컸는데 꼼꼼하게 절세 방법을 찾아줬어요. 납부해야 할 세금이 생각보다 훨씬 줄었습니다.","author":"권○○ 대표님 · 부동산"},
+      {"metric":"세무조사 대응, 추징세금 0원","quote":"세무조사가 나왔을 때 당황했는데 처음부터 끝까지 대리해줬어요. 꼼꼼한 장부 덕분에 추가 납부 없이 마무리됐습니다.","author":"성○○ 원장님 · 병원"}
+    ]
   }
 ];
 
