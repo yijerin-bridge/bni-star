@@ -358,9 +358,7 @@ img { max-width: 100%; display: block; }
 .t-expert-spec  { font-size: .68rem; color: var(--text-sub); }
 .t-author-line  {
   font-size: .72rem; color: var(--text-mute);
-  padding: 8px 0 6px;
-  border-top: 1px solid var(--border);
-  margin-top: 4px;
+  padding: 4px 0 6px;
 }
 
 /* ============================================================
