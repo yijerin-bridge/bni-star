@@ -11,7 +11,8 @@ const MEMBERS_DEFAULT = [
     description: "맛있습니다.",
     phone: "010-5003-6491", email: "", address: "경기 수원시 영통구 영통로214번길 59 2층",
     instagram: "", kakao: "", website: "",
-    color: "#566573", featured: true, photoUrl: "https://randomuser.me/api/portraits/men/55.jpg"
+    color: "#566573", featured: true, photoUrl: "https://randomuser.me/api/portraits/men/55.jpg",
+    testimonials: []
   },
   {
     id: 4, name: "나성연", company: "KB손해보험", category: "금융/보험",
@@ -22,7 +23,7 @@ const MEMBERS_DEFAULT = [
     phone: "010-8245-5258", email: "3282614@kbinsure.co.kr", address: "경기도 수원시 팔달구 경수대로 518, KB손해보험 8층",
     instagram: "", kakao: "https://open.kakao.com/o/seO0n8ei", website: "",
     color: "#F39C12", featured: true, photoUrl: "https://ocmnbwlhjovfycihyvnr.supabase.co/storage/v1/object/public/member-photos/member-1775641531227.jpg",
-    testimonials: [{ metric: "보험료 월 42만원 절약", quote: "단체보험 갱신 때 기존 계약을 꼼꼼히 분석해줬어요. 불필요한 항목을 정리하고 보장은 더 좋아졌는데 보험료가 많이 줄었습니다.", author: "이○○ 이사님 · IT 스타트업" }]
+    testimonials: [{"metric":"보험료 월 42만원 절약","quote":"단체보험 갱신 때 기존 계약을 꼼꼼히 분석해줬어요. 불필요한 항목을 정리하고 보장은 더 좋아졌는데 보험료가 많이 줄었습니다.","author":"이○○ 이사님 · IT 스타트업"}]
   },
   {
     id: 5, name: "정영준", company: "와이즈앤밸류", category: "금융/보험",
@@ -33,7 +34,7 @@ const MEMBERS_DEFAULT = [
     phone: "010-2599-1901", email: "", address: "",
     instagram: "", kakao: "https://open.kakao.com/o/sVdeyYli", website: "",
     color: "#1E8449", featured: true, photoUrl: "https://ocmnbwlhjovfycihyvnr.supabase.co/storage/v1/object/public/member-photos/member-1775186874538.jpg",
-    testimonials: [{ metric: "노후 준비 완료, 월 수령액 2.3배 증가", quote: "막연하게 걱정만 했는데 재무 플랜을 짜주니까 눈에 보이더라고요. 언제 얼마를 받을 수 있는지 명확해졌습니다." }]
+    testimonials: [{"metric":"노후 준비 완료, 월 수령액 2.3배 증가","quote":"막연하게 걱정만 했는데 재무 플랜을 짜주니까 눈에 보이더라고요. 언제 얼마를 받을 수 있는지 명확해졌습니다."}]
   },
   {
     id: 7, name: "문혜선", company: "인크루즈", category: "라이프/여행",
@@ -43,7 +44,8 @@ const MEMBERS_DEFAULT = [
     description: "크루즈 소개해드립니다.",
     phone: "010-9016-2122", email: "nexy0316@naver.com", address: "",
     instagram: "", kakao: "https://open.kakao.com/o/sIDTmV5", website: "",
-    color: "#148F77", featured: true, photoUrl: "https://randomuser.me/api/portraits/women/63.jpg"
+    color: "#148F77", featured: true, photoUrl: "https://randomuser.me/api/portraits/women/63.jpg",
+    testimonials: []
   },
   {
     id: 9, name: "임귀상", company: "아르페이", category: "IT/디지털",
@@ -53,7 +55,8 @@ const MEMBERS_DEFAULT = [
     description: "쇼핑몰 무료 구축, QR결제 다양한 지원이 됩니다.",
     phone: "010-6532-3651", email: "imguisang@naver.com", address: "경기도 화성시 효행구 봉담읍 서봉산길 21-1",
     instagram: "", kakao: "", website: "",
-    color: "#B03A2E", featured: true, photoUrl: "https://randomuser.me/api/portraits/women/17.jpg"
+    color: "#B03A2E", featured: true, photoUrl: "https://randomuser.me/api/portraits/women/17.jpg",
+    testimonials: []
   },
   {
     id: 10, name: "고 웅", company: "디자인 이안", category: "부동산/인테리어",
@@ -64,7 +67,7 @@ const MEMBERS_DEFAULT = [
     phone: "010-6314-8999", email: "ianko83@naver.com", address: "경기 수원시 영통구 영통로 174번길 12, 그대가센트럴파크상가 101호 (망포동 722)",
     instagram: "design_ian.ko", kakao: "https://open.kakao.com/o/soUVe1Tc", website: "",
     color: "#D35400", featured: true, photoUrl: "https://randomuser.me/api/portraits/men/41.jpg",
-    testimonials: [{ metric: "인테리어 후 카페 매출 30% 상승", quote: "오픈 전 공간 기획부터 맡겼는데 손님들이 분위기 때문에 또 온다고 하더라고요. 인테리어가 마케팅이었어요." }]
+    testimonials: [{"metric":"인테리어 후 카페 매출 30% 상승","quote":"오픈 전 공간 기획부터 맡겼는데 손님들이 분위기 때문에 또 온다고 하더라고요. 인테리어가 마케팅이었어요."}]
   },
   {
     id: 12, name: "김봉석", company: "유사나헬스사이언스코리아", category: "의료/건강",
@@ -74,7 +77,8 @@ const MEMBERS_DEFAULT = [
     description: "균형잡힌 영양공급",
     phone: "010-3775-3612", email: "kbseok77@naver.com", address: "",
     instagram: "", kakao: "https://open.kakao.com/o/s4J5gnci", website: "www.usana.com",
-    color: "#117A8B", featured: true, photoUrl: "https://ocmnbwlhjovfycihyvnr.supabase.co/storage/v1/object/public/member-photos/member-1775310685175.jpg"
+    color: "#117A8B", featured: true, photoUrl: "https://ocmnbwlhjovfycihyvnr.supabase.co/storage/v1/object/public/member-photos/member-1775310685175.jpg",
+    testimonials: []
   },
   {
     id: 13, name: "이지혜", company: "암웨이", category: "뷰티/패션",
@@ -84,7 +88,8 @@ const MEMBERS_DEFAULT = [
     description: "자연스럽고 건강한 피부를 위한 최적의 솔루션을 제안합니다.\nNo.659799",
     phone: "010-2275-2250", email: "fcmbyfreedom@gmail.com", address: "",
     instagram: "", kakao: "", website: "www.amway.co.kr",
-    color: "#A93226", featured: true, photoUrl: "https://ocmnbwlhjovfycihyvnr.supabase.co/storage/v1/object/public/member-photos/member-1775186245990.jpg"
+    color: "#A93226", featured: true, photoUrl: "https://ocmnbwlhjovfycihyvnr.supabase.co/storage/v1/object/public/member-photos/member-1775186245990.jpg",
+    testimonials: []
   },
   {
     id: 15, name: "김성길", company: "바다예찬", category: "식품/외식",
@@ -94,7 +99,8 @@ const MEMBERS_DEFAULT = [
     description: "회와 솥밥의 달인",
     phone: "010-3788-2414", email: "amiga1992@naver.com", address: "경기도 수원시 팔달구 효원로 249번길 18-5",
     instagram: "", kakao: "", website: "",
-    color: "#D68910", featured: true, photoUrl: "https://ocmnbwlhjovfycihyvnr.supabase.co/storage/v1/object/public/member-photos/member-1775191913169.jpg"
+    color: "#D68910", featured: true, photoUrl: "https://ocmnbwlhjovfycihyvnr.supabase.co/storage/v1/object/public/member-photos/member-1775191913169.jpg",
+    testimonials: []
   },
   {
     id: 16, name: "이재린", company: "주식회사 브릿지자산관리", category: "금융/보험",
@@ -105,7 +111,7 @@ const MEMBERS_DEFAULT = [
     phone: "010-3127-6765", email: "yijerin@hanmail.net", address: "",
     instagram: "yijerin", kakao: "https://open.kakao.com/me/yijerin", website: "bridgeasset.kr",
     color: "#566573", featured: true, photoUrl: "https://ocmnbwlhjovfycihyvnr.supabase.co/storage/v1/object/public/member-photos/member-1775190537938.jpg",
-    testimonials: [{ metric: "달러 자산 비중 40% 달성, 환차익 포함 연 11% 수익", quote: "원화로만 갖고 있던 자산을 달러로 분산하고 나서 환율 오를 때마다 수익이 생기더라고요." }]
+    testimonials: [{"metric":"달러 자산 비중 40% 달성, 환차익 포함 연 11% 수익","quote":"원화로만 갖고 있던 자산을 달러로 분산하고 나서 환율 오를 때마다 수익이 생기더라고요."}]
   },
   {
     id: 17, name: "김성미", company: "JK제빵소", category: "식품/외식",
@@ -115,7 +121,8 @@ const MEMBERS_DEFAULT = [
     description: "천연발효종으로 만든 식사대용으로 즐길수있는 빵부터 페스츄리,디저트까지~\n신선한 원두로 커피와 음료도 다양하게 즐길 수 있습니다.",
     phone: "010-9532-0316", email: "sm-dos@daum.net", address: "경기도 수원시 권선구 곡선로 49번길 13-25, 한아름빌딩 1F",
     instagram: "", kakao: "https://open.kakao.com/o/s8pwFPuh", website: "",
-    color: "#dbe972", featured: true, photoUrl: "https://ocmnbwlhjovfycihyvnr.supabase.co/storage/v1/object/public/member-photos/member-1775186264851.jpg"
+    color: "#dbe972", featured: true, photoUrl: "https://ocmnbwlhjovfycihyvnr.supabase.co/storage/v1/object/public/member-photos/member-1775186264851.jpg",
+    testimonials: []
   },
   {
     id: 18, name: "임현준", company: "볼트런", category: "자동차",
@@ -125,7 +132,8 @@ const MEMBERS_DEFAULT = [
     description: "",
     phone: "010-5344-0255", email: "guswns0255@hanmail.net", address: "수원특례시 권선구 권광로 85",
     instagram: "", kakao: "", website: "www.volt-run.co.kr",
-    color: "#C0392B", featured: true, photoUrl: "https://ocmnbwlhjovfycihyvnr.supabase.co/storage/v1/object/public/member-photos/member-1775191124054.jpg"
+    color: "#C0392B", featured: true, photoUrl: "https://ocmnbwlhjovfycihyvnr.supabase.co/storage/v1/object/public/member-photos/member-1775191124054.jpg",
+    testimonials: []
   },
   {
     id: 19, name: "윤명렬", company: "QY케어", category: "부동산/인테리어",
@@ -135,7 +143,8 @@ const MEMBERS_DEFAULT = [
     description: "대규모 에어컨 청소 전문 기업 QY케어 입니다. \n주택부터 사무실까지 깨끗하게 청소합니다.",
     phone: "010-4899-1911", email: "", address: "경기도 수원시 권선구 권선로 720번길 23, 202호",
     instagram: "", kakao: "", website: "",
-    color: "#C0392B", featured: true, photoUrl: "https://ocmnbwlhjovfycihyvnr.supabase.co/storage/v1/object/public/member-photos/member-1775643105191.jpg"
+    color: "#C0392B", featured: true, photoUrl: "https://ocmnbwlhjovfycihyvnr.supabase.co/storage/v1/object/public/member-photos/member-1775643105191.jpg",
+    testimonials: []
   },
   {
     id: 20, name: "진성훈", company: "찐수제컵밥", category: "식품/외식",
@@ -145,7 +154,8 @@ const MEMBERS_DEFAULT = [
     description: "베풀 진(陳)이라 쓰고 찐이라 읽습니다.",
     phone: "010-8852-5450", email: "", address: "경기도 수원시 권선구 동수원로 146번길 192-13, 102호",
     instagram: "", kakao: "", website: "",
-    color: "#784212", featured: true, photoUrl: ""
+    color: "#784212", featured: true, photoUrl: "",
+    testimonials: []
   },
   {
     id: 21, name: "한관우", company: "더쓰임마케팅", category: "마케팅/광고",
@@ -156,7 +166,7 @@ const MEMBERS_DEFAULT = [
     phone: "010-2546-8295", email: "beasap32@gmail.com", address: "경기도 광주시 창뜰윗길 42-13, B1",
     instagram: "", kakao: "", website: "thssi.co.kr",
     color: "#566573", featured: true, photoUrl: "https://ocmnbwlhjovfycihyvnr.supabase.co/storage/v1/object/public/member-photos/member-1775189844021.jpg",
-    testimonials: [{ metric: "블로그 월 방문자 3배 증가", quote: "SEO 설계 후 2개월 만에 네이버 검색 1페이지에 올라갔어요. 광고비 없이 유입이 생기니까 체감이 확실히 달랐습니다." }]
+    testimonials: [{"metric":"블로그 월 방문자 3배 증가","quote":"SEO 설계 후 2개월 만에 네이버 검색 1페이지에 올라갔어요. 광고비 없이 유입이 생기니까 체감이 확실히 달랐습니다."}]
   },
   {
     id: 22, name: "박희배", company: "에이치비인터내셔널", category: "IT/디지털",
@@ -166,7 +176,8 @@ const MEMBERS_DEFAULT = [
     description: "",
     phone: "010-9616-9294", email: "jsapark76@nate.com", address: "경기도 수원시 권선구 정조로 588, 1층",
     instagram: "", kakao: "", website: "",
-    color: "#F39C12", featured: true, photoUrl: "https://ocmnbwlhjovfycihyvnr.supabase.co/storage/v1/object/public/member-photos/member-1775190969972.jpg"
+    color: "#F39C12", featured: true, photoUrl: "https://ocmnbwlhjovfycihyvnr.supabase.co/storage/v1/object/public/member-photos/member-1775190969972.jpg",
+    testimonials: []
   },
   {
     id: 23, name: "이준수", company: "(주)미래온투어", category: "라이프/여행",
@@ -176,7 +187,8 @@ const MEMBERS_DEFAULT = [
     description: "해외 현지 여행사와 하나투어 대리점을 운영중에 있습니다.",
     phone: "010-9321-2625", email: "seoulmilk2013@gmail.com", address: "경기도 화성시 병점구 떡전골로 96-4 오피스밸리 244호",
     instagram: "", kakao: "", website: "",
-    color: "#784212", featured: true, photoUrl: "https://ocmnbwlhjovfycihyvnr.supabase.co/storage/v1/object/public/member-photos/member-1775190979758.jpg"
+    color: "#784212", featured: true, photoUrl: "https://ocmnbwlhjovfycihyvnr.supabase.co/storage/v1/object/public/member-photos/member-1775190979758.jpg",
+    testimonials: []
   },
   {
     id: 24, name: "황성호", company: "인투이피앤티", category: "제조/유통",
@@ -186,7 +198,8 @@ const MEMBERS_DEFAULT = [
     description: "친환경 패키지를 다룹니다.",
     phone: "010-7376-1111", email: "sean@in2epnt.com", address: "경기도 수원시 팔달구 행궁로 98 성장관 2층",
     instagram: "in2epnt_official", kakao: "", website: "",
-    color: "#27AE60", featured: true, photoUrl: "https://ocmnbwlhjovfycihyvnr.supabase.co/storage/v1/object/public/member-photos/member-1775191113862.jpg"
+    color: "#27AE60", featured: true, photoUrl: "https://ocmnbwlhjovfycihyvnr.supabase.co/storage/v1/object/public/member-photos/member-1775191113862.jpg",
+    testimonials: []
   },
   {
     id: 25, name: "민경록", company: "포도주류(유)", category: "제조/유통",
@@ -196,7 +209,8 @@ const MEMBERS_DEFAULT = [
     description: "수입맥주,위스키, 리큐르, 꼬냑, 와인, 사케, 소주, 맥주, 생맥주 모두 다루고 있습니ㅏㄷ.",
     phone: "010-8794-7273", email: "kkakkuchi@naver.com", address: "경기도 의왕시 왕곡로 216-12 (왕곡동)",
     instagram: "", kakao: "", website: "",
-    color: "#8E44AD", featured: true, photoUrl: "https://ocmnbwlhjovfycihyvnr.supabase.co/storage/v1/object/public/member-photos/member-1775191777652.jpg"
+    color: "#8E44AD", featured: true, photoUrl: "https://ocmnbwlhjovfycihyvnr.supabase.co/storage/v1/object/public/member-photos/member-1775191777652.jpg",
+    testimonials: []
   },
   {
     id: 26, name: "이현희", company: "보쌈1979", category: "식품/외식",
@@ -206,7 +220,19 @@ const MEMBERS_DEFAULT = [
     description: "고기 한점 한점 정성을 담았습니다.",
     phone: "010-9928-0994", email: "", address: "경기도 수원시 권선구 권광로 91번길2 1층 (권선동 1038-6)",
     instagram: "", kakao: "https://pf.kakao.com/_kefxcC", website: "",
-    color: "#C0392B", featured: true, photoUrl: ""
+    color: "#C0392B", featured: true, photoUrl: "",
+    testimonials: []
+  },
+  {
+    id: 27, name: "이명재", company: "세무법인 건율", category: "법률/세무",
+    specialty: "세무 컨설팅",
+    headline: "합리적인 절세 컨설팅",
+    targetCustomer: "증여, 상속 컨설팅 필요하신분",
+    description: "",
+    phone: "010-3264-9026", email: "", address: "",
+    instagram: "", kakao: "https://open.kakao.com/o/shEa7Hpi", website: "",
+    color: "#117A8B", featured: false, photoUrl: "",
+    testimonials: []
   }
 ];
 
@@ -252,6 +278,6 @@ function loadMembers() {
     photoUrl: m.photoUrl || SAMPLE_PHOTOS[m.id] || ''
   }));
 }
-function saveMembers() {
+function saveMembers(list) {
   // no-op: data is persisted via GitHub API (api/save-members)
 }
