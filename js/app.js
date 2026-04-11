@@ -357,6 +357,7 @@ function renderTestimonials() {
 function cbOpen() {
   $('cbPanel').classList.add('open');
   $('cbBackdrop').classList.add('open');
+  $('cbFab').classList.add('hidden');
   if (!$('cbMessages').children.length) cbReset();
   setTimeout(() => $('cbInput').focus(), 350);
 }
@@ -364,6 +365,7 @@ function cbOpen() {
 function cbClose() {
   $('cbPanel').classList.remove('open');
   $('cbBackdrop').classList.remove('open');
+  $('cbFab').classList.remove('hidden');
 }
 
 function cbReset() {
