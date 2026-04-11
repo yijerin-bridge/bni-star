@@ -226,9 +226,9 @@ const MEMBERS_DEFAULT = [
   {
     id: 27, name: "이명재", company: "세무법인 건율", category: "법률/세무",
     specialty: "세무 컨설팅",
-    headline: "합리적인 절세 컨설팅",
+    headline: "믿고 맡길수 있는 기장, 합리적인 절세",
     targetCustomer: "증여, 상속 컨설팅 필요하신분",
-    description: "",
+    description: "성심 성의껏 돕겠습니다.",
     phone: "010-3264-9026", email: "", address: "",
     instagram: "", kakao: "https://open.kakao.com/o/shEa7Hpi", website: "",
     color: "#117A8B", featured: true, photoUrl: "",
