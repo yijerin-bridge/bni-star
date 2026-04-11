@@ -199,16 +199,17 @@ img { max-width: 100%; display: block; }
    ============================================================ */
 .cb-fab {
   position: fixed; bottom: 24px; right: 16px;
-  width: 56px; height: 56px; border-radius: 50%;
-  background: var(--red);
-  box-shadow: 0 4px 16px rgba(220,38,38,.38);
+  width: 64px; height: 64px; border-radius: 50%;
+  background: none;
+  box-shadow: 0 4px 20px rgba(0,0,0,.18);
   display: flex; align-items: center; justify-content: center;
   z-index: 200;
-  transition: transform .25s cubic-bezier(.34,1.56,.64,1), opacity .2s, box-shadow .2s;
+  transition: transform .25s cubic-bezier(.34,1.56,.64,1), opacity .2s;
   animation: cbFabPop .5s cubic-bezier(.34,1.56,.64,1) both;
 }
-.cb-fab:active { transform: scale(.88); box-shadow: 0 2px 8px rgba(220,38,38,.25); }
+.cb-fab:active { transform: scale(.88); }
 .cb-fab.hidden { transform: scale(0) !important; opacity: 0 !important; pointer-events: none; animation: none; }
+.cb-fab-img { width: 64px; height: 64px; object-fit: contain; border-radius: 50%; display: block; }
 @keyframes cbFabPop {
   0%   { transform: scale(0); opacity: 0; }
   100% { transform: scale(1); opacity: 1; }
