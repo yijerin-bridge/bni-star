@@ -272,10 +272,10 @@ const CATEGORIES = [
   { name: "교육/컨설팅",  emoji: "📚",  color: "#784212" },
   { name: "마케팅/광고",  emoji: "📣",  color: "#B03A2E" },
   { name: "부동산/인테리어", emoji: "🏠", color: "#D35400" },
-  { name: "식품/외식",    emoji: "🍽️", color: "#1D8348" },
+  { name: "라이프/여행",  emoji: "✈️",  color: "#0277BD" },
   { name: "레저/스포츠",  emoji: "🏃",  color: "#1565C0" },
   { name: "뷰티/패션",    emoji: "💄",  color: "#AD1457" },
-  { name: "라이프/여행",  emoji: "✈️",  color: "#0277BD" },
+  { name: "식품/외식",    emoji: "🍽️", color: "#1D8348" },
   { name: "제조/유통",    emoji: "🏭",  color: "#546E7A" },
 ];
 
