@@ -266,7 +266,7 @@ const MEMBERS_DEFAULT = [
 const CATEGORIES = [
   { name: "법률/세무",    emoji: "⚖️",  color: "#6C3483" },
   { name: "금융/보험",    emoji: "💰",  color: "#1F618D" },
-  { name: "자동차",        emoji: "🚗",  color: "#D68910" },
+  { name: "식품/외식",    emoji: "🍽️", color: "#1D8348" },
   { name: "IT/디지털",    emoji: "💻",  color: "#212F3D" },
   { name: "의료/건강",    emoji: "🏥",  color: "#117A8B" },
   { name: "교육/컨설팅",  emoji: "📚",  color: "#784212" },
@@ -275,7 +275,7 @@ const CATEGORIES = [
   { name: "라이프/여행",  emoji: "✈️",  color: "#0277BD" },
   { name: "레저/스포츠",  emoji: "🏃",  color: "#1565C0" },
   { name: "뷰티/패션",    emoji: "💄",  color: "#AD1457" },
-  { name: "식품/외식",    emoji: "🍽️", color: "#1D8348" },
+  { name: "자동차",        emoji: "🚗",  color: "#D68910" },
   { name: "제조/유통",    emoji: "🏭",  color: "#546E7A" },
 ];
 
