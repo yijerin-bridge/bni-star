@@ -233,6 +233,17 @@ const MEMBERS_DEFAULT = [
     instagram: "", kakao: "https://open.kakao.com/o/shEa7Hpi", website: "",
     color: "#117A8B", featured: true, photoUrl: "",
     testimonials: [{"metric":"증여세 합법 절세, 세금 2,800만원 절감","quote":"부모님께 상가 건물을 증여받을 때 세금 걱정이 컸는데 꼼꼼하게 절세 방법을 찾아줬어요. 납부해야 할 세금이 생각보다 훨씬 줄었습니다.","author":"권○○ 대표님 · 부동산"},{"metric":"세무조사 대응, 추징세금 0원","quote":"세무조사가 나왔을 때 당황했는데 처음부터 끝까지 대리해줬어요. 꼼꼼한 장부 덕분에 추가 납부 없이 마무리됐습니다.","author":"성○○ 원장님 · 병원"}]
+  },
+  {
+    id: 28, name: "손미", company: "럭셔리 부동산", category: "부동산/인테리어",
+    specialty: "수익형 부동산",
+    headline: "수익형 부동산 A부터 Z까지 다해드립니다.",
+    targetCustomer: "수익형 부동산, 월세 매물 찾으시는분",
+    description: "곡반정동에서 수익형부동산, 전월세 매매를 주로 컨설팅하고 있습니다.",
+    phone: "010-8983-1005", email: "", address: "경기도 수원시 권선구 곡반정동 539-2",
+    instagram: "", kakao: "", website: "",
+    color: "#F39C12", featured: true, photoUrl: "https://ocmnbwlhjovfycihyvnr.supabase.co/storage/v1/object/public/member-photos/member-1776850833317.jpg",
+    testimonials: []
   }
 ];
 
