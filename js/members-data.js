@@ -154,7 +154,7 @@ const MEMBERS_DEFAULT = [
     description: "베풀 진(陳)이라 쓰고 찐이라 읽습니다.",
     phone: "010-8852-5450", email: "", address: "경기도 수원시 권선구 동수원로 146번길 192-13, 102호",
     instagram: "", kakao: "", website: "",
-    color: "#784212", featured: true, photoUrl: "",
+    color: "#784212", featured: true, photoUrl: "https://ocmnbwlhjovfycihyvnr.supabase.co/storage/v1/object/public/member-photos/member-1776845649329.jpg",
     testimonials: [{"metric":"소풍 도시락 50인분, 남김없이 완판","quote":"회사 야유회 도시락을 주문했는데 직원들이 맛있다고 난리났어요. 컵밥이라 먹기도 편하고 양도 넉넉해서 다들 만족했습니다.","author":"장○○ 팀장님 · IT기업"}]
   },
   {
