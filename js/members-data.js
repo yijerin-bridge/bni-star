@@ -81,7 +81,7 @@ const MEMBERS_DEFAULT = [
     testimonials: [{"metric":"3개월 만에 면역력 회복, 잦은 감기 사라짐","quote":"매년 겨울마다 감기로 고생했는데 영양 제품 꾸준히 챙기고 나서 올 겨울은 한 번도 아프지 않았어요.","author":"정○○ 이사님 · 유통업"}]
   },
   {
-    id: 13, name: "이지혜", company: "암웨이 글로벌", category: "뷰티/패션",
+    id: 13, name: "이지혜", company: "암웨이 글로벌🌐", category: "뷰티/패션",
     specialty: "화장품",
     headline: "거울 볼 때마다 피부 때문에 자신감이 떨어지시나요?",
     targetCustomer: "피부 트러블, 노화 방지, 미용에 관심 있는 분",
