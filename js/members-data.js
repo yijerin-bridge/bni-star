@@ -244,6 +244,17 @@ const MEMBERS_DEFAULT = [
     instagram: "", kakao: "", website: "",
     color: "#F39C12", featured: true, photoUrl: "https://ocmnbwlhjovfycihyvnr.supabase.co/storage/v1/object/public/member-photos/member-1776850833317.jpg",
     testimonials: []
+  },
+  {
+    id: 29, name: "이보옥", company: "명진청과", category: "식품/외식",
+    specialty: "과일",
+    headline: "소중한 고객들을 위한 정성스러운 과일선물",
+    targetCustomer: "선물용 과일세트, 단체구매",
+    description: "소중한 고객들을 위한 정성스러운 과일선물 제공해드립니다.",
+    phone: "010-2224-7321", email: "lbo7321@naver.com", address: "경기도 수원시 권선구 세권로 243(권선동) 과일동 4번 GATE 18번",
+    instagram: "", kakao: "https://open.kakao.com/o/sPaoFuqi", website: "",
+    color: "#1D8348", featured: true, photoUrl: "",
+    testimonials: []
   }
 ];
 
