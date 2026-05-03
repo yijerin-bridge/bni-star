@@ -7,11 +7,10 @@
 CREATE TABLE IF NOT EXISTS traffic_weekly_records (
   id            UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   member_id     INTEGER NOT NULL,
-  week_start    DATE NOT NULL,          -- 해당 주 월요일
+  week_start    DATE NOT NULL,          -- 해당 주 수요일
   attended      BOOLEAN DEFAULT false,
   one_on_one    INTEGER DEFAULT 0,
-  referrals_given INTEGER DEFAULT 0,
-  closed_business_received NUMERIC(12,0) DEFAULT 0,
+  education     BOOLEAN DEFAULT false,
   notes         TEXT,
   created_at    TIMESTAMPTZ DEFAULT NOW(),
   updated_at    TIMESTAMPTZ DEFAULT NOW(),
@@ -49,3 +48,10 @@ $$ LANGUAGE plpgsql;
 CREATE TRIGGER trg_weekly_updated_at
   BEFORE UPDATE ON traffic_weekly_records
   FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+
+-- ============================================================
+-- 기존 테이블 업데이트 (이미 생성된 경우 아래만 실행)
+-- ============================================================
+ALTER TABLE traffic_weekly_records ADD COLUMN IF NOT EXISTS education BOOLEAN DEFAULT false;
+ALTER TABLE traffic_weekly_records DROP COLUMN IF EXISTS referrals_given;
+ALTER TABLE traffic_weekly_records DROP COLUMN IF EXISTS closed_business_received;

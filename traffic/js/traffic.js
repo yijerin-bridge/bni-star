@@ -76,14 +76,22 @@ function tlLabel(status) {
 ───────────────────────────────────────── */
 function calcMemberStats() {
   const recentWeeks = getRecentWeeks(4);
+  // 최근 4주 날짜 범위
+  const cutoff = new Date();
+  cutoff.setDate(cutoff.getDate() - 28);
+
   memberStats = members.map(m => {
     const recs = weeklyRecords.filter(r =>
       r.member_id === m.id && recentWeeks.includes(r.week_start)
     );
     const attendance = recs.filter(r => r.attended).length;
     const ono = recs.reduce((s, r) => s + (r.one_on_one || 0), 0);
-    const referrals = recs.reduce((s, r) => s + (r.referrals_given || 0), 0);
-    const cb = recs.reduce((s, r) => s + (r.closed_business_received || 0), 0);
+    const education = recs.filter(r => r.education).length;
+
+    // 레퍼럴 건수: 레퍼럴 흐름 테이블에서 집계
+    const referrals = referralFlows.filter(f =>
+      f.from_member_id === m.id && new Date(f.referral_date) >= cutoff
+    ).length;
 
     const critAttend = attendance >= CRITERIA.attendanceMin;
     const critOno = ono >= CRITERIA.onoMin;
@@ -93,26 +101,32 @@ function calcMemberStats() {
     let status = 'green';
     if (failCount === 1) status = 'yellow';
     if (failCount >= 2) status = 'red';
-    if (recs.length === 0) status = 'new';  // 데이터 미입력
+    if (recs.length === 0) status = 'new';
 
-    // 추세: 최근 8주 주별 레퍼럴
+    // 추세: 최근 8주 주별 레퍼럴 건수
     const allWeeks = getRecentWeeks(8);
     const trend = allWeeks.map(w => {
-      const r = weeklyRecords.find(r => r.member_id === m.id && r.week_start === w);
-      return r ? (r.referrals_given || 0) : 0;
+      const wDate = new Date(w);
+      const wEnd = new Date(w); wEnd.setDate(wEnd.getDate() + 7);
+      return referralFlows.filter(f =>
+        f.from_member_id === m.id &&
+        new Date(f.referral_date) >= wDate &&
+        new Date(f.referral_date) < wEnd
+      ).length;
     });
 
-    // CB 받은 것 + 준 것 (레퍼럴 흐름에서)
-    const cbReceived = referralFlows
+    // 레퍼럴 성사금액 (준 것 / 받은 것)
+    const refAmountReceived = referralFlows
       .filter(f => f.to_member_id === m.id && f.status === 'closed')
       .reduce((s, f) => s + (f.amount || 0), 0);
-    const cbGiven = referralFlows
+    const refAmountGiven = referralFlows
       .filter(f => f.from_member_id === m.id && f.status === 'closed')
       .reduce((s, f) => s + (f.amount || 0), 0);
 
     return {
-      ...m, attendance, ono, referrals, cb: cbReceived || cb,
-      cbGiven, status, critAttend, critOno, critReferral, trend, recs
+      ...m, attendance, ono, education, referrals,
+      refAmountReceived, refAmountGiven,
+      status, critAttend, critOno, critReferral, trend, recs
     };
   });
 }
@@ -318,14 +332,14 @@ function renderMembers(filter = '', lightFilter = '') {
         <div class="mc-stat"><div class="mc-stat-val">${m.attendance}/4</div><div class="mc-stat-label">출석</div></div>
         <div class="mc-stat"><div class="mc-stat-val">${m.ono}</div><div class="mc-stat-label">1:1</div></div>
         <div class="mc-stat"><div class="mc-stat-val">${m.referrals}</div><div class="mc-stat-label">레퍼럴</div></div>
-        <div class="mc-stat"><div class="mc-stat-val">${fmt(m.cb)}</div><div class="mc-stat-label">CB받음</div></div>
+        <div class="mc-stat"><div class="mc-stat-val">${fmt(m.refAmountReceived)}</div><div class="mc-stat-label">성사금액</div></div>
       </div>
       <div class="mc-criteria">
         <span class="mc-crit ${m.critAttend ? 'ok' : 'fail'}">${m.critAttend ? '✓' : '✗'} 출석</span>
         <span class="mc-crit ${m.critOno ? 'ok' : 'fail'}">${m.critOno ? '✓' : '✗'} 1:1</span>
         <span class="mc-crit ${m.critReferral ? 'ok' : 'fail'}">${m.critReferral ? '✓' : '✗'} 레퍼럴</span>
         <span style="flex:1"></span>
-        <span style="font-size:.72rem;color:#999">CB줌 ${fmt(m.cbGiven)}</span>
+        <span style="font-size:.72rem;color:#999">준 금액 ${fmt(m.refAmountGiven)}원</span>
       </div>
     </div>`).join('') || '<div class="empty-msg">해당하는 멤버 없음</div>';
 }
@@ -517,8 +531,7 @@ function initForms() {
       week_start: getMondayOf(weekStart),
       attended: attendVal,
       one_on_one: parseInt(document.getElementById('fOno').value) || 0,
-      referrals_given: parseInt(document.getElementById('fReferrals').value) || 0,
-      closed_business_received: parseInt(document.getElementById('fCB').value) || 0,
+      education: eduVal,
       notes: document.getElementById('fNotes').value,
     };
 
@@ -566,6 +579,13 @@ function setAttend(val) {
   document.getElementById('toggleNo').classList.toggle('active', !val);
 }
 
+let eduVal = true;
+function setEdu(val) {
+  eduVal = val;
+  document.getElementById('toggleEduY').classList.toggle('active', val);
+  document.getElementById('toggleEduN').classList.toggle('active', !val);
+}
+
 function showMsg(id, msg, type) {
   const el = document.getElementById(id);
   el.textContent = msg;
@@ -583,7 +603,7 @@ async function loadRecentWeekly() {
       return `<div class="recent-item">
           <div class="recent-item-left">
             <div class="recent-item-week">${m?.name || '?'} · ${r.week_start}</div>
-            <div class="recent-item-detail">${r.attended ? '✅ 출석' : '❌ 결석'} · 1:1 ${r.one_on_one}회 · 레퍼럴 ${r.referrals_given}건 · CB ${fmt(r.closed_business_received)}원</div>
+            <div class="recent-item-detail">${r.attended ? '✅ 출석' : '❌ 결석'} · 1:1 ${r.one_on_one}회 · 교육 ${r.education ? '✅' : '❌'}</div>
           </div>
         </div>`;
     }).join('')
@@ -598,7 +618,7 @@ async function loadRecentReferral() {
     ? list.map(r => {
       const from = members.find(m => m.id === r.from_member_id);
       const to = members.find(m => m.id === r.to_member_id);
-      const statusLabel = r.status === 'closed' ? '✅ 클로즈드' : r.status === 'rejected' ? '❌ 불발' : '⏳ 진행 중';
+      const statusLabel = r.status === 'closed' ? '✅ 성사' : r.status === 'rejected' ? '❌ 불발' : '⏳ 진행 중';
       return `<div class="recent-item">
           <div class="recent-item-left">
             <div class="recent-item-week">${from?.name || '?'} → ${to?.name || '?'}</div>

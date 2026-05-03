@@ -158,12 +158,11 @@
               <input type="number" id="fOno" class="form-input" min="0" value="0">
             </div>
             <div class="form-row">
-              <label class="form-label">레퍼럴 건수</label>
-              <input type="number" id="fReferrals" class="form-input" min="0" value="0">
-            </div>
-            <div class="form-row">
-              <label class="form-label">받은 Closed Business (원)</label>
-              <input type="number" id="fCB" class="form-input" min="0" value="0" step="10000">
+              <label class="form-label">교육</label>
+              <div class="toggle-wrap">
+                <button class="toggle-btn active" id="toggleEduY" onclick="setEdu(true)">참여</button>
+                <button class="toggle-btn" id="toggleEduN" onclick="setEdu(false)">미참여</button>
+              </div>
             </div>
           </div>
           <div class="form-row">
@@ -184,13 +183,13 @@
       <!-- 레퍼럴 흐름 입력 -->
       <div class="input-panel" id="ipanel-referral">
         <div class="card">
-          <div class="card-title">레퍼럴 흐름 기록 (A → B)</div>
+          <div class="card-title">레퍼럴 기록 (누가 → 누구에게)</div>
           <div class="form-row">
-            <label class="form-label">레퍼럴 준 멤버 (From)</label>
+            <label class="form-label">레퍼럴 준 멤버</label>
             <select id="fFrom" class="form-input"></select>
           </div>
           <div class="form-row">
-            <label class="form-label">레퍼럴 받은 멤버 (To)</label>
+            <label class="form-label">레퍼럴 받은 멤버</label>
             <select id="fTo" class="form-input"></select>
           </div>
           <div class="form-grid">
@@ -199,14 +198,14 @@
               <input type="date" id="fRefDate" class="form-input">
             </div>
             <div class="form-row">
-              <label class="form-label">금액 (원, 예상 포함)</label>
+              <label class="form-label">레퍼럴 성사금액 (원)</label>
               <input type="number" id="fRefAmount" class="form-input" min="0" value="0" step="10000">
             </div>
             <div class="form-row">
               <label class="form-label">상태</label>
               <select id="fRefStatus" class="form-input">
                 <option value="pending">진행 중</option>
-                <option value="closed">클로즈드</option>
+                <option value="closed">성사</option>
                 <option value="rejected">불발</option>
               </select>
             </div>
