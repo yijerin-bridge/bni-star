@@ -58,10 +58,16 @@ function getRecentWeeks(n = 4) {
 }
 
 function tlClass(status) {
-  return status === 'green' ? 'green' : status === 'yellow' ? 'yellow' : 'red';
+  if (status === 'green') return 'green';
+  if (status === 'yellow') return 'yellow';
+  if (status === 'new') return 'new';
+  return 'red';
 }
 function tlLabel(status) {
-  return status === 'green' ? '🟢 Green' : status === 'yellow' ? '🟡 Yellow' : '🔴 Red';
+  if (status === 'green') return '🟢 Green';
+  if (status === 'yellow') return '🟡 Yellow';
+  if (status === 'new') return '⚪ 미입력';
+  return '🔴 Red';
 }
 
 /* ─────────────────────────────────────────
@@ -86,6 +92,7 @@ function calcMemberStats() {
     let status = 'green';
     if (failCount === 1) status = 'yellow';
     if (failCount >= 2) status = 'red';
+    if (recs.length === 0) status = 'new';  // 데이터 미입력
 
     // 추세: 최근 8주 주별 레퍼럴
     const allWeeks = getRecentWeeks(8);
@@ -144,14 +151,17 @@ function initTabs() {
    데이터 로드
 ───────────────────────────────────────── */
 async function loadData() {
-  // 회원 데이터: /api/members 에서 fetch
+  // 회원 데이터: /api/members fetch, 실패 시 members-data.js 폴백
   try {
     const res = await fetch('/api/members');
+    if (!res.ok) throw new Error(`API ${res.status}`);
     const json = await res.json();
     members = json.members || [];
-  } catch {
+  } catch (e) {
+    console.warn('members API 실패, 로컬 데이터 사용:', e.message);
     members = (typeof MEMBERS_DEFAULT !== 'undefined') ? MEMBERS_DEFAULT : [];
   }
+  if (members.length === 0) console.error('멤버 데이터 로드 실패');
 
   // Supabase에서 활동 데이터 로드 (테이블 없어도 페이지 표시)
   try {

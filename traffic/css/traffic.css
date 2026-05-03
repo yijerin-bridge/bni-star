@@ -134,6 +134,7 @@ input, select, textarea { font-family: inherit; }
 .member-card.green { border-left-color: var(--green); }
 .member-card.yellow { border-left-color: var(--yellow); }
 .member-card.red { border-left-color: var(--red); }
+.member-card.new { border-left-color: var(--mute); }
 .mc-header { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
 .mc-avatar { width: 42px; height: 42px; border-radius: 50%; object-fit: cover; flex-shrink: 0; background: var(--bg); }
 .mc-info { flex: 1; }
@@ -143,6 +144,7 @@ input, select, textarea { font-family: inherit; }
 .mc-tl.green { background: #EAFAF1; color: var(--green); }
 .mc-tl.yellow { background: #FEF9E7; color: var(--yellow); }
 .mc-tl.red { background: #FDEDEC; color: var(--red); }
+.mc-tl.new { background: #F4F4F4; color: var(--mute); }
 .mc-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; margin-bottom: 10px; }
 .mc-stat { background: var(--bg); border-radius: 8px; padding: 6px 4px; text-align: center; }
 .mc-stat-val { font-size: .9rem; font-weight: 900; color: var(--navy); }
