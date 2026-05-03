@@ -75,6 +75,11 @@
 
     <!-- ② 개인 성과 -->
     <div class="tab-panel" id="panel-members">
+      <div class="month-nav">
+        <button class="month-btn" id="monthPrev">&#8249;</button>
+        <span class="month-label" id="monthLabel"></span>
+        <button class="month-btn" id="monthNext">&#8250;</button>
+      </div>
       <div class="toolbar">
         <input type="text" id="memberSearch" class="search-input" placeholder="이름 검색...">
         <select id="lightFilter" class="filter-select">
@@ -82,6 +87,7 @@
           <option value="green">🟢 Green</option>
           <option value="yellow">🟡 Yellow</option>
           <option value="red">🔴 Red</option>
+          <option value="new">⚪ 미입력</option>
         </select>
       </div>
       <div class="member-grid" id="memberGrid"></div>

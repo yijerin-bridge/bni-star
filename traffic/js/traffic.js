@@ -26,6 +26,7 @@ let members = [];
 let weeklyRecords = [];
 let referralFlows = [];
 let attendVal = true;
+let selectedMonth = { year: new Date().getFullYear(), month: new Date().getMonth() }; // 0-indexed
 let memberStats = [];  // 계산된 멤버별 통계
 let chartInstances = {};  // Chart.js 인스턴스 보관
 
@@ -324,8 +325,64 @@ function renderChart(id, type, labels, data, colors) {
 /* ─────────────────────────────────────────
    ② 개인 성과
 ───────────────────────────────────────── */
+function calcMonthStats(year, month) {
+  // 해당 월의 시작/끝
+  const monthStart = new Date(year, month, 1);
+  const monthEnd = new Date(year, month + 1, 0);
+
+  // 해당 월의 수요일 목록
+  const wednesdays = [];
+  for (let d = new Date(monthStart); d <= monthEnd; d.setDate(d.getDate() + 1)) {
+    if (d.getDay() === 3) wednesdays.push(toLocalDateStr(new Date(d)));
+  }
+  const totalMeetings = wednesdays.length; // 이 달의 총 미팅 수
+
+  return members.map(m => {
+    const recs = weeklyRecords.filter(r =>
+      r.member_id === m.id && wednesdays.includes(r.week_start)
+    );
+    const attendance = recs.filter(r => r.attended).length;
+    const ono = recs.reduce((s, r) => s + (r.one_on_one || 0), 0);
+    const education = recs.filter(r => r.education).length;
+    const visitors = recs.reduce((s, r) => s + (r.visitors_invited || 0), 0);
+
+    const referrals = referralFlows.filter(f =>
+      f.from_member_id === m.id &&
+      new Date(f.referral_date) >= monthStart &&
+      new Date(f.referral_date) <= monthEnd
+    ).length;
+
+    const attendanceMin = Math.ceil(totalMeetings * 0.75); // 75% 이상
+    const critAttend = attendance >= attendanceMin;
+    const critOno = ono >= CRITERIA.onoMin;
+    const critReferral = referrals >= CRITERIA.referralMin;
+    const failCount = [critAttend, critOno, critReferral].filter(v => !v).length;
+
+    let status = 'green';
+    if (failCount === 1) status = 'yellow';
+    if (failCount >= 2) status = 'red';
+    if (recs.length === 0) status = 'new';
+
+    const refAmountReceived = referralFlows
+      .filter(f => f.to_member_id === m.id && f.status === 'closed' &&
+        new Date(f.referral_date) >= monthStart && new Date(f.referral_date) <= monthEnd)
+      .reduce((s, f) => s + (f.amount || 0), 0);
+    const refAmountGiven = referralFlows
+      .filter(f => f.from_member_id === m.id && f.status === 'closed' &&
+        new Date(f.referral_date) >= monthStart && new Date(f.referral_date) <= monthEnd)
+      .reduce((s, f) => s + (f.amount || 0), 0);
+
+    return {
+      ...m, attendance, totalMeetings, ono, education, visitors, referrals,
+      refAmountReceived, refAmountGiven,
+      status, critAttend, critOno, critReferral, recs
+    };
+  });
+}
+
 function renderMembers(filter = '', lightFilter = '') {
-  let list = memberStats;
+  const stats = calcMonthStats(selectedMonth.year, selectedMonth.month);
+  let list = stats;
   if (filter) list = list.filter(m => m.name.includes(filter) || m.category.includes(filter));
   if (lightFilter) list = list.filter(m => m.status === lightFilter);
 
@@ -340,7 +397,7 @@ function renderMembers(filter = '', lightFilter = '') {
         <span class="mc-tl ${tlClass(m.status)}">${tlLabel(m.status)}</span>
       </div>
       <div class="mc-stats">
-        <div class="mc-stat"><div class="mc-stat-val">${m.attendance}/4</div><div class="mc-stat-label">출석</div></div>
+        <div class="mc-stat"><div class="mc-stat-val">${m.attendance}/${m.totalMeetings}</div><div class="mc-stat-label">출석</div></div>
         <div class="mc-stat"><div class="mc-stat-val">${m.ono}</div><div class="mc-stat-label">1:1</div></div>
         <div class="mc-stat"><div class="mc-stat-val">${m.referrals}</div><div class="mc-stat-label">레퍼럴</div></div>
         <div class="mc-stat"><div class="mc-stat-val">${m.visitors}</div><div class="mc-stat-label">비지터</div></div>
@@ -645,7 +702,40 @@ async function loadRecentReferral() {
 /* ─────────────────────────────────────────
    검색 필터
 ───────────────────────────────────────── */
+function updateMonthLabel() {
+  document.getElementById('monthLabel').textContent =
+    `${selectedMonth.year}년 ${selectedMonth.month + 1}월`;
+  // 미래 월은 넘어갈 수 없게
+  const now = new Date();
+  document.getElementById('monthNext').disabled =
+    selectedMonth.year >= now.getFullYear() && selectedMonth.month >= now.getMonth();
+}
+
 function initFilters() {
+  // 월 네비게이션
+  updateMonthLabel();
+  document.getElementById('monthPrev').addEventListener('click', () => {
+    if (selectedMonth.month === 0) { selectedMonth.month = 11; selectedMonth.year--; }
+    else selectedMonth.month--;
+    updateMonthLabel();
+    renderMembers(
+      document.getElementById('memberSearch').value,
+      document.getElementById('lightFilter').value
+    );
+  });
+  document.getElementById('monthNext').addEventListener('click', () => {
+    const now = new Date();
+    if (selectedMonth.year >= now.getFullYear() && selectedMonth.month >= now.getMonth()) return;
+    if (selectedMonth.month === 11) { selectedMonth.month = 0; selectedMonth.year++; }
+    else selectedMonth.month++;
+    updateMonthLabel();
+    renderMembers(
+      document.getElementById('memberSearch').value,
+      document.getElementById('lightFilter').value
+    );
+  });
+
+  // 검색/필터
   let debounce;
   document.getElementById('memberSearch').addEventListener('input', e => {
     clearTimeout(debounce);

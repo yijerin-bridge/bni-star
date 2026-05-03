@@ -121,6 +121,12 @@ input, select, textarea { font-family: inherit; }
 .rank-tl.yellow { background: #FEF9E7; color: var(--yellow); }
 .rank-tl.red { background: #FDEDEC; color: var(--red); }
 
+/* MONTH NAV */
+.month-nav { display: flex; align-items: center; justify-content: center; gap: 16px; margin-bottom: 12px; background: var(--card); border-radius: var(--r); box-shadow: var(--sh); padding: 10px 16px; }
+.month-btn { width: 36px; height: 36px; border-radius: 50%; background: var(--bg); font-size: 1.4rem; color: var(--navy); display: flex; align-items: center; justify-content: center; transition: background .2s; line-height: 1; }
+.month-btn:hover { background: var(--border); }
+.month-label { font-size: 1rem; font-weight: 700; color: var(--navy); min-width: 100px; text-align: center; }
+
 /* MEMBER GRID */
 .toolbar { display: flex; gap: 8px; margin-bottom: 12px; }
 .search-input {
