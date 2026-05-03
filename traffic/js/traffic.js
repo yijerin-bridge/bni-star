@@ -151,17 +151,9 @@ function initTabs() {
    데이터 로드
 ───────────────────────────────────────── */
 async function loadData() {
-  // 회원 데이터: /api/members fetch, 실패 시 members-data.js 폴백
-  try {
-    const res = await fetch('/api/members');
-    if (!res.ok) throw new Error(`API ${res.status}`);
-    const json = await res.json();
-    members = json.members || [];
-  } catch (e) {
-    console.warn('members API 실패, 로컬 데이터 사용:', e.message);
-    members = (typeof MEMBERS_DEFAULT !== 'undefined') ? MEMBERS_DEFAULT : [];
-  }
-  if (members.length === 0) console.error('멤버 데이터 로드 실패');
+  // 회원 데이터: members-data.js (bni-star와 동일 배포, 항상 최신)
+  members = (typeof MEMBERS_DEFAULT !== 'undefined') ? [...MEMBERS_DEFAULT] : [];
+  console.log('멤버 로드:', members.length, '명');
 
   // Supabase에서 활동 데이터 로드 (테이블 없어도 페이지 표시)
   try {
