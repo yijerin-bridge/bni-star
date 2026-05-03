@@ -209,31 +209,89 @@ function showSchemaWarning() {
 }
 
 /* ─────────────────────────────────────────
+   이전 기간 비교 통계 (주 5~8, 즉 4주 전)
+───────────────────────────────────────── */
+function calcPrevPeriodStats() {
+  const allWeeks8 = getRecentWeeks(8);
+  const prevWeeks = allWeeks8.slice(0, 4); // 오래된 4주
+  const cutoffNew = new Date(); cutoffNew.setDate(cutoffNew.getDate() - 28);
+  const cutoffOld = new Date(); cutoffOld.setDate(cutoffOld.getDate() - 56);
+
+  return members.map(m => {
+    const recs = weeklyRecords.filter(r =>
+      r.member_id === m.id && prevWeeks.includes(r.week_start)
+    );
+    const attendance = recs.filter(r => r.attended).length;
+    const ono        = recs.reduce((s, r) => s + (r.one_on_one || 0), 0);
+    const visitors   = recs.reduce((s, r) => s + (r.visitors_invited || 0), 0);
+    const referrals  = referralFlows.filter(f =>
+      f.from_member_id === m.id &&
+      new Date(f.referral_date) >= cutoffOld &&
+      new Date(f.referral_date) < cutoffNew
+    ).length;
+    const refAmountReceived = referralFlows
+      .filter(f => f.to_member_id === m.id && f.status === 'closed' &&
+        new Date(f.referral_date) >= cutoffOld &&
+        new Date(f.referral_date) < cutoffNew)
+      .reduce((s, f) => s + (f.amount || 0), 0);
+
+    const critAttend   = attendance >= CRITERIA.attendanceMin;
+    const critOno      = ono >= CRITERIA.onoMin;
+    const critReferral = referrals >= CRITERIA.referralMin;
+    const failCount = [critAttend, critOno, critReferral].filter(v => !v).length;
+    let status = recs.length === 0 ? 'new' : failCount >= 2 ? 'red' : failCount === 1 ? 'yellow' : 'green';
+
+    return { ...m, attendance, ono, visitors, referrals, refAmountReceived, status };
+  });
+}
+
+function kpiDelta(curr, prev) {
+  if (prev === 0 && curr === 0) return '';
+  if (prev === 0) return `<span class="kpi-delta up">신규</span>`;
+  const diff = curr - prev;
+  const pct  = Math.round(Math.abs(diff) / prev * 100);
+  if (diff === 0) return `<span class="kpi-delta neutral">→ 동일</span>`;
+  const up = diff > 0;
+  return `<span class="kpi-delta ${up ? 'up' : 'down'}">${up ? '▲' : '▼'} ${up ? '+' : ''}${pct}% vs 이전 4주</span>`;
+}
+
+/* ─────────────────────────────────────────
    ① 대시보드
 ───────────────────────────────────────── */
 function renderDashboard() {
-  const green = memberStats.filter(m => m.status === 'green').length;
+  const green  = memberStats.filter(m => m.status === 'green').length;
   const yellow = memberStats.filter(m => m.status === 'yellow').length;
-  const red = memberStats.filter(m => m.status === 'red').length;
-  const total = memberStats.length;
+  const red    = memberStats.filter(m => m.status === 'red').length;
+  const total  = memberStats.length;
 
   const totalReferrals = memberStats.reduce((s, m) => s + m.referrals, 0);
   const totalRefAmount = memberStats.reduce((s, m) => s + m.refAmountReceived, 0);
-  const totalVisitors = memberStats.reduce((s, m) => s + m.visitors, 0);
-  const avgOno = total ? (memberStats.reduce((s, m) => s + m.ono, 0) / total).toFixed(1) : 0;
-  const healthScore = total ? Math.round((green * 100 + yellow * 50) / total) : 0;
+  const totalVisitors  = memberStats.reduce((s, m) => s + m.visitors, 0);
+  const avgOno         = total ? memberStats.reduce((s, m) => s + m.ono, 0) / total : 0;
+  const healthScore    = total ? Math.round((green * 100 + yellow * 50) / total) : 0;
+
+  // 이전 4주 비교
+  const prev = calcPrevPeriodStats();
+  const prevGreen       = prev.filter(m => m.status === 'green').length;
+  const prevYellow      = prev.filter(m => m.status === 'yellow').length;
+  const prevReferrals   = prev.reduce((s, m) => s + m.referrals, 0);
+  const prevRefAmount   = prev.reduce((s, m) => s + m.refAmountReceived, 0);
+  const prevVisitors    = prev.reduce((s, m) => s + m.visitors, 0);
+  const prevAvgOno      = total ? prev.reduce((s, m) => s + m.ono, 0) / total : 0;
+  const prevHealth      = total ? Math.round((prevGreen * 100 + prevYellow * 50) / total) : 0;
 
   // KPI
   document.getElementById('kpiGrid').innerHTML = [
-    { label: '챕터 건강 점수', value: healthScore, unit: '점' },
-    { label: '총 리퍼럴 (4주)', value: totalReferrals, unit: '건' },
-    { label: '리퍼럴 성사금액', value: fmt(totalRefAmount), unit: '원' },
-    { label: '평균 1:1 (4주)', value: avgOno, unit: '회' },
-    { label: '비지터 초대 (4주)', value: totalVisitors, unit: '명' },
+    { label: '챕터 건강 점수', value: healthScore,           unit: '점', curr: healthScore,    prev: prevHealth    },
+    { label: '총 리퍼럴 (4주)', value: totalReferrals,       unit: '건', curr: totalReferrals, prev: prevReferrals },
+    { label: '리퍼럴 성사금액', value: fmt(totalRefAmount),  unit: '원', curr: totalRefAmount, prev: prevRefAmount },
+    { label: '평균 1:1 (4주)',  value: avgOno.toFixed(1),    unit: '회', curr: avgOno,         prev: prevAvgOno    },
+    { label: '비지터 초대 (4주)', value: totalVisitors,      unit: '명', curr: totalVisitors,  prev: prevVisitors  },
   ].map(k => `
     <div class="kpi-card">
       <div class="kpi-label">${k.label}</div>
       <div class="kpi-value">${k.value}<small style="font-size:.7em;font-weight:500"> ${k.unit}</small></div>
+      ${kpiDelta(k.curr, k.prev)}
     </div>`).join('');
 
   // 트래픽 분포
@@ -242,33 +300,44 @@ function renderDashboard() {
     <div class="tl-badge yellow"><div class="tl-count">${yellow}</div><div class="tl-label">🟡 Yellow</div></div>
     <div class="tl-badge red"><div class="tl-count">${red}</div><div class="tl-label">🔴 Red</div></div>`;
 
-  renderChart('chartDist', 'doughnut',
+  // 트래픽라이트 분포 도넛 + 이전 4주 비교 추가
+  const prevRed = prev.filter(m => m.status === 'red').length;
+  renderChartCompare('chartDist',
     ['Green', 'Yellow', 'Red'],
     [green, yellow, red],
-    ['#27AE60', '#F39C12', '#CC0000']
+    [prevGreen, prevYellow, prevRed]
   );
 
-  // 주간 추이 (최근 8주)
-  const weeks = getRecentWeeks(8);
-  const weeklyTotals = weeks.map(w =>
-    weeklyRecords.filter(r => r.week_start === w).reduce((s, r) => s + (r.referrals_given || 0), 0)
-  );
-  renderChart('chartTrend', 'line',
-    weeks.map(w => w.slice(5)),
-    weeklyTotals,
-    ['#CC0000']
-  );
+  // 월별 리퍼럴 성사금액 (최근 6개월)
+  const monthLabels = [], monthAmounts = [], monthCounts = [];
+  for (let i = 5; i >= 0; i--) {
+    const d = new Date();
+    d.setDate(1);
+    d.setMonth(d.getMonth() - i);
+    const y  = d.getFullYear();
+    const mo = d.getMonth();
+    const mStart = new Date(y, mo, 1);
+    const mEnd   = new Date(y, mo + 1, 0);
+    const closed = referralFlows.filter(f =>
+      f.status === 'closed' &&
+      new Date(f.referral_date) >= mStart &&
+      new Date(f.referral_date) <= mEnd
+    );
+    monthLabels.push(`${y}.${String(mo + 1).padStart(2, '0')}`);
+    monthAmounts.push(closed.reduce((s, f) => s + (f.amount || 0), 0));
+    monthCounts.push(closed.length);
+  }
+  renderChartDual('chartTrend', monthLabels, monthAmounts, monthCounts);
 
   // Top/Bottom 5
-  const sorted = [...memberStats].sort((a, b) => b.referrals - a.referrals);
-  renderRankList('rankReferralTop', sorted.slice(0, 5), m => `${m.referrals}건`);
-  renderRankList('rankReferralBottom', sorted.slice(-5).reverse(), m => `${m.referrals}건`);
+  const sorted    = [...memberStats].sort((a, b) => b.referrals - a.referrals);
+  renderRankList('rankReferralTop',    sorted.slice(0, 5),          m => `${m.referrals}건`);
+  renderRankList('rankReferralBottom', sorted.slice(-5).reverse(),  m => `${m.referrals}건`);
 
   const sortedOno = [...memberStats].sort((a, b) => b.ono - a.ono);
-  renderRankList('rankOnoTop', sortedOno.slice(0, 5), m => `${m.ono}회`);
+  renderRankList('rankOnoTop',    sortedOno.slice(0, 5),         m => `${m.ono}회`);
   renderRankList('rankOnoBottom', sortedOno.slice(-5).reverse(), m => `${m.ono}회`);
 
-  // 챕터 배지
   document.getElementById('chapterBadge').textContent = `전체 ${total}명`;
 }
 
@@ -320,6 +389,112 @@ function renderChart(id, type, labels, data, colors) {
         x: { ticks: { font: { size: 10 } } }
       } : {},
     }
+  });
+}
+
+// 도넛 차트 — 현재(외곽) + 이전 4주(내부) 비교 링
+function renderChartCompare(id, labels, curr, prev) {
+  if (typeof Chart === 'undefined') return;
+  const ctx = document.getElementById(id);
+  if (!ctx) return;
+  if (chartInstances[id]) chartInstances[id].destroy();
+  chartInstances[id] = new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+      labels,
+      datasets: [
+        {
+          label: '현재 4주',
+          data: curr,
+          backgroundColor: ['#27AE60', '#F39C12', '#CC0000'],
+          borderWidth: 2, borderColor: '#fff',
+        },
+        {
+          label: '이전 4주',
+          data: prev,
+          backgroundColor: ['#27AE6066', '#F39C1266', '#CC000066'],
+          borderWidth: 1, borderColor: '#fff',
+        },
+      ],
+    },
+    options: {
+      responsive: true, maintainAspectRatio: true,
+      plugins: {
+        legend: { display: true, position: 'bottom', labels: { font: { size: 11 }, padding: 10, boxWidth: 12 } },
+        tooltip: {
+          callbacks: {
+            label: ctx => ` ${ctx.dataset.label}: ${ctx.raw}명`,
+          },
+        },
+      },
+    },
+  });
+}
+
+// 성사금액(막대) + 건수(선) 이중 축 차트
+function renderChartDual(id, labels, amounts, counts) {
+  if (typeof Chart === 'undefined') return;
+  const ctx = document.getElementById(id);
+  if (!ctx) return;
+  if (chartInstances[id]) chartInstances[id].destroy();
+  chartInstances[id] = new Chart(ctx, {
+    data: {
+      labels,
+      datasets: [
+        {
+          type: 'bar',
+          label: '성사금액(원)',
+          data: amounts,
+          backgroundColor: '#CC000033',
+          borderColor: '#CC0000',
+          borderWidth: 1.5,
+          yAxisID: 'yAmt',
+          order: 2,
+        },
+        {
+          type: 'line',
+          label: '성사 건수',
+          data: counts,
+          borderColor: '#1A1A2E',
+          backgroundColor: 'transparent',
+          borderWidth: 2,
+          pointRadius: 4,
+          pointBackgroundColor: '#1A1A2E',
+          tension: 0.35,
+          yAxisID: 'yCnt',
+          order: 1,
+        },
+      ],
+    },
+    options: {
+      responsive: true, maintainAspectRatio: true,
+      plugins: {
+        legend: { display: true, position: 'bottom', labels: { font: { size: 11 }, padding: 10, boxWidth: 12 } },
+        tooltip: {
+          callbacks: {
+            label: ctx => ctx.dataset.yAxisID === 'yAmt'
+              ? ` ${fmt(ctx.raw)}원`
+              : ` ${ctx.raw}건`,
+          },
+        },
+      },
+      scales: {
+        yAmt: {
+          type: 'linear', position: 'left', beginAtZero: true,
+          ticks: {
+            font: { size: 10 },
+            callback: v => v >= 10000 ? (v / 10000) + '만' : v,
+          },
+          grid: { drawOnChartArea: true },
+        },
+        yCnt: {
+          type: 'linear', position: 'right', beginAtZero: true,
+          ticks: { font: { size: 10 }, stepSize: 1 },
+          grid: { drawOnChartArea: false },
+        },
+        x: { ticks: { font: { size: 10 } } },
+      },
+    },
   });
 }
 
