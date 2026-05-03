@@ -294,18 +294,35 @@ function renderDashboard() {
       ${kpiDelta(k.curr, k.prev)}
     </div>`).join('');
 
-  // 트래픽 분포
-  document.getElementById('trafficDist').innerHTML = `
-    <div class="tl-badge green"><div class="tl-count">${green}</div><div class="tl-label">🟢 Green</div></div>
-    <div class="tl-badge yellow"><div class="tl-count">${yellow}</div><div class="tl-label">🟡 Yellow</div></div>
-    <div class="tl-badge red"><div class="tl-count">${red}</div><div class="tl-label">🔴 Red</div></div>`;
-
-  // 트래픽라이트 분포 도넛 + 이전 4주 비교 추가
+  // 트래픽 분포 (이전 4주 숫자 비교)
   const prevRed = prev.filter(m => m.status === 'red').length;
-  renderChartCompare('chartDist',
+  function cmpBadge(curr, p) {
+    const diff = curr - p;
+    if (diff === 0) return `<span class="tl-prev">이전 ${p}명</span>`;
+    const up = diff > 0;
+    return `<span class="tl-prev ${up ? 'tl-prev-up' : 'tl-prev-dn'}">${up ? '▲' : '▼'}${Math.abs(diff)} <em>이전 ${p}명</em></span>`;
+  }
+  document.getElementById('trafficDist').innerHTML = `
+    <div class="tl-badge green">
+      <div class="tl-count">${green}</div>
+      <div class="tl-label">🟢 Green</div>
+      ${cmpBadge(green, prevGreen)}
+    </div>
+    <div class="tl-badge yellow">
+      <div class="tl-count">${yellow}</div>
+      <div class="tl-label">🟡 Yellow</div>
+      ${cmpBadge(yellow, prevYellow)}
+    </div>
+    <div class="tl-badge red">
+      <div class="tl-count">${red}</div>
+      <div class="tl-label">🔴 Red</div>
+      ${cmpBadge(red, prevRed)}
+    </div>`;
+
+  renderChart('chartDist', 'doughnut',
     ['Green', 'Yellow', 'Red'],
     [green, yellow, red],
-    [prevGreen, prevYellow, prevRed]
+    ['#27AE60', '#F39C12', '#CC0000']
   );
 
   // 월별 리퍼럴 성사금액 (최근 6개월)

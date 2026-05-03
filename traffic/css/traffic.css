@@ -109,6 +109,10 @@ input, select, textarea { font-family: inherit; }
 .tl-badge.yellow .tl-count { color: var(--yellow); }
 .tl-badge.red .tl-count { color: var(--red); }
 .tl-label { font-size: .72rem; color: var(--sub); margin-top: 2px; }
+.tl-prev { display: block; font-size: .65rem; font-weight: 700; margin-top: 4px; color: var(--mute); }
+.tl-prev em { font-style: normal; font-weight: 400; }
+.tl-prev-up { color: var(--green); }
+.tl-prev-dn { color: var(--red); }
 
 /* RANK LIST */
 .rank-list { display: flex; flex-direction: column; gap: 8px; }
