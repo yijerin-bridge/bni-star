@@ -173,7 +173,7 @@ const MEMBERS_DEFAULT = [
     specialty: "종합가전렌탈",
     headline: "모든 가전을 책임집니다",
     targetCustomer: "가전 교체, 맞춤형 컨설팅이 필요하신분",
-    description: "",
+    description: "정수기, 비데, 공기청정기 등 일상의 필요한 제품들을 렌탈제공하고 있습니다. \n대부분의 브랜드 다 비교견적 가능하니 편하게 연락주세요:)",
     phone: "010-9616-9294", email: "jsapark76@nate.com", address: "경기도 수원시 권선구 정조로 588, 1층",
     instagram: "", kakao: "", website: "",
     color: "#F39C12", featured: true, photoUrl: "https://ocmnbwlhjovfycihyvnr.supabase.co/storage/v1/object/public/member-photos/member-1775190969972.jpg",
