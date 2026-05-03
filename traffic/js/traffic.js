@@ -126,12 +126,12 @@ function calcMemberStats() {
       ).length;
     });
 
-    // 리퍼럴 성사금액 (준 것 / 받은 것)
+    // 리퍼럴 금액
     const refAmountReceived = referralFlows
-      .filter(f => f.to_member_id === m.id && f.status === 'closed')
+      .filter(f => f.to_member_id === m.id)
       .reduce((s, f) => s + (f.amount || 0), 0);
     const refAmountGiven = referralFlows
-      .filter(f => f.from_member_id === m.id && f.status === 'closed')
+      .filter(f => f.from_member_id === m.id)
       .reduce((s, f) => s + (f.amount || 0), 0);
 
     return {
@@ -231,7 +231,7 @@ function calcPrevPeriodStats() {
       new Date(f.referral_date) < cutoffNew
     ).length;
     const refAmountReceived = referralFlows
-      .filter(f => f.to_member_id === m.id && f.status === 'closed' &&
+      .filter(f => f.to_member_id === m.id &&
         new Date(f.referral_date) >= cutoffOld &&
         new Date(f.referral_date) < cutoffNew)
       .reduce((s, f) => s + (f.amount || 0), 0);
@@ -338,7 +338,6 @@ function renderDashboard() {
     const mStart = new Date(y, mo, 1);
     const mEnd   = new Date(y, mo + 1, 0);
     const closed = referralFlows.filter(f =>
-      f.status === 'closed' &&
       new Date(f.referral_date) >= mStart &&
       new Date(f.referral_date) <= mEnd
     );
@@ -570,11 +569,11 @@ function calcMonthStats(year, month) {
     if (recs.length === 0) status = 'new';
 
     const refAmountReceived = referralFlows
-      .filter(f => f.to_member_id === m.id && f.status === 'closed' &&
+      .filter(f => f.to_member_id === m.id &&
         new Date(f.referral_date) >= monthStart && new Date(f.referral_date) <= monthEnd)
       .reduce((s, f) => s + (f.amount || 0), 0);
     const refAmountGiven = referralFlows
-      .filter(f => f.from_member_id === m.id && f.status === 'closed' &&
+      .filter(f => f.from_member_id === m.id &&
         new Date(f.referral_date) >= monthStart && new Date(f.referral_date) <= monthEnd)
       .reduce((s, f) => s + (f.amount || 0), 0);
 
@@ -674,9 +673,9 @@ async function renderNetwork() {
     to: f.to_member_id,
     width: Math.max(1, Math.round((f.amount || 0) / maxAmount * 5)),
     label: f.amount ? fmt(f.amount) : '',
-    title: `${f.description || ''} (${f.status})`,
+    title: f.description || '',
     arrows: 'to',
-    color: { color: f.status === 'closed' ? '#27AE60' : f.status === 'rejected' ? '#CC0000' : '#AAA' },
+    color: { color: '#CC0000' },
     font: { size: 10, color: '#666' },
   }));
 
@@ -844,7 +843,6 @@ function initForms() {
       referral_type: refTypeVal,
       introduced_name: refTypeVal === 'T2' ? document.getElementById('fIntroduced').value : null,
       amount: parseInt(document.getElementById('fRefAmount').value) || 0,
-      status: document.getElementById('fRefStatus').value,
       description: document.getElementById('fRefDesc').value,
     };
 
@@ -890,7 +888,6 @@ function cancelReferralEdit() {
   document.getElementById('fTo').value = '';
   document.getElementById('fRefDate').value = toLocalDateStr(new Date());
   document.getElementById('fRefAmount').value = '0';
-  document.getElementById('fRefStatus').value = 'pending';
   document.getElementById('fRefDesc').value = '';
   document.getElementById('fIntroduced').value = '';
   setRefType('T1');
@@ -933,7 +930,6 @@ function editReferral(id) {
   document.getElementById('fTo').value         = r.to_member_id;
   document.getElementById('fRefDate').value    = r.referral_date;
   document.getElementById('fRefAmount').value  = r.amount || 0;
-  document.getElementById('fRefStatus').value  = r.status || 'pending';
   document.getElementById('fRefDesc').value    = r.description || '';
   document.getElementById('fIntroduced').value = r.introduced_name || '';
   setRefType(r.referral_type || 'T1');
@@ -1007,12 +1003,11 @@ async function loadRecentReferral() {
     ? recentReferralData.map(r => {
       const from = members.find(m => m.id === r.from_member_id);
       const to   = members.find(m => m.id === r.to_member_id);
-      const statusLabel = r.status === 'closed' ? '✅ 성사' : r.status === 'rejected' ? '❌ 불발' : '⏳ 진행 중';
-      const typeLabel   = r.referral_type === 'T2' ? `T2${r.introduced_name ? ` (${r.introduced_name})` : ''}` : 'T1';
+      const typeLabel = r.referral_type === 'T2' ? `T2${r.introduced_name ? ` (${r.introduced_name})` : ''}` : 'T1';
       return `<div class="recent-item">
           <div class="recent-item-left">
             <div class="recent-item-week">${from?.name || '?'} → ${to?.name || '?'} <span style="font-size:.72rem;color:#999;font-weight:700">${typeLabel}</span></div>
-            <div class="recent-item-detail">${r.referral_date} · ${fmt(r.amount)}원 · ${statusLabel}</div>
+            <div class="recent-item-detail">${r.referral_date} · ${fmt(r.amount)}원</div>
           </div>
           <div class="recent-item-actions">
             <button class="ri-edit-btn" onclick="editReferral('${r.id}')">수정</button>
@@ -1160,9 +1155,8 @@ function generateDirectorInsight(tab) {
       .sort((a, b) => b.cnt - a.cnt).slice(0, 3).filter(m => m.cnt > 0);
 
     const t2Count    = referralFlows.filter(f => f.referral_type === 'T2').length;
-    const closed     = referralFlows.filter(f => f.status === 'closed').length;
     const totalFlows = referralFlows.length;
-    const closedRate = totalFlows ? Math.round(closed / totalFlows * 100) : 0;
+    const totalAmt   = referralFlows.reduce((s, f) => s + (f.amount || 0), 0);
 
     if (hubs.length > 0)
       points.push({ type: 'positive', text: `네트워크 허브 멤버: ${hubs.map(m => m.name).join(', ')} — 이 멤버들이 챕터 리퍼럴 흐름의 중심 역할을 합니다.` });
@@ -1171,13 +1165,10 @@ function generateDirectorInsight(tab) {
       points.push({ type: 'critical', text: `리퍼럴 고립 멤버 ${isolated.length}명: ${isolated.slice(0, 5).map(m => m.name).join(', ')}${isolated.length > 5 ? ' 외' : ''} — 1:1 미팅 주선 등 연결 지원이 필요합니다.` });
 
     if (t2Count > 0)
-      points.push({ type: 'positive', text: `T2(소개) 리퍼럴 ${t2Count}건 발생 — 간접 네트워크가 활성화되고 있습니다.` });
+      points.push({ type: 'positive', text: `T2(소개) 리퍼럴 ${t2Count}건 — 간접 네트워크가 활성화되고 있습니다.` });
 
-    if (totalFlows > 0)
-      points.push({
-        type: closedRate >= 50 ? 'positive' : 'warning',
-        text: `리퍼럴 성사율 ${closedRate}% (전체 ${totalFlows}건 중 ${closed}건 성사) — ${closedRate < 50 ? '진행 중 건들의 팔로업을 독려하세요.' : '양호한 성사율을 유지하고 있습니다.'}`
-      });
+    if (totalFlows > 0 && totalAmt > 0)
+      points.push({ type: 'positive', text: `총 리퍼럴 ${totalFlows}건 · 누적 금액 ${fmt(totalAmt)}원` });
 
     return points;
   }
@@ -1237,15 +1228,10 @@ function generateDirectorInsight(tab) {
     const missingLast = memberStats.filter(m =>
       !weeklyRecords.some(r => r.member_id === m.id && r.week_start === lastWeek)
     ).length;
-    const pending = referralFlows.filter(f => f.status === 'pending').length;
-
     if (missingLast > 0)
       points.push({ type: 'warning', text: `지난 주(${lastWeek}) 활동 미입력 멤버 ${missingLast}명 — 정확한 트래픽라이트 판정을 위해 빠른 입력이 필요합니다.` });
     else
       points.push({ type: 'positive', text: `지난 주 모든 멤버의 데이터가 입력되어 있습니다. 데이터 관리가 잘 이루어지고 있습니다.` });
-
-    if (pending > 0)
-      points.push({ type: 'warning', text: `리퍼럴 진행 중 ${pending}건 — 결과(성사/불발)를 업데이트하면 성사금액 통계가 더 정확해집니다.` });
 
     return points;
   }
