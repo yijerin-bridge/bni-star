@@ -191,7 +191,7 @@ const MEMBERS_DEFAULT = [
     testimonials: [{"metric":"골프 해외투어 8명, 현지 만족도 최고","quote":"처음으로 해외 골프 투어를 기획했는데 라운딩 예약부터 숙소까지 완벽하게 준비해줬어요. 다음엔 인원 더 늘려서 또 가기로 했습니다.","author":"김○○ 대표님 · 건설업"}]
   },
   {
-    id: 24, name: "황성호", company: "인투이피앤티", category: "제조/유통",
+    id: 24, name: "황성호", company: "인투이피앤티 주식회사", category: "제조/유통",
     specialty: "친환경패키지",
     headline: "포장재, 박스가 필요하시다면",
     targetCustomer: "B2C 제품 패키지가 필요하신분",
