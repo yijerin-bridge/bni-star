@@ -255,6 +255,17 @@ const MEMBERS_DEFAULT = [
     instagram: "", kakao: "https://open.kakao.com/o/sPaoFuqi", website: "",
     color: "#1D8348", featured: true, photoUrl: "",
     testimonials: []
+  },
+  {
+    id: 30, name: "김상현", company: "리셋헤어&케이뷰티아카데미", category: "뷰티/패션",
+    specialty: "미용실/미용교육",
+    headline: "26년 경력의 헤어 전문가입니다.",
+    targetCustomer: "헤어 스타일링 필요하신분, 전문적으로 미용을 배우고 싶으신분",
+    description: "국제사이버대학교에서 K-뷰티아트학과 특임교수를 했고 총 경력 26년의 미용 전문가입니다. \n리셋헤어 미용실과 케이뷰티아카데미를 같이 운영하고 있습니다.",
+    phone: "010-5678-6000", email: "kimcf26@hanmail.net", address: "경기도 수원시 권선구 권광로 81, 2층",
+    instagram: "", kakao: "", website: "www.kacademy.co.kr",
+    color: "#8E44AD", featured: true, photoUrl: "https://ocmnbwlhjovfycihyvnr.supabase.co/storage/v1/object/public/member-photos/member-1777818100277.jpg",
+    testimonials: []
   }
 ];
 
