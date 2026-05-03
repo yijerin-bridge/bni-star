@@ -208,8 +208,11 @@
               <input type="date" id="fRefDate" class="form-input">
             </div>
             <div class="form-row">
-              <label class="form-label">레퍼럴 성사금액 (원)</label>
-              <input type="number" id="fRefAmount" class="form-input" min="0" value="0" step="10000">
+              <label class="form-label">레퍼럴 유형</label>
+              <div class="toggle-wrap">
+                <button class="toggle-btn active" id="toggleT1" onclick="setRefType('T1')">T1 직접소비</button>
+                <button class="toggle-btn" id="toggleT2" onclick="setRefType('T2')">T2 소개</button>
+              </div>
             </div>
             <div class="form-row">
               <label class="form-label">상태</label>
@@ -219,6 +222,14 @@
                 <option value="rejected">불발</option>
               </select>
             </div>
+            <div class="form-row">
+              <label class="form-label">레퍼럴 성사금액 (원)</label>
+              <input type="number" id="fRefAmount" class="form-input" min="0" value="0" step="10000">
+            </div>
+          </div>
+          <div class="form-row" id="rowIntroduced" style="display:none">
+            <label class="form-label">소개받은 사람 이름 (T2)</label>
+            <input type="text" id="fIntroduced" class="form-input" placeholder="소개받은 분 성함">
           </div>
           <div class="form-row">
             <label class="form-label">내용</label>

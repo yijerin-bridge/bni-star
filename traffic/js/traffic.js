@@ -627,6 +627,8 @@ function initForms() {
       from_member_id: from,
       to_member_id: to,
       referral_date: date,
+      referral_type: refTypeVal,
+      introduced_name: refTypeVal === 'T2' ? document.getElementById('fIntroduced').value : null,
       amount: parseInt(document.getElementById('fRefAmount').value) || 0,
       status: document.getElementById('fRefStatus').value,
       description: document.getElementById('fRefDesc').value,
@@ -654,6 +656,15 @@ function setEdu(val) {
   eduVal = val;
   document.getElementById('toggleEduY').classList.toggle('active', val);
   document.getElementById('toggleEduN').classList.toggle('active', !val);
+}
+
+let refTypeVal = 'T1';
+function setRefType(val) {
+  refTypeVal = val;
+  document.getElementById('toggleT1').classList.toggle('active', val === 'T1');
+  document.getElementById('toggleT2').classList.toggle('active', val === 'T2');
+  document.getElementById('rowIntroduced').style.display = val === 'T2' ? 'block' : 'none';
+  if (val === 'T1') document.getElementById('fIntroduced').value = '';
 }
 
 function showMsg(id, msg, type) {
@@ -689,9 +700,10 @@ async function loadRecentReferral() {
       const from = members.find(m => m.id === r.from_member_id);
       const to = members.find(m => m.id === r.to_member_id);
       const statusLabel = r.status === 'closed' ? '✅ 성사' : r.status === 'rejected' ? '❌ 불발' : '⏳ 진행 중';
+      const typeLabel = r.referral_type === 'T2' ? `T2${r.introduced_name ? ` (${r.introduced_name})` : ''}` : 'T1';
       return `<div class="recent-item">
           <div class="recent-item-left">
-            <div class="recent-item-week">${from?.name || '?'} → ${to?.name || '?'}</div>
+            <div class="recent-item-week">${from?.name || '?'} → ${to?.name || '?'} <span style="font-size:.72rem;color:#999;font-weight:700">${typeLabel}</span></div>
             <div class="recent-item-detail">${r.referral_date} · ${fmt(r.amount)}원 · ${statusLabel}</div>
           </div>
         </div>`;
