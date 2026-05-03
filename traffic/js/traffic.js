@@ -356,14 +356,7 @@ function renderDashboard() {
       return d >= wStart && d < wEnd;
     }).length;
   });
-  const weeklyClosedAmts = weeks8.map(w => {
-    const wStart = new Date(w + 'T00:00:00');
-    const wEnd   = new Date(w + 'T00:00:00'); wEnd.setDate(wEnd.getDate() + 7);
-    return referralFlows
-      .filter(f => f.status === 'closed' && new Date(f.referral_date) >= wStart && new Date(f.referral_date) < wEnd)
-      .reduce((s, f) => s + (f.amount || 0), 0);
-  });
-  renderChartDual('chartWeeklyTrend', weeks8.map(w => w.slice(5)), weeklyClosedAmts, weeklyRefCounts);
+  renderChart('chartWeeklyTrend', 'bar', weeks8.map(w => w.slice(5)), weeklyRefCounts, ['#CC0000']);
 
   // Top/Bottom 5
   const sorted    = [...memberStats].sort((a, b) => b.referrals - a.referrals);
