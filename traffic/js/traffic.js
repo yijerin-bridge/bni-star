@@ -4,8 +4,8 @@
 
 const TRAFFIC_PW = 'dlwofls1!';  // 비밀번호 여기서 변경
 
-// Supabase (supabase-config.js에서 SUPABASE_URL, SUPABASE_ANON 로드됨)
-const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+// Supabase
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
 
 // 트래픽라이트 판정 기준 (최근 4주 기준)
 const CRITERIA = {
@@ -137,8 +137,14 @@ function initTabs() {
    데이터 로드
 ───────────────────────────────────────── */
 async function loadData() {
-  // 회원 데이터 (members-data.js)
-  members = (typeof MEMBERS_DEFAULT !== 'undefined') ? MEMBERS_DEFAULT : [];
+  // 회원 데이터: /api/members 에서 fetch
+  try {
+    const res = await fetch('/api/members');
+    const json = await res.json();
+    members = json.members || [];
+  } catch {
+    members = (typeof MEMBERS_DEFAULT !== 'undefined') ? MEMBERS_DEFAULT : [];
+  }
 
   // Supabase에서 활동 데이터 로드 (테이블 없어도 페이지 표시)
   try {
