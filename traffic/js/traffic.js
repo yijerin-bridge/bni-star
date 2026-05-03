@@ -276,6 +276,7 @@ function renderRankList(id, list, valFn) {
 }
 
 function renderChart(id, type, labels, data, colors) {
+  if (typeof Chart === 'undefined') return;
   const ctx = document.getElementById(id);
   if (!ctx) return;
   if (chartInstances[id]) chartInstances[id].destroy();
@@ -347,9 +348,29 @@ function renderMembers(filter = '', lightFilter = '') {
 /* ─────────────────────────────────────────
    ③ 레퍼럴 네트워크
 ───────────────────────────────────────── */
-function renderNetwork() {
+function loadScript(src) {
+  return new Promise((resolve, reject) => {
+    if (document.querySelector(`script[src="${src}"]`)) { resolve(); return; }
+    const s = document.createElement('script');
+    s.src = src; s.onload = resolve; s.onerror = reject;
+    document.head.appendChild(s);
+  });
+}
+
+async function renderNetwork() {
   const container = document.getElementById('networkContainer');
   if (!container) return;
+
+  if (!window.vis) {
+    container.innerHTML = '<div style="text-align:center;padding:40px;color:#999">로딩 중...</div>';
+    try {
+      await loadScript('https://cdn.jsdelivr.net/npm/vis-network@9.1.9/dist/vis-network.min.js');
+    } catch {
+      container.innerHTML = '<div style="text-align:center;padding:40px;color:#CC0000">vis-network 로드 실패. 새로고침 해주세요.</div>';
+      return;
+    }
+  }
+  container.innerHTML = '';
 
   // 멤버별 레퍼럴 송수신 집계
   const degreeMap = {};
