@@ -98,7 +98,7 @@ function calcMemberStats() {
     const education = recs.filter(r => r.education).length;
     const visitors = recs.reduce((s, r) => s + (r.visitors_invited || 0), 0);
 
-    // 레퍼럴 건수: 레퍼럴 흐름 테이블에서 집계
+    // 리퍼럴 건수: 리퍼럴 흐름 테이블에서 집계
     const referrals = referralFlows.filter(f =>
       f.from_member_id === m.id && new Date(f.referral_date) >= cutoff
     ).length;
@@ -113,7 +113,7 @@ function calcMemberStats() {
     if (failCount >= 2) status = 'red';
     if (recs.length === 0) status = 'new';
 
-    // 추세: 최근 8주 주별 레퍼럴 건수
+    // 추세: 최근 8주 주별 리퍼럴 건수
     const allWeeks = getRecentWeeks(8);
     const trend = allWeeks.map(w => {
       const wDate = new Date(w);
@@ -125,7 +125,7 @@ function calcMemberStats() {
       ).length;
     });
 
-    // 레퍼럴 성사금액 (준 것 / 받은 것)
+    // 리퍼럴 성사금액 (준 것 / 받은 것)
     const refAmountReceived = referralFlows
       .filter(f => f.to_member_id === m.id && f.status === 'closed')
       .reduce((s, f) => s + (f.amount || 0), 0);
@@ -159,6 +159,7 @@ function initTabs() {
       btn.classList.add('active');
       document.getElementById('panel-' + btn.dataset.tab).classList.add('active');
       if (btn.dataset.tab === 'network') renderNetwork();
+      renderAIDirector(btn.dataset.tab);
     });
   });
 
@@ -225,8 +226,8 @@ function renderDashboard() {
   // KPI
   document.getElementById('kpiGrid').innerHTML = [
     { label: '챕터 건강 점수', value: healthScore, unit: '점' },
-    { label: '총 레퍼럴 (4주)', value: totalReferrals, unit: '건' },
-    { label: '레퍼럴 성사금액', value: fmt(totalRefAmount), unit: '원' },
+    { label: '총 리퍼럴 (4주)', value: totalReferrals, unit: '건' },
+    { label: '리퍼럴 성사금액', value: fmt(totalRefAmount), unit: '원' },
     { label: '평균 1:1 (4주)', value: avgOno, unit: '회' },
     { label: '비지터 초대 (4주)', value: totalVisitors, unit: '명' },
   ].map(k => `
@@ -399,14 +400,14 @@ function renderMembers(filter = '', lightFilter = '') {
       <div class="mc-stats">
         <div class="mc-stat"><div class="mc-stat-val">${m.attendance}/${m.totalMeetings}</div><div class="mc-stat-label">출석</div></div>
         <div class="mc-stat"><div class="mc-stat-val">${m.ono}</div><div class="mc-stat-label">1:1</div></div>
-        <div class="mc-stat"><div class="mc-stat-val">${m.referrals}</div><div class="mc-stat-label">레퍼럴</div></div>
+        <div class="mc-stat"><div class="mc-stat-val">${m.referrals}</div><div class="mc-stat-label">리퍼럴</div></div>
         <div class="mc-stat"><div class="mc-stat-val">${m.visitors}</div><div class="mc-stat-label">비지터</div></div>
         <div class="mc-stat"><div class="mc-stat-val">${fmt(m.refAmountReceived)}</div><div class="mc-stat-label">성사금액</div></div>
       </div>
       <div class="mc-criteria">
         <span class="mc-crit ${m.critAttend ? 'ok' : 'fail'}">${m.critAttend ? '✓' : '✗'} 출석</span>
         <span class="mc-crit ${m.critOno ? 'ok' : 'fail'}">${m.critOno ? '✓' : '✗'} 1:1</span>
-        <span class="mc-crit ${m.critReferral ? 'ok' : 'fail'}">${m.critReferral ? '✓' : '✗'} 레퍼럴</span>
+        <span class="mc-crit ${m.critReferral ? 'ok' : 'fail'}">${m.critReferral ? '✓' : '✗'} 리퍼럴</span>
         <span style="flex:1"></span>
         <span style="font-size:.72rem;color:#999">준 금액 ${fmt(m.refAmountGiven)}원</span>
       </div>
@@ -414,7 +415,7 @@ function renderMembers(filter = '', lightFilter = '') {
 }
 
 /* ─────────────────────────────────────────
-   ③ 레퍼럴 네트워크
+   ③ 리퍼럴 네트워크
 ───────────────────────────────────────── */
 function loadScript(src) {
   return new Promise((resolve, reject) => {
@@ -440,7 +441,7 @@ async function renderNetwork() {
   }
   container.innerHTML = '';
 
-  // 멤버별 레퍼럴 송수신 집계
+  // 멤버별 리퍼럴 송수신 집계
   const degreeMap = {};
   members.forEach(m => { degreeMap[m.id] = { out: 0, in: 0 }; });
   referralFlows.forEach(f => {
@@ -455,7 +456,7 @@ async function renderNetwork() {
     return {
       id: m.id,
       label: m.name,
-      title: `${m.name}\n${m.category}\n레퍼럴 준: ${degreeMap[m.id]?.out || 0} / 받은: ${degreeMap[m.id]?.in || 0}`,
+      title: `${m.name}\n${m.category}\n리퍼럴 준: ${degreeMap[m.id]?.out || 0} / 받은: ${degreeMap[m.id]?.in || 0}`,
       size: Math.max(12, 12 + deg * 4),
       color: { background: color, border: color, highlight: { background: color, border: '#333' } },
       font: { size: 13, color: '#1E1E1E' },
@@ -506,7 +507,7 @@ function renderPortfolio() {
   const table = document.getElementById('catTable');
   table.innerHTML = `
     <thead><tr>
-      <th>직군</th><th>인원</th><th>레퍼럴</th>
+      <th>직군</th><th>인원</th><th>리퍼럴</th>
       <th><span class="tl-dot green"></span>Green</th>
       <th><span class="tl-dot yellow"></span>Yellow</th>
       <th><span class="tl-dot red"></span>Red</th>
@@ -540,7 +541,7 @@ function renderAlerts() {
     if (consecutiveAbsent) reasons.push('2주 연속 결석');
 
     if (m.ono === 0) reasons.push('1:1 0회 (4주)');
-    if (m.referrals === 0) reasons.push('레퍼럴 0건 (4주)');
+    if (m.referrals === 0) reasons.push('리퍼럴 0건 (4주)');
 
     // Yellow인데 3주 연속 악화 감지
     if (m.status === 'yellow') {
@@ -550,7 +551,7 @@ function renderAlerts() {
         return r ? (r.referrals_given || 0) : 0;
       });
       if (trend3[0] >= trend3[1] && trend3[1] >= trend3[2] && trend3[2] === 0) {
-        reasons.push('레퍼럴 3주 연속 하락');
+        reasons.push('리퍼럴 3주 연속 하락');
       }
     }
 
@@ -615,7 +616,7 @@ function initForms() {
     loadRecentWeekly();
   });
 
-  // 레퍼럴 흐름 저장
+  // 리퍼럴 흐름 저장
   document.getElementById('submitReferral').addEventListener('click', async () => {
     const from = parseInt(document.getElementById('fFrom').value);
     const to = parseInt(document.getElementById('fTo').value);
@@ -708,7 +709,7 @@ async function loadRecentReferral() {
           </div>
         </div>`;
     }).join('')
-    : '<div class="empty-msg">레퍼럴 내역 없음</div>';
+    : '<div class="empty-msg">리퍼럴 내역 없음</div>';
 }
 
 /* ─────────────────────────────────────────
@@ -734,6 +735,7 @@ function initFilters() {
       document.getElementById('memberSearch').value,
       document.getElementById('lightFilter').value
     );
+    renderAIDirector('members');
   });
   document.getElementById('monthNext').addEventListener('click', () => {
     const now = new Date();
@@ -745,6 +747,7 @@ function initFilters() {
       document.getElementById('memberSearch').value,
       document.getElementById('lightFilter').value
     );
+    renderAIDirector('members');
   });
 
   // 검색/필터
@@ -761,6 +764,209 @@ function initFilters() {
 }
 
 /* ─────────────────────────────────────────
+   AI 챕터 디렉터
+───────────────────────────────────────── */
+function generateDirectorInsight(tab) {
+  const total = memberStats.length;
+  if (total === 0) return null;
+
+  const green  = memberStats.filter(m => m.status === 'green').length;
+  const yellow = memberStats.filter(m => m.status === 'yellow').length;
+  const red    = memberStats.filter(m => m.status === 'red').length;
+  const newM   = memberStats.filter(m => m.status === 'new').length;
+  const healthScore = Math.round((green * 100 + yellow * 50) / total);
+
+  if (tab === 'dashboard') {
+    const points = [];
+    const greenPct = Math.round(green / total * 100);
+    const redPct   = Math.round(red   / total * 100);
+
+    if (healthScore >= 80)
+      points.push({ type: 'positive', text: `챕터 건강 점수 ${healthScore}점 — Green 멤버 ${green}명(${greenPct}%)이 활발히 활동 중입니다.` });
+    else if (healthScore >= 60)
+      points.push({ type: 'warning',  text: `챕터 건강 점수 ${healthScore}점 — Yellow/Red 멤버 개별 면담을 통한 개선이 필요합니다.` });
+    else
+      points.push({ type: 'critical', text: `챕터 건강 점수 ${healthScore}점으로 위험 수준입니다. 멤버십위원회의 즉각적인 개입이 필요합니다.` });
+
+    if (red > 0)
+      points.push({ type: 'action', text: `🔴 Red 멤버 ${red}명(${redPct}%) — 멤버십위원회 1:1 면담을 즉시 진행하세요.` });
+
+    if (newM > 0)
+      points.push({ type: 'warning', text: `⚪ 데이터 미입력 멤버 ${newM}명 — 빠른 활동 입력으로 정확한 현황 파악에 협조해 주세요.` });
+
+    const totalRefs = memberStats.reduce((s, m) => s + m.referrals, 0);
+    const avgRefs   = (totalRefs / total).toFixed(1);
+    if (parseFloat(avgRefs) < 1)
+      points.push({ type: 'action', text: `4주 평균 리퍼럴 멤버당 ${avgRefs}건 — 목표(1건) 미달입니다. 다음 미팅에서 리퍼럴 동기부여 세션을 권장합니다.` });
+
+    const topRef = [...memberStats].sort((a, b) => b.referrals - a.referrals)[0];
+    if (topRef && topRef.referrals > 0)
+      points.push({ type: 'positive', text: `이번 기간 리퍼럴 MVP: ${topRef.name}님(${topRef.referrals}건) — 미팅에서 공개 인정을 통해 챕터 문화를 강화하세요.` });
+
+    return points;
+  }
+
+  if (tab === 'members') {
+    const stats = calcMonthStats(selectedMonth.year, selectedMonth.month);
+    const mGreen = stats.filter(m => m.status === 'green').length;
+    const mYellow= stats.filter(m => m.status === 'yellow').length;
+    const mRed   = stats.filter(m => m.status === 'red').length;
+    const failAttend = stats.filter(m => !m.critAttend && m.recs.length > 0).length;
+    const failOno    = stats.filter(m => !m.critOno   && m.recs.length > 0).length;
+    const failRef    = stats.filter(m => !m.critReferral && m.recs.length > 0).length;
+    const points = [];
+
+    const ym = `${selectedMonth.year}년 ${selectedMonth.month + 1}월`;
+    points.push({
+      type: mRed > total * 0.2 ? 'critical' : mYellow > total * 0.3 ? 'warning' : 'positive',
+      text: `${ym} 성과 현황 — 🟢 Green ${mGreen}명 · 🟡 Yellow ${mYellow}명 · 🔴 Red ${mRed}명`
+    });
+
+    const failItems = [
+      { label: '출석 미달', count: failAttend },
+      { label: '1:1 부족',  count: failOno    },
+      { label: '리퍼럴 미달', count: failRef  },
+    ].sort((a, b) => b.count - a.count);
+    if (failItems[0].count > 0)
+      points.push({ type: 'action', text: `가장 많은 멤버가 부진한 항목: "${failItems[0].label}" (${failItems[0].count}명) — 해당 항목 중심의 교육 및 지원 방안을 검토하세요.` });
+
+    const redNames = stats.filter(m => m.status === 'red').map(m => m.name);
+    if (redNames.length > 0 && redNames.length <= 6)
+      points.push({ type: 'critical', text: `즉시 면담 권장: ${redNames.join(', ')}` });
+    else if (redNames.length > 6)
+      points.push({ type: 'critical', text: `🔴 Red 멤버 ${redNames.length}명 — 멤버십위원회 집중 관리 대상입니다.` });
+
+    return points;
+  }
+
+  if (tab === 'network') {
+    const points = [];
+    const isolated = members.filter(m =>
+      referralFlows.filter(f => f.from_member_id === m.id || f.to_member_id === m.id).length === 0
+    );
+    const hubs = members
+      .map(m => ({ ...m, cnt: referralFlows.filter(f => f.from_member_id === m.id || f.to_member_id === m.id).length }))
+      .sort((a, b) => b.cnt - a.cnt).slice(0, 3).filter(m => m.cnt > 0);
+
+    const t2Count    = referralFlows.filter(f => f.referral_type === 'T2').length;
+    const closed     = referralFlows.filter(f => f.status === 'closed').length;
+    const totalFlows = referralFlows.length;
+    const closedRate = totalFlows ? Math.round(closed / totalFlows * 100) : 0;
+
+    if (hubs.length > 0)
+      points.push({ type: 'positive', text: `네트워크 허브 멤버: ${hubs.map(m => m.name).join(', ')} — 이 멤버들이 챕터 리퍼럴 흐름의 중심 역할을 합니다.` });
+
+    if (isolated.length > 0)
+      points.push({ type: 'critical', text: `리퍼럴 고립 멤버 ${isolated.length}명: ${isolated.slice(0, 5).map(m => m.name).join(', ')}${isolated.length > 5 ? ' 외' : ''} — 1:1 미팅 주선 등 연결 지원이 필요합니다.` });
+
+    if (t2Count > 0)
+      points.push({ type: 'positive', text: `T2(소개) 리퍼럴 ${t2Count}건 발생 — 간접 네트워크가 활성화되고 있습니다.` });
+
+    if (totalFlows > 0)
+      points.push({
+        type: closedRate >= 50 ? 'positive' : 'warning',
+        text: `리퍼럴 성사율 ${closedRate}% (전체 ${totalFlows}건 중 ${closed}건 성사) — ${closedRate < 50 ? '진행 중 건들의 팔로업을 독려하세요.' : '양호한 성사율을 유지하고 있습니다.'}`
+      });
+
+    return points;
+  }
+
+  if (tab === 'portfolio') {
+    const points = [];
+    const cats = {};
+    memberStats.forEach(m => {
+      if (!cats[m.category]) cats[m.category] = { count: 0, referrals: 0, red: 0 };
+      cats[m.category].count++;
+      cats[m.category].referrals += m.referrals;
+      if (m.status === 'red') cats[m.category].red++;
+    });
+    const catList = Object.entries(cats).sort((a, b) => b[1].referrals - a[1].referrals);
+    const topCat  = catList[0];
+    const zeroCats = catList.filter(([, v]) => v.referrals === 0).map(([c]) => c);
+    const weakCats = catList.filter(([, v]) => v.count > 0 && v.red / v.count >= 0.5).map(([c]) => c);
+    const singles  = catList.filter(([, v]) => v.count === 1).map(([c]) => c);
+
+    if (topCat)
+      points.push({ type: 'positive', text: `리퍼럴 가장 활발한 직군: ${topCat[0]} (${topCat[1].referrals}건) — 타 직군의 롤모델로 미팅에서 소개해 주세요.` });
+
+    if (zeroCats.length > 0)
+      points.push({ type: 'warning', text: `리퍼럴 0건 직군: ${zeroCats.slice(0, 4).join(', ')} — 해당 직군의 리퍼럴 장벽을 파악하고 교육 기회를 제공하세요.` });
+
+    if (weakCats.length > 0)
+      points.push({ type: 'critical', text: `Red 멤버 비율 50% 이상 직군: ${weakCats.join(', ')} — 집중 관리가 필요합니다.` });
+
+    if (singles.length > 0)
+      points.push({ type: 'warning', text: `단독 직군(1명) ${singles.length}개: ${singles.slice(0, 4).join(', ')} — 해당 직군 내 상호 리퍼럴 파트너 발굴을 지원하세요.` });
+
+    return points;
+  }
+
+  if (tab === 'alerts') {
+    const points = [];
+    const critical = memberStats.filter(m => m.status === 'red').length;
+
+    if (critical === 0) {
+      points.push({ type: 'positive', text: '즉시 개입이 필요한 멤버가 없습니다. 챕터가 안정적으로 운영되고 있습니다. 현재 상태 유지를 위한 긍정적 피드백을 멤버들에게 전달하세요.' });
+    } else {
+      points.push({ type: 'critical', text: `🔴 Red 멤버 ${critical}명 — 멤버십위원회 1:1 면담을 통해 활동 저조 원인(업무 과부하, 챕터 불만, 비즈니스 변화 등)을 파악하고 맞춤 지원 계획을 수립하세요.` });
+      if (critical >= 3)
+        points.push({ type: 'action', text: `다음 멤버십위원회 미팅 아젠다에 Red 멤버 ${critical}명 관리 계획 항목을 반드시 포함시키세요.` });
+    }
+
+    const noData = memberStats.filter(m => m.recs.length === 0);
+    if (noData.length > 0)
+      points.push({ type: 'warning', text: `활동 데이터 미입력 멤버 ${noData.length}명: ${noData.slice(0, 4).map(m => m.name).join(', ')}${noData.length > 4 ? ' 외' : ''} — 데이터 없이는 정확한 트래픽라이트 판정이 불가합니다.` });
+
+    return points;
+  }
+
+  if (tab === 'input') {
+    const points = [];
+    const lastWeek    = getRecentWeeks(1)[0];
+    const missingLast = memberStats.filter(m =>
+      !weeklyRecords.some(r => r.member_id === m.id && r.week_start === lastWeek)
+    ).length;
+    const pending = referralFlows.filter(f => f.status === 'pending').length;
+
+    if (missingLast > 0)
+      points.push({ type: 'warning', text: `지난 주(${lastWeek}) 활동 미입력 멤버 ${missingLast}명 — 정확한 트래픽라이트 판정을 위해 빠른 입력이 필요합니다.` });
+    else
+      points.push({ type: 'positive', text: `지난 주 모든 멤버의 데이터가 입력되어 있습니다. 데이터 관리가 잘 이루어지고 있습니다.` });
+
+    if (pending > 0)
+      points.push({ type: 'warning', text: `리퍼럴 진행 중 ${pending}건 — 결과(성사/불발)를 업데이트하면 성사금액 통계가 더 정확해집니다.` });
+
+    return points;
+  }
+
+  return null;
+}
+
+function renderAIDirector(tab) {
+  const el = document.getElementById('ai-director-' + tab);
+  if (!el) return;
+  if (memberStats.length === 0) { el.style.display = 'none'; return; }
+
+  const points = generateDirectorInsight(tab);
+  if (!points || points.length === 0) { el.style.display = 'none'; return; }
+
+  el.style.display = 'block';
+  el.innerHTML = `
+    <div class="aidc-header">
+      <span class="aidc-icon">🤖</span>
+      <span class="aidc-title">AI 챕터 디렉터</span>
+      <span class="aidc-sub">의장단 · 멤버십위원회 참고용</span>
+    </div>
+    <ul class="aidc-list">
+      ${points.map(p => `<li class="aidc-item ${p.type}">${p.text}</li>`).join('')}
+    </ul>`;
+}
+
+function renderAllAIDirectors() {
+  ['dashboard', 'members', 'network', 'portfolio', 'alerts', 'input'].forEach(renderAIDirector);
+}
+
+/* ─────────────────────────────────────────
    전체 렌더
 ───────────────────────────────────────── */
 function renderAll() {
@@ -768,6 +974,7 @@ function renderAll() {
   renderMembers();
   renderPortfolio();
   renderAlerts();
+  renderAllAIDirectors();
 }
 
 /* ─────────────────────────────────────────

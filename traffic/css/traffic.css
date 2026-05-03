@@ -236,3 +236,31 @@ textarea.form-input { resize: vertical; min-height: 64px; }
 .recent-item-detail { color: var(--sub); margin-top: 2px; }
 .recent-item-tl { font-size: .72rem; font-weight: 700; }
 .empty-msg { text-align: center; color: var(--mute); font-size: .85rem; padding: 24px; }
+
+/* AI 챕터 디렉터 */
+.ai-director-card {
+  background: linear-gradient(135deg, #0F0F1F 0%, #1A1A2E 100%);
+  border-radius: var(--r); padding: 16px 18px; margin-bottom: 16px;
+  border: 1px solid rgba(204,0,0,.3);
+  box-shadow: 0 4px 20px rgba(204,0,0,.12);
+}
+.aidc-header {
+  display: flex; align-items: center; gap: 8px; margin-bottom: 12px;
+}
+.aidc-icon { font-size: 1.2rem; }
+.aidc-title { font-size: .95rem; font-weight: 900; color: #FF6B6B; letter-spacing: -.02em; }
+.aidc-sub {
+  margin-left: auto; font-size: .7rem; font-weight: 600;
+  color: rgba(255,255,255,.35); background: rgba(255,255,255,.07);
+  padding: 2px 8px; border-radius: 20px; white-space: nowrap;
+}
+.aidc-list { list-style: none; display: flex; flex-direction: column; gap: 7px; }
+.aidc-item {
+  font-size: .84rem; line-height: 1.55; padding: 9px 12px;
+  border-radius: 8px; border-left: 3px solid transparent;
+  color: rgba(255,255,255,.88);
+}
+.aidc-item.positive { background: rgba(39,174,96,.12); border-left-color: #27AE60; }
+.aidc-item.warning  { background: rgba(243,156,18,.12); border-left-color: #F39C12; }
+.aidc-item.critical { background: rgba(204,0,0,.15);    border-left-color: #CC0000; }
+.aidc-item.action   { background: rgba(52,152,219,.12); border-left-color: #3498DB; }
