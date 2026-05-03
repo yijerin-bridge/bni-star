@@ -4,8 +4,15 @@
 
 const TRAFFIC_PW = 'dlwofls1!';  // 비밀번호 여기서 변경
 
-// Supabase
-const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+// Supabase — 지연 초기화 (CDN 로딩 타이밍 이슈 방지)
+let _sb = null;
+function getSb() {
+  if (!_sb) {
+    if (!window.supabase) throw new Error('Supabase CDN 미로드');
+    _sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+  }
+  return _sb;
+}
 
 // 트래픽라이트 판정 기준 (최근 4주 기준)
 const CRITERIA = {
@@ -149,8 +156,8 @@ async function loadData() {
   // Supabase에서 활동 데이터 로드 (테이블 없어도 페이지 표시)
   try {
     const [{ data: wr, error: e1 }, { data: rf, error: e2 }] = await Promise.all([
-      sb.from('traffic_weekly_records').select('*').order('week_start', { ascending: false }),
-      sb.from('traffic_referral_flows').select('*').order('referral_date', { ascending: false }),
+      getSb().from('traffic_weekly_records').select('*').order('week_start', { ascending: false }),
+      getSb().from('traffic_referral_flows').select('*').order('referral_date', { ascending: false }),
     ]);
     if (e1 || e2) {
       console.warn('Supabase 테이블 미생성 — Supabase SQL Editor에서 supabase-schema.sql을 실행하세요');
@@ -512,7 +519,7 @@ function initForms() {
       notes: document.getElementById('fNotes').value,
     };
 
-    const { error } = await sb.from('traffic_weekly_records')
+    const { error } = await getSb().from('traffic_weekly_records')
       .upsert(payload, { onConflict: 'member_id,week_start' });
 
     if (error) return showMsg('weeklyMsg', '저장 실패: ' + error.message, 'err');
@@ -530,7 +537,7 @@ function initForms() {
     if (!from || !to || !date) return showMsg('referralMsg', '모든 필드를 입력하세요', 'err');
     if (from === to) return showMsg('referralMsg', '같은 멤버는 선택 불가', 'err');
 
-    const { error } = await sb.from('traffic_referral_flows').insert({
+    const { error } = await getSb().from('traffic_referral_flows').insert({
       from_member_id: from,
       to_member_id: to,
       referral_date: date,
@@ -564,7 +571,7 @@ function showMsg(id, msg, type) {
 }
 
 async function loadRecentWeekly() {
-  const { data } = await sb.from('traffic_weekly_records')
+  const { data } = await getSb().from('traffic_weekly_records')
     .select('*').order('created_at', { ascending: false }).limit(10);
   const list = data || [];
   document.getElementById('recentWeekly').innerHTML = list.length
@@ -581,7 +588,7 @@ async function loadRecentWeekly() {
 }
 
 async function loadRecentReferral() {
-  const { data } = await sb.from('traffic_referral_flows')
+  const { data } = await getSb().from('traffic_referral_flows')
     .select('*').order('created_at', { ascending: false }).limit(10);
   const list = data || [];
   document.getElementById('recentReferral').innerHTML = list.length
@@ -629,10 +636,20 @@ function renderAll() {
    초기화
 ───────────────────────────────────────── */
 async function init() {
-  await loadData();
-  renderAll();
-  initForms();
-  initFilters();
+  try {
+    await loadData();
+    renderAll();
+    initForms();
+    initFilters();
+  } catch (e) {
+    console.error('init error:', e);
+    document.getElementById('kpiGrid').innerHTML =
+      `<div style="grid-column:1/-1;padding:20px;color:#CC0000;font-weight:700">
+        ❌ 오류 발생: ${e.message}<br>
+        <small style="font-weight:400">브라우저 콘솔(F12)에서 상세 확인</small>
+      </div>`;
+    document.getElementById('app').style.display = 'flex';
+  }
 }
 
 initLogin();
