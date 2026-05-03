@@ -32,13 +32,21 @@ let chartInstances = {};  // Chart.js 인스턴스 보관
 /* ─────────────────────────────────────────
    유틸
 ───────────────────────────────────────── */
+function toLocalDateStr(d) {
+  // toISOString()은 UTC 기준이라 한국(UTC+9)에서 날짜 어긋남 → 로컬 기준으로
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
 function getMondayOf(dateStr) {
-  // BNI 수원 챕터: 수요일 기준 주차
-  const d = dateStr ? new Date(dateStr) : new Date();
+  // BNI 수원 챕터: 수요일(3) 기준 주차
+  const d = dateStr ? new Date(dateStr + 'T12:00:00') : new Date();
   const day = d.getDay(); // 0=일 1=월 2=화 3=수 4=목 5=금 6=토
   const diff = (day >= 3) ? 3 - day : 3 - day - 7;
   d.setDate(d.getDate() + diff);
-  return d.toISOString().slice(0, 10);
+  return toLocalDateStr(d);
 }
 
 function fmt(n) {
@@ -522,7 +530,7 @@ function initForms() {
 
   // 기본 날짜: 이번 주 월요일
   document.getElementById('fWeekStart').value = getMondayOf();
-  document.getElementById('fRefDate').value = new Date().toISOString().slice(0, 10);
+  document.getElementById('fRefDate').value = toLocalDateStr(new Date());
 
   // 주간 활동 저장
   document.getElementById('submitWeekly').addEventListener('click', async () => {
