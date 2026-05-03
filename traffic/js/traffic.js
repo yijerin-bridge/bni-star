@@ -171,14 +171,31 @@ async function loadData() {
   // 회원 데이터 (members-data.js)
   members = (typeof MEMBERS_DEFAULT !== 'undefined') ? MEMBERS_DEFAULT : [];
 
-  // Supabase에서 활동 데이터 로드
-  const [{ data: wr }, { data: rf }] = await Promise.all([
-    sb.from('traffic_weekly_records').select('*').order('week_start', { ascending: false }),
-    sb.from('traffic_referral_flows').select('*').order('referral_date', { ascending: false }),
-  ]);
-  weeklyRecords = wr || [];
-  referralFlows = rf || [];
+  // Supabase에서 활동 데이터 로드 (테이블 없어도 페이지 표시)
+  try {
+    const [{ data: wr, error: e1 }, { data: rf, error: e2 }] = await Promise.all([
+      sb.from('traffic_weekly_records').select('*').order('week_start', { ascending: false }),
+      sb.from('traffic_referral_flows').select('*').order('referral_date', { ascending: false }),
+    ]);
+    if (e1 || e2) {
+      console.warn('Supabase 테이블 미생성 — Supabase SQL Editor에서 supabase-schema.sql을 실행하세요');
+      showSchemaWarning();
+    }
+    weeklyRecords = wr || [];
+    referralFlows = rf || [];
+  } catch (e) {
+    console.error(e);
+    showSchemaWarning();
+  }
   calcMemberStats();
+}
+
+function showSchemaWarning() {
+  const el = document.createElement('div');
+  el.style.cssText = 'position:fixed;bottom:16px;left:50%;transform:translateX(-50%);background:#1A1A2E;color:white;padding:12px 20px;border-radius:12px;font-size:.85rem;z-index:999;text-align:center;box-shadow:0 4px 20px rgba(0,0,0,.3)';
+  el.innerHTML = '⚠️ Supabase 테이블 미생성 — SQL Editor에서 <b>supabase-schema.sql</b> 실행 필요';
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), 8000);
 }
 
 /* ─────────────────────────────────────────
@@ -453,7 +470,7 @@ function renderAlerts() {
     }
   });
 
-  alerts.sort((a, b) => (a.severity === 'critical' ? -1 : 1));
+  alerts.sort((a) => (a.severity === 'critical' ? -1 : 1));
 
   document.getElementById('alertList').innerHTML = alerts.length
     ? alerts.map(a => `
