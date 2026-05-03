@@ -222,8 +222,11 @@ textarea.form-input { resize: vertical; min-height: 64px; }
 .toggle-wrap { display: flex; gap: 6px; }
 .toggle-btn { flex: 1; height: 42px; border-radius: 10px; font-size: .88rem; font-weight: 700; color: var(--sub); background: var(--bg); border: 2px solid var(--border); transition: all .2s; }
 .toggle-btn.active { background: var(--navy); color: white; border-color: var(--navy); }
-.submit-btn { width: 100%; height: 48px; background: var(--red); color: white; border-radius: var(--r); font-size: 1rem; font-weight: 700; margin-top: 6px; transition: opacity .2s; }
+.form-btns { display: flex; gap: 8px; margin-top: 6px; }
+.submit-btn { flex: 1; height: 48px; background: var(--red); color: white; border-radius: var(--r); font-size: 1rem; font-weight: 700; transition: opacity .2s; }
 .submit-btn:active { opacity: .85; }
+.cancel-btn { height: 48px; padding: 0 20px; background: var(--bg); color: var(--sub); border-radius: var(--r); font-size: .92rem; font-weight: 700; border: 2px solid var(--border); transition: all .2s; }
+.cancel-btn:hover { border-color: var(--sub); color: var(--text); }
 .form-msg { text-align: center; font-size: .85rem; margin-top: 8px; min-height: 20px; }
 .form-msg.ok { color: var(--green); }
 .form-msg.err { color: var(--red); }
@@ -231,10 +234,15 @@ textarea.form-input { resize: vertical; min-height: 64px; }
 /* RECENT LIST */
 .recent-list { display: flex; flex-direction: column; gap: 8px; }
 .recent-item { background: var(--bg); border-radius: 8px; padding: 10px 12px; font-size: .82rem; display: flex; justify-content: space-between; align-items: center; gap: 8px; }
-.recent-item-left { flex: 1; }
-.recent-item-week { font-weight: 700; color: var(--navy); }
+.recent-item-left { flex: 1; min-width: 0; }
+.recent-item-week { font-weight: 700; color: var(--navy); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .recent-item-detail { color: var(--sub); margin-top: 2px; }
 .recent-item-tl { font-size: .72rem; font-weight: 700; }
+.recent-item-actions { display: flex; gap: 4px; flex-shrink: 0; }
+.ri-edit-btn { padding: 4px 10px; border-radius: 6px; font-size: .75rem; font-weight: 700; background: var(--navy); color: white; transition: opacity .2s; }
+.ri-edit-btn:hover { opacity: .8; }
+.ri-del-btn  { padding: 4px 10px; border-radius: 6px; font-size: .75rem; font-weight: 700; background: #fff; color: var(--red); border: 1.5px solid var(--red); transition: all .2s; }
+.ri-del-btn:hover { background: var(--red); color: white; }
 .empty-msg { text-align: center; color: var(--mute); font-size: .85rem; padding: 24px; }
 
 /* AI 챕터 디렉터 */

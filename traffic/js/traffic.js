@@ -579,20 +579,22 @@ function renderAlerts() {
 /* ─────────────────────────────────────────
    ⑥ 입력 폼
 ───────────────────────────────────────── */
+let editingWeeklyId  = null;
+let editingReferralId = null;
+let recentWeeklyData  = [];
+let recentReferralData = [];
+
 function initForms() {
-  // 멤버 셀렉트 채우기
   const opts = members.map(m => `<option value="${m.id}">${m.name} (${m.category})</option>`).join('');
   ['fMember', 'fFrom', 'fTo'].forEach(id => {
     document.getElementById(id).innerHTML = '<option value="">선택하세요</option>' + opts;
   });
 
-  // 기본 날짜: 이번 주 월요일
   document.getElementById('fWeekStart').value = getMondayOf();
-  document.getElementById('fRefDate').value = toLocalDateStr(new Date());
+  document.getElementById('fRefDate').value   = toLocalDateStr(new Date());
 
-  // 주간 활동 저장
   document.getElementById('submitWeekly').addEventListener('click', async () => {
-    const memberId = parseInt(document.getElementById('fMember').value);
+    const memberId  = parseInt(document.getElementById('fMember').value);
     const weekStart = document.getElementById('fWeekStart').value;
     if (!memberId || !weekStart) return showMsg('weeklyMsg', '멤버와 날짜를 선택하세요', 'err');
 
@@ -606,25 +608,31 @@ function initForms() {
       notes: document.getElementById('fNotes').value,
     };
 
-    const { error } = await getSb().from('traffic_weekly_records')
-      .upsert(payload, { onConflict: 'member_id,week_start' });
+    let error;
+    if (editingWeeklyId) {
+      ({ error } = await getSb().from('traffic_weekly_records')
+        .update(payload).eq('id', editingWeeklyId));
+    } else {
+      ({ error } = await getSb().from('traffic_weekly_records')
+        .upsert(payload, { onConflict: 'member_id,week_start' }));
+    }
 
     if (error) return showMsg('weeklyMsg', '저장 실패: ' + error.message, 'err');
-    showMsg('weeklyMsg', '저장 완료!', 'ok');
-    await loadData();
-    renderAll();
-    loadRecentWeekly();
+    showMsg('weeklyMsg', editingWeeklyId ? '수정 완료!' : '저장 완료!', 'ok');
+    cancelWeeklyEdit();
+    await loadData(); renderAll(); loadRecentWeekly();
   });
 
-  // 리퍼럴 흐름 저장
+  document.getElementById('cancelWeekly').addEventListener('click', cancelWeeklyEdit);
+
   document.getElementById('submitReferral').addEventListener('click', async () => {
     const from = parseInt(document.getElementById('fFrom').value);
-    const to = parseInt(document.getElementById('fTo').value);
+    const to   = parseInt(document.getElementById('fTo').value);
     const date = document.getElementById('fRefDate').value;
     if (!from || !to || !date) return showMsg('referralMsg', '모든 필드를 입력하세요', 'err');
     if (from === to) return showMsg('referralMsg', '같은 멤버는 선택 불가', 'err');
 
-    const { error } = await getSb().from('traffic_referral_flows').insert({
+    const payload = {
       from_member_id: from,
       to_member_id: to,
       referral_date: date,
@@ -633,17 +641,107 @@ function initForms() {
       amount: parseInt(document.getElementById('fRefAmount').value) || 0,
       status: document.getElementById('fRefStatus').value,
       description: document.getElementById('fRefDesc').value,
-    });
+    };
+
+    let error;
+    if (editingReferralId) {
+      ({ error } = await getSb().from('traffic_referral_flows')
+        .update(payload).eq('id', editingReferralId));
+    } else {
+      ({ error } = await getSb().from('traffic_referral_flows').insert(payload));
+    }
 
     if (error) return showMsg('referralMsg', '저장 실패: ' + error.message, 'err');
-    showMsg('referralMsg', '저장 완료!', 'ok');
-    await loadData();
-    renderAll();
-    loadRecentReferral();
+    showMsg('referralMsg', editingReferralId ? '수정 완료!' : '저장 완료!', 'ok');
+    cancelReferralEdit();
+    await loadData(); renderAll(); loadRecentReferral();
   });
+
+  document.getElementById('cancelReferral').addEventListener('click', cancelReferralEdit);
 
   loadRecentWeekly();
   loadRecentReferral();
+}
+
+function cancelWeeklyEdit() {
+  editingWeeklyId = null;
+  document.getElementById('submitWeekly').textContent = '저장';
+  document.getElementById('cancelWeekly').style.display = 'none';
+  document.getElementById('weeklyFormTitle').textContent = '주간 활동 기록';
+  document.getElementById('fMember').value = '';
+  document.getElementById('fWeekStart').value = getMondayOf();
+  document.getElementById('fOno').value = '0';
+  document.getElementById('fVisitors').value = '0';
+  document.getElementById('fNotes').value = '';
+  setAttend(true); setEdu(true);
+}
+
+function cancelReferralEdit() {
+  editingReferralId = null;
+  document.getElementById('submitReferral').textContent = '저장';
+  document.getElementById('cancelReferral').style.display = 'none';
+  document.getElementById('referralFormTitle').textContent = '리퍼럴 기록 (누가 → 누구에게)';
+  document.getElementById('fFrom').value = '';
+  document.getElementById('fTo').value = '';
+  document.getElementById('fRefDate').value = toLocalDateStr(new Date());
+  document.getElementById('fRefAmount').value = '0';
+  document.getElementById('fRefStatus').value = 'pending';
+  document.getElementById('fRefDesc').value = '';
+  document.getElementById('fIntroduced').value = '';
+  setRefType('T1');
+}
+
+function editWeekly(id) {
+  const r = recentWeeklyData.find(x => x.id === id);
+  if (!r) return;
+  editingWeeklyId = id;
+  document.getElementById('weeklyFormTitle').textContent = '주간 활동 수정';
+  document.getElementById('submitWeekly').textContent = '수정 저장';
+  document.getElementById('cancelWeekly').style.display = 'block';
+  document.getElementById('fMember').value    = r.member_id;
+  document.getElementById('fWeekStart').value = r.week_start;
+  document.getElementById('fOno').value       = r.one_on_one || 0;
+  document.getElementById('fVisitors').value  = r.visitors_invited || 0;
+  document.getElementById('fNotes').value     = r.notes || '';
+  setAttend(!!r.attended);
+  setEdu(!!r.education);
+  document.querySelector('[data-itab="weekly"]').click();
+  document.getElementById('ipanel-weekly').querySelector('.card').scrollIntoView({ behavior: 'smooth' });
+}
+
+async function deleteWeekly(id) {
+  if (!confirm('이 활동 기록을 삭제하시겠습니까?')) return;
+  const { error } = await getSb().from('traffic_weekly_records').delete().eq('id', id);
+  if (error) return alert('삭제 실패: ' + error.message);
+  if (editingWeeklyId === id) cancelWeeklyEdit();
+  await loadData(); renderAll(); loadRecentWeekly();
+}
+
+function editReferral(id) {
+  const r = recentReferralData.find(x => x.id === id);
+  if (!r) return;
+  editingReferralId = id;
+  document.getElementById('referralFormTitle').textContent = '리퍼럴 수정';
+  document.getElementById('submitReferral').textContent = '수정 저장';
+  document.getElementById('cancelReferral').style.display = 'block';
+  document.getElementById('fFrom').value       = r.from_member_id;
+  document.getElementById('fTo').value         = r.to_member_id;
+  document.getElementById('fRefDate').value    = r.referral_date;
+  document.getElementById('fRefAmount').value  = r.amount || 0;
+  document.getElementById('fRefStatus').value  = r.status || 'pending';
+  document.getElementById('fRefDesc').value    = r.description || '';
+  document.getElementById('fIntroduced').value = r.introduced_name || '';
+  setRefType(r.referral_type || 'T1');
+  document.querySelector('[data-itab="referral"]').click();
+  document.getElementById('ipanel-referral').querySelector('.card').scrollIntoView({ behavior: 'smooth' });
+}
+
+async function deleteReferral(id) {
+  if (!confirm('이 리퍼럴 기록을 삭제하시겠습니까?')) return;
+  const { error } = await getSb().from('traffic_referral_flows').delete().eq('id', id);
+  if (error) return alert('삭제 실패: ' + error.message);
+  if (editingReferralId === id) cancelReferralEdit();
+  await loadData(); renderAll(); loadRecentReferral();
 }
 
 function setAttend(val) {
@@ -677,15 +775,19 @@ function showMsg(id, msg, type) {
 
 async function loadRecentWeekly() {
   const { data } = await getSb().from('traffic_weekly_records')
-    .select('*').order('created_at', { ascending: false }).limit(10);
-  const list = data || [];
-  document.getElementById('recentWeekly').innerHTML = list.length
-    ? list.map(r => {
+    .select('*').order('created_at', { ascending: false }).limit(20);
+  recentWeeklyData = data || [];
+  document.getElementById('recentWeekly').innerHTML = recentWeeklyData.length
+    ? recentWeeklyData.map(r => {
       const m = members.find(m => m.id === r.member_id);
       return `<div class="recent-item">
           <div class="recent-item-left">
             <div class="recent-item-week">${m?.name || '?'} · ${r.week_start}</div>
-            <div class="recent-item-detail">${r.attended ? '✅ 출석' : '❌ 결석'} · 1:1 ${r.one_on_one}회 · 교육 ${r.education ? '✅' : '❌'}</div>
+            <div class="recent-item-detail">${r.attended ? '✅ 출석' : '❌ 결석'} · 1:1 ${r.one_on_one}회 · 교육 ${r.education ? '✅' : '❌'} · 비지터 ${r.visitors_invited || 0}명</div>
+          </div>
+          <div class="recent-item-actions">
+            <button class="ri-edit-btn" onclick="editWeekly('${r.id}')">수정</button>
+            <button class="ri-del-btn" onclick="deleteWeekly('${r.id}')">삭제</button>
           </div>
         </div>`;
     }).join('')
@@ -694,18 +796,22 @@ async function loadRecentWeekly() {
 
 async function loadRecentReferral() {
   const { data } = await getSb().from('traffic_referral_flows')
-    .select('*').order('created_at', { ascending: false }).limit(10);
-  const list = data || [];
-  document.getElementById('recentReferral').innerHTML = list.length
-    ? list.map(r => {
+    .select('*').order('created_at', { ascending: false }).limit(20);
+  recentReferralData = data || [];
+  document.getElementById('recentReferral').innerHTML = recentReferralData.length
+    ? recentReferralData.map(r => {
       const from = members.find(m => m.id === r.from_member_id);
-      const to = members.find(m => m.id === r.to_member_id);
+      const to   = members.find(m => m.id === r.to_member_id);
       const statusLabel = r.status === 'closed' ? '✅ 성사' : r.status === 'rejected' ? '❌ 불발' : '⏳ 진행 중';
-      const typeLabel = r.referral_type === 'T2' ? `T2${r.introduced_name ? ` (${r.introduced_name})` : ''}` : 'T1';
+      const typeLabel   = r.referral_type === 'T2' ? `T2${r.introduced_name ? ` (${r.introduced_name})` : ''}` : 'T1';
       return `<div class="recent-item">
           <div class="recent-item-left">
             <div class="recent-item-week">${from?.name || '?'} → ${to?.name || '?'} <span style="font-size:.72rem;color:#999;font-weight:700">${typeLabel}</span></div>
             <div class="recent-item-detail">${r.referral_date} · ${fmt(r.amount)}원 · ${statusLabel}</div>
+          </div>
+          <div class="recent-item-actions">
+            <button class="ri-edit-btn" onclick="editReferral('${r.id}')">수정</button>
+            <button class="ri-del-btn" onclick="deleteReferral('${r.id}')">삭제</button>
           </div>
         </div>`;
     }).join('')

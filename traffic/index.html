@@ -148,7 +148,7 @@
       <!-- 주간 활동 입력 -->
       <div class="input-panel active" id="ipanel-weekly">
         <div class="card">
-          <div class="card-title">주간 활동 기록</div>
+          <div class="card-title" id="weeklyFormTitle">주간 활동 기록</div>
           <div class="form-row">
             <label class="form-label">주차 (수요일 기준)</label>
             <input type="date" id="fWeekStart" class="form-input">
@@ -185,7 +185,10 @@
             <label class="form-label">메모</label>
             <textarea id="fNotes" class="form-input" rows="2" placeholder="선택 입력"></textarea>
           </div>
-          <button class="submit-btn" id="submitWeekly">저장</button>
+          <div class="form-btns">
+            <button class="submit-btn" id="submitWeekly">저장</button>
+            <button class="cancel-btn" id="cancelWeekly" style="display:none">취소</button>
+          </div>
           <div class="form-msg" id="weeklyMsg"></div>
         </div>
 
@@ -199,7 +202,7 @@
       <!-- 리퍼럴 흐름 입력 -->
       <div class="input-panel" id="ipanel-referral">
         <div class="card">
-          <div class="card-title">리퍼럴 기록 (누가 → 누구에게)</div>
+          <div class="card-title" id="referralFormTitle">리퍼럴 기록 (누가 → 누구에게)</div>
           <div class="form-row">
             <label class="form-label">리퍼럴 준 멤버</label>
             <select id="fFrom" class="form-input"></select>
@@ -241,7 +244,10 @@
             <label class="form-label">내용</label>
             <textarea id="fRefDesc" class="form-input" rows="2" placeholder="리퍼럴 내용 간략히"></textarea>
           </div>
-          <button class="submit-btn" id="submitReferral">저장</button>
+          <div class="form-btns">
+            <button class="submit-btn" id="submitReferral">저장</button>
+            <button class="cancel-btn" id="cancelReferral" style="display:none">취소</button>
+          </div>
           <div class="form-msg" id="referralMsg"></div>
         </div>
 
