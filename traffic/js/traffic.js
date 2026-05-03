@@ -329,6 +329,25 @@ function renderDashboard() {
   }
   renderChartDual('chartTrend', monthLabels, monthAmounts, monthCounts);
 
+  // 주간 리퍼럴 추이 (최근 8주 — referralFlows 기준)
+  const weeks8 = getRecentWeeks(8);
+  const weeklyRefCounts = weeks8.map(w => {
+    const wStart = new Date(w + 'T00:00:00');
+    const wEnd   = new Date(w + 'T00:00:00'); wEnd.setDate(wEnd.getDate() + 7);
+    return referralFlows.filter(f => {
+      const d = new Date(f.referral_date);
+      return d >= wStart && d < wEnd;
+    }).length;
+  });
+  const weeklyClosedAmts = weeks8.map(w => {
+    const wStart = new Date(w + 'T00:00:00');
+    const wEnd   = new Date(w + 'T00:00:00'); wEnd.setDate(wEnd.getDate() + 7);
+    return referralFlows
+      .filter(f => f.status === 'closed' && new Date(f.referral_date) >= wStart && new Date(f.referral_date) < wEnd)
+      .reduce((s, f) => s + (f.amount || 0), 0);
+  });
+  renderChartDual('chartWeeklyTrend', weeks8.map(w => w.slice(5)), weeklyClosedAmts, weeklyRefCounts);
+
   // Top/Bottom 5
   const sorted    = [...memberStats].sort((a, b) => b.referrals - a.referrals);
   renderRankList('rankReferralTop',    sorted.slice(0, 5),          m => `${m.referrals}건`);
