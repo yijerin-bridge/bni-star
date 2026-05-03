@@ -33,9 +33,10 @@ let chartInstances = {};  // Chart.js 인스턴스 보관
    유틸
 ───────────────────────────────────────── */
 function getMondayOf(dateStr) {
+  // BNI 수원 챕터: 수요일 기준 주차
   const d = dateStr ? new Date(dateStr) : new Date();
-  const day = d.getDay();
-  const diff = (day === 0) ? -6 : 1 - day;
+  const day = d.getDay(); // 0=일 1=월 2=화 3=수 4=목 5=금 6=토
+  const diff = (day >= 3) ? 3 - day : 3 - day - 7;
   d.setDate(d.getDate() + diff);
   return d.toISOString().slice(0, 10);
 }
