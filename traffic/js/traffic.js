@@ -103,41 +103,10 @@ function calcMemberStats() {
 }
 
 /* ─────────────────────────────────────────
-   로그인
+   로그인 (비활성화)
 ───────────────────────────────────────── */
 function initLogin() {
-  const overlay = document.getElementById('loginOverlay');
-  const app = document.getElementById('app');
-  const btn = document.getElementById('loginBtn');
-  const pw = document.getElementById('loginPw');
-  const err = document.getElementById('loginError');
-
-  if (sessionStorage.getItem('tl_auth') === '1') {
-    overlay.classList.add('hidden');
-    app.classList.add('show');
-    init();
-    return;
-  }
-
-  function tryLogin() {
-    if (pw.value === TRAFFIC_PW) {
-      sessionStorage.setItem('tl_auth', '1');
-      overlay.classList.add('hidden');
-      app.classList.add('show');
-      init();
-    } else {
-      err.classList.add('show');
-      pw.value = '';
-      pw.focus();
-    }
-  }
-  btn.addEventListener('click', tryLogin);
-  pw.addEventListener('keydown', e => e.key === 'Enter' && tryLogin());
-
-  document.getElementById('logoutBtn').addEventListener('click', () => {
-    sessionStorage.removeItem('tl_auth');
-    location.reload();
-  });
+  init();
 }
 
 /* ─────────────────────────────────────────
