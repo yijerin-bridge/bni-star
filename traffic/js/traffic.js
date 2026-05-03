@@ -14,11 +14,11 @@ function getSb() {
   return _sb;
 }
 
-// 트래픽라이트 판정 기준 (최근 4주 기준)
+// 트래픽라이트 판정 기준 (주 단위 — 기간 × 이 값으로 최솟값 계산)
 const CRITERIA = {
-  attendanceMin: 3,   // 4주 중 3회 이상
-  onoMin: 1,          // 4주 중 1회 이상
-  referralMin: 1,     // 4주 중 1건 이상
+  attendanceRate: 1.0,  // 출석률 100%
+  onoPerWeek: 1,        // 1:1 주 1회
+  referralPerWeek: 1,   // 리퍼럴 주 1건
 };
 
 // 상태
@@ -103,9 +103,10 @@ function calcMemberStats() {
       f.from_member_id === m.id && new Date(f.referral_date) >= cutoff
     ).length;
 
-    const critAttend = attendance >= CRITERIA.attendanceMin;
-    const critOno = ono >= CRITERIA.onoMin;
-    const critReferral = referrals >= CRITERIA.referralMin;
+    const weeks = recentWeeks.length; // 4주
+    const critAttend   = attendance >= Math.ceil(weeks * CRITERIA.attendanceRate);
+    const critOno      = ono >= weeks * CRITERIA.onoPerWeek;
+    const critReferral = referrals >= weeks * CRITERIA.referralPerWeek;
     const failCount = [critAttend, critOno, critReferral].filter(v => !v).length;
 
     let status = 'green';
@@ -235,9 +236,10 @@ function calcPrevPeriodStats() {
         new Date(f.referral_date) < cutoffNew)
       .reduce((s, f) => s + (f.amount || 0), 0);
 
-    const critAttend   = attendance >= CRITERIA.attendanceMin;
-    const critOno      = ono >= CRITERIA.onoMin;
-    const critReferral = referrals >= CRITERIA.referralMin;
+    const weeks = prevWeeks.length; // 4주
+    const critAttend   = attendance >= Math.ceil(weeks * CRITERIA.attendanceRate);
+    const critOno      = ono >= weeks * CRITERIA.onoPerWeek;
+    const critReferral = referrals >= weeks * CRITERIA.referralPerWeek;
     const failCount = [critAttend, critOno, critReferral].filter(v => !v).length;
     let status = recs.length === 0 ? 'new' : failCount >= 2 ? 'red' : failCount === 1 ? 'yellow' : 'green';
 
@@ -557,10 +559,9 @@ function calcMonthStats(year, month) {
       new Date(f.referral_date) <= monthEnd
     ).length;
 
-    const attendanceMin = Math.ceil(totalMeetings * 0.75); // 75% 이상
-    const critAttend = attendance >= attendanceMin;
-    const critOno = ono >= CRITERIA.onoMin;
-    const critReferral = referrals >= CRITERIA.referralMin;
+    const critAttend   = attendance >= Math.ceil(totalMeetings * CRITERIA.attendanceRate);
+    const critOno      = ono >= totalMeetings * CRITERIA.onoPerWeek;
+    const critReferral = referrals >= totalMeetings * CRITERIA.referralPerWeek;
     const failCount = [critAttend, critOno, critReferral].filter(v => !v).length;
 
     let status = 'green';
