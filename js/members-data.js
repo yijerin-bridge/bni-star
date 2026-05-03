@@ -197,7 +197,7 @@ const MEMBERS_DEFAULT = [
     targetCustomer: "B2C 제품 패키지가 필요하신분",
     description: "친환경 패키지를 다룹니다.",
     phone: "010-7376-1111", email: "sean@in2epnt.com", address: "경기도 수원시 팔달구 행궁로 98 성장관 2층",
-    instagram: "in2epnt_official", kakao: "", website: "",
+    instagram: "in2epnt_official", kakao: "https://open.kakao.com/o/sOECy8mi", website: "",
     color: "#27AE60", featured: true, photoUrl: "https://ocmnbwlhjovfycihyvnr.supabase.co/storage/v1/object/public/member-photos/member-1775191113862.jpg",
     testimonials: [{"metric":"친환경 패키지 전환 후 브랜드 호감도 40% 상승","quote":"친환경 패키지로 바꾸고 나서 고객 반응이 달라졌어요. 제품 품질은 그대로인데 '환경 생각하는 브랜드'라는 이미지가 생겼습니다.","author":"조○○ 대표님 · 식품업"}]
   },
