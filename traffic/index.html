@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BNI STAR 트래픽라이트</title>
+  <meta name="robots" content="noindex, nofollow">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/traffic.css">
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <!-- vis-network (레퍼럴 네트워크 그래프) -->
+  <script src="https://cdn.jsdelivr.net/npm/vis-network@9.1.9/dist/vis-network.min.js"></script>
+  <link href="https://cdn.jsdelivr.net/npm/vis-network@9.1.9/dist/dist/vis-network.min.css" rel="stylesheet">
+  <!-- Supabase -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div class="login-overlay" id="loginOverlay">
+  <div class="login-box">
+    <div class="login-logo">BNI ★ STAR</div>
+    <div class="login-sub">멤버십위원회 전용</div>
+    <input type="password" id="loginPw" class="login-input" placeholder="비밀번호" autocomplete="current-password">
+    <div class="login-error" id="loginError">비밀번호가 올바르지 않습니다</div>
+    <button class="login-btn" id="loginBtn">로그인</button>
+  </div>
+</div>
+
+<!-- APP -->
+<div class="app" id="app">
+
+  <!-- Header -->
+  <header class="header">
+    <div class="header-inner">
+      <div class="header-logo">BNI ★ <span>트래픽라이트</span></div>
+      <div class="header-actions">
+        <span class="chapter-badge" id="chapterBadge">-</span>
+        <button class="logout-btn" id="logoutBtn">로그아웃</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Tabs -->
+  <nav class="tab-nav">
+    <button class="tab-btn active" data-tab="dashboard">대시보드</button>
+    <button class="tab-btn" data-tab="members">개인 성과</button>
+    <button class="tab-btn" data-tab="network">레퍼럴 지도</button>
+    <button class="tab-btn" data-tab="portfolio">직군 현황</button>
+    <button class="tab-btn" data-tab="alerts">경고</button>
+    <button class="tab-btn" data-tab="input">데이터 입력</button>
+  </nav>
+
+  <main class="main">
+
+    <!-- ① 대시보드 -->
+    <div class="tab-panel active" id="panel-dashboard">
+      <div class="kpi-grid" id="kpiGrid"></div>
+      <div class="section-row">
+        <div class="card half">
+          <div class="card-title">챕터 건강도 · 트래픽라이트 분포</div>
+          <div class="traffic-dist" id="trafficDist"></div>
+          <canvas id="chartDist" height="180"></canvas>
+        </div>
+        <div class="card half">
+          <div class="card-title">주간 레퍼럴 추이</div>
+          <canvas id="chartTrend" height="180"></canvas>
+        </div>
+      </div>
+      <div class="section-row">
+        <div class="card half">
+          <div class="card-title">레퍼럴 Top 5</div>
+          <div class="rank-list" id="rankReferralTop"></div>
+        </div>
+        <div class="card half">
+          <div class="card-title">레퍼럴 Bottom 5</div>
+          <div class="rank-list" id="rankReferralBottom"></div>
+        </div>
+      </div>
+      <div class="section-row">
+        <div class="card half">
+          <div class="card-title">1:1 Top 5</div>
+          <div class="rank-list" id="rankOnoTop"></div>
+        </div>
+        <div class="card half">
+          <div class="card-title">1:1 Bottom 5</div>
+          <div class="rank-list" id="rankOnoBottom"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ② 개인 성과 -->
+    <div class="tab-panel" id="panel-members">
+      <div class="toolbar">
+        <input type="text" id="memberSearch" class="search-input" placeholder="이름 검색...">
+        <select id="lightFilter" class="filter-select">
+          <option value="">전체</option>
+          <option value="green">🟢 Green</option>
+          <option value="yellow">🟡 Yellow</option>
+          <option value="red">🔴 Red</option>
+        </select>
+      </div>
+      <div class="member-grid" id="memberGrid"></div>
+    </div>
+
+    <!-- ③ 레퍼럴 흐름 지도 -->
+    <div class="tab-panel" id="panel-network">
+      <div class="card" style="padding:16px 16px 8px">
+        <div class="card-title">레퍼럴 흐름 네트워크 · 허브/고립 멤버</div>
+        <div class="network-legend">
+          <span class="legend-item"><span class="dot big"></span> 허브 (레퍼럴 多)</span>
+          <span class="legend-item"><span class="dot small"></span> 고립 (레퍼럴 0)</span>
+          <span class="legend-item"><span class="line thick"></span> 금액 큰 레퍼럴</span>
+        </div>
+      </div>
+      <div id="networkContainer"></div>
+    </div>
+
+    <!-- ④ 직군 현황 -->
+    <div class="tab-panel" id="panel-portfolio">
+      <div class="section-row">
+        <div class="card half">
+          <div class="card-title">직군별 인원</div>
+          <canvas id="chartCategory" height="260"></canvas>
+        </div>
+        <div class="card half">
+          <div class="card-title">직군별 레퍼럴 기여도</div>
+          <canvas id="chartCatReferral" height="260"></canvas>
+        </div>
+      </div>
+      <div class="card" style="margin-top:0">
+        <div class="card-title">직군별 트래픽라이트 현황</div>
+        <div class="cat-table-wrap">
+          <table class="cat-table" id="catTable"></table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ⑤ 경고 -->
+    <div class="tab-panel" id="panel-alerts">
+      <div class="alert-info">멤버십위원회 액션 대상 — 자동 감지</div>
+      <div id="alertList"></div>
+    </div>
+
+    <!-- ⑥ 데이터 입력 -->
+    <div class="tab-panel" id="panel-input">
+      <div class="input-tabs">
+        <button class="input-tab active" data-itab="weekly">주간 활동 입력</button>
+        <button class="input-tab" data-itab="referral">레퍼럴 흐름 입력</button>
+      </div>
+
+      <!-- 주간 활동 입력 -->
+      <div class="input-panel active" id="ipanel-weekly">
+        <div class="card">
+          <div class="card-title">주간 활동 기록</div>
+          <div class="form-row">
+            <label class="form-label">주차 (월요일 기준)</label>
+            <input type="date" id="fWeekStart" class="form-input">
+          </div>
+          <div class="form-row">
+            <label class="form-label">멤버 선택</label>
+            <select id="fMember" class="form-input"></select>
+          </div>
+          <div class="form-grid">
+            <div class="form-row">
+              <label class="form-label">출석</label>
+              <div class="toggle-wrap">
+                <button class="toggle-btn active" id="toggleYes" onclick="setAttend(true)">출석</button>
+                <button class="toggle-btn" id="toggleNo" onclick="setAttend(false)">결석</button>
+              </div>
+            </div>
+            <div class="form-row">
+              <label class="form-label">1:1 횟수</label>
+              <input type="number" id="fOno" class="form-input" min="0" value="0">
+            </div>
+            <div class="form-row">
+              <label class="form-label">레퍼럴 건수</label>
+              <input type="number" id="fReferrals" class="form-input" min="0" value="0">
+            </div>
+            <div class="form-row">
+              <label class="form-label">받은 Closed Business (원)</label>
+              <input type="number" id="fCB" class="form-input" min="0" value="0" step="10000">
+            </div>
+          </div>
+          <div class="form-row">
+            <label class="form-label">메모</label>
+            <textarea id="fNotes" class="form-input" rows="2" placeholder="선택 입력"></textarea>
+          </div>
+          <button class="submit-btn" id="submitWeekly">저장</button>
+          <div class="form-msg" id="weeklyMsg"></div>
+        </div>
+
+        <!-- 최근 입력 내역 -->
+        <div class="card" style="margin-top:12px">
+          <div class="card-title">최근 입력 내역</div>
+          <div id="recentWeekly" class="recent-list"></div>
+        </div>
+      </div>
+
+      <!-- 레퍼럴 흐름 입력 -->
+      <div class="input-panel" id="ipanel-referral">
+        <div class="card">
+          <div class="card-title">레퍼럴 흐름 기록 (A → B)</div>
+          <div class="form-row">
+            <label class="form-label">레퍼럴 준 멤버 (From)</label>
+            <select id="fFrom" class="form-input"></select>
+          </div>
+          <div class="form-row">
+            <label class="form-label">레퍼럴 받은 멤버 (To)</label>
+            <select id="fTo" class="form-input"></select>
+          </div>
+          <div class="form-grid">
+            <div class="form-row">
+              <label class="form-label">날짜</label>
+              <input type="date" id="fRefDate" class="form-input">
+            </div>
+            <div class="form-row">
+              <label class="form-label">금액 (원, 예상 포함)</label>
+              <input type="number" id="fRefAmount" class="form-input" min="0" value="0" step="10000">
+            </div>
+            <div class="form-row">
+              <label class="form-label">상태</label>
+              <select id="fRefStatus" class="form-input">
+                <option value="pending">진행 중</option>
+                <option value="closed">클로즈드</option>
+                <option value="rejected">불발</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-row">
+            <label class="form-label">내용</label>
+            <textarea id="fRefDesc" class="form-input" rows="2" placeholder="레퍼럴 내용 간략히"></textarea>
+          </div>
+          <button class="submit-btn" id="submitReferral">저장</button>
+          <div class="form-msg" id="referralMsg"></div>
+        </div>
+
+        <div class="card" style="margin-top:12px">
+          <div class="card-title">레퍼럴 내역</div>
+          <div id="recentReferral" class="recent-list"></div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<script src="../js/supabase-config.js"></script>
+<script src="../js/members-data.js"></script>
+<script src="js/traffic.js"></script>
+</body>
+</html>
