@@ -84,8 +84,8 @@ input, select, textarea { font-family: inherit; }
 @media (max-width: 600px) { .section-row { grid-template-columns: 1fr; } }
 
 /* KPI GRID */
-.kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 12px; }
-@media (max-width: 600px) { .kpi-grid { grid-template-columns: repeat(2, 1fr); } }
+.kpi-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin-bottom: 12px; }
+@media (max-width: 700px) { .kpi-grid { grid-template-columns: repeat(2, 1fr); } }
 .kpi-card { background: var(--card); border-radius: var(--r); box-shadow: var(--sh); padding: 14px 12px; text-align: center; }
 .kpi-label { font-size: .72rem; color: var(--sub); font-weight: 500; margin-bottom: 6px; }
 .kpi-value { font-size: 1.6rem; font-weight: 900; color: var(--navy); line-height: 1; }

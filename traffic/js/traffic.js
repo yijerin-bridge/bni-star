@@ -87,6 +87,7 @@ function calcMemberStats() {
     const attendance = recs.filter(r => r.attended).length;
     const ono = recs.reduce((s, r) => s + (r.one_on_one || 0), 0);
     const education = recs.filter(r => r.education).length;
+    const visitors = recs.reduce((s, r) => s + (r.visitors_invited || 0), 0);
 
     // 레퍼럴 건수: 레퍼럴 흐름 테이블에서 집계
     const referrals = referralFlows.filter(f =>
@@ -124,7 +125,7 @@ function calcMemberStats() {
       .reduce((s, f) => s + (f.amount || 0), 0);
 
     return {
-      ...m, attendance, ono, education, referrals,
+      ...m, attendance, ono, education, visitors, referrals,
       refAmountReceived, refAmountGiven,
       status, critAttend, critOno, critReferral, trend, recs
     };
@@ -207,16 +208,18 @@ function renderDashboard() {
   const total = memberStats.length;
 
   const totalReferrals = memberStats.reduce((s, m) => s + m.referrals, 0);
-  const totalCB = memberStats.reduce((s, m) => s + m.cb, 0);
+  const totalRefAmount = memberStats.reduce((s, m) => s + m.refAmountReceived, 0);
+  const totalVisitors = memberStats.reduce((s, m) => s + m.visitors, 0);
   const avgOno = total ? (memberStats.reduce((s, m) => s + m.ono, 0) / total).toFixed(1) : 0;
   const healthScore = total ? Math.round((green * 100 + yellow * 50) / total) : 0;
 
   // KPI
   document.getElementById('kpiGrid').innerHTML = [
-    { label: '챕터 건강 점수', value: healthScore, unit: '점', colorClass: healthScore >= 70 ? 'up' : healthScore >= 50 ? 'flat' : 'down' },
+    { label: '챕터 건강 점수', value: healthScore, unit: '점' },
     { label: '총 레퍼럴 (4주)', value: totalReferrals, unit: '건' },
-    { label: '총 Closed Business', value: fmt(totalCB), unit: '' },
+    { label: '레퍼럴 성사금액', value: fmt(totalRefAmount), unit: '원' },
     { label: '평균 1:1 (4주)', value: avgOno, unit: '회' },
+    { label: '비지터 초대 (4주)', value: totalVisitors, unit: '명' },
   ].map(k => `
     <div class="kpi-card">
       <div class="kpi-label">${k.label}</div>
@@ -332,6 +335,7 @@ function renderMembers(filter = '', lightFilter = '') {
         <div class="mc-stat"><div class="mc-stat-val">${m.attendance}/4</div><div class="mc-stat-label">출석</div></div>
         <div class="mc-stat"><div class="mc-stat-val">${m.ono}</div><div class="mc-stat-label">1:1</div></div>
         <div class="mc-stat"><div class="mc-stat-val">${m.referrals}</div><div class="mc-stat-label">레퍼럴</div></div>
+        <div class="mc-stat"><div class="mc-stat-val">${m.visitors}</div><div class="mc-stat-label">비지터</div></div>
         <div class="mc-stat"><div class="mc-stat-val">${fmt(m.refAmountReceived)}</div><div class="mc-stat-label">성사금액</div></div>
       </div>
       <div class="mc-criteria">
@@ -532,6 +536,7 @@ function initForms() {
       attended: attendVal,
       one_on_one: parseInt(document.getElementById('fOno').value) || 0,
       education: eduVal,
+      visitors_invited: parseInt(document.getElementById('fVisitors').value) || 0,
       notes: document.getElementById('fNotes').value,
     };
 

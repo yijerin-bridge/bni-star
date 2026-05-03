@@ -11,6 +11,7 @@ CREATE TABLE IF NOT EXISTS traffic_weekly_records (
   attended      BOOLEAN DEFAULT false,
   one_on_one    INTEGER DEFAULT 0,
   education     BOOLEAN DEFAULT false,
+  visitors_invited INTEGER DEFAULT 0,
   notes         TEXT,
   created_at    TIMESTAMPTZ DEFAULT NOW(),
   updated_at    TIMESTAMPTZ DEFAULT NOW(),
@@ -53,5 +54,6 @@ CREATE TRIGGER trg_weekly_updated_at
 -- 기존 테이블 업데이트 (이미 생성된 경우 아래만 실행)
 -- ============================================================
 ALTER TABLE traffic_weekly_records ADD COLUMN IF NOT EXISTS education BOOLEAN DEFAULT false;
+ALTER TABLE traffic_weekly_records ADD COLUMN IF NOT EXISTS visitors_invited INTEGER DEFAULT 0;
 ALTER TABLE traffic_weekly_records DROP COLUMN IF EXISTS referrals_given;
 ALTER TABLE traffic_weekly_records DROP COLUMN IF EXISTS closed_business_received;
