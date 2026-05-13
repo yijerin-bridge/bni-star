@@ -44,7 +44,7 @@ const MEMBERS_DEFAULT = [
     description: "크루즈 소개해드립니다.",
     phone: "010-9016-2122", email: "nexy0316@naver.com", address: "",
     instagram: "", kakao: "https://open.kakao.com/o/sIDTmV5", website: "",
-    color: "#148F77", featured: true, photoUrl: "https://randomuser.me/api/portraits/women/63.jpg",
+    color: "#148F77", featured: true, photoUrl: "https://ocmnbwlhjovfycihyvnr.supabase.co/storage/v1/object/public/member-photos/member-1778647799789.jpg",
     testimonials: [{"metric":"크루즈 첫 경험, 만족도 100%","quote":"크루즈가 처음이라 걱정이 많았는데 하나하나 친절하게 설명해주셔서 편하게 다녀왔어요. 식사도 관광도 모두 완벽했습니다.","author":"최○○ 대표님 · 서비스업"}]
   },
   {
