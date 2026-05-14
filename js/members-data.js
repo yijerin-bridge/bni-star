@@ -85,9 +85,9 @@ const MEMBERS_DEFAULT = [
     specialty: "화장품",
     headline: "거울 볼 때마다 피부 때문에 자신감이 떨어지시나요?",
     targetCustomer: "피부 트러블, 노화 방지, 미용에 관심 있는 분",
-    description: "자연스럽고 건강한 피부를 위한 최적의 솔루션을 제안합니다.\nNo.659799",
+    description: "피부 맞춤 레서피로! 귀티 나는 피부! 화장품 전문가 이지혜입니다 첫인상은 3초! 비지니스와 삶 터닝포인트\nCrown 659799",
     phone: "010-2275-2250", email: "fcmbyfreedom@gmail.com", address: "",
-    instagram: "", kakao: "", website: "www.amway.co.kr",
+    instagram: "", kakao: "https://open.kakao.com/o/sXACiK1h", website: "www.amway.co.kr",
     color: "#A93226", featured: true, photoUrl: "https://ocmnbwlhjovfycihyvnr.supabase.co/storage/v1/object/public/member-photos/member-1775186245990.jpg",
     testimonials: [{"metric":"피부 트러블 4주 만에 80% 개선","quote":"오랫동안 피부 트러블로 고생했는데 제품 추천과 사용법까지 꼼꼼하게 알려주셔서 정말 빠르게 나아졌어요. 지금은 주변에도 많이 소개하고 있습니다.","author":"김○○ 대표님 · 뷰티샵"},{"metric":"고객 답례 선물 후 재방문율 2배","quote":"고객 선물로 드렸더니 반응이 너무 좋았어요. 제품이 이렇게 좋은 줄 몰랐다고 하시는 분들이 많아서 저도 놀랐습니다.","author":"오○○ 원장님 · 헤어샵"}]
   },
