@@ -214,7 +214,7 @@ function renderDashboard() {
   document.getElementById('kpiGrid').innerHTML = [
     { label:'챕터 건강 점수', value:healthScore,          unit:'점', curr:healthScore,    prev:prevHealth    },
     { label:'총 리퍼럴 (4주)', value:totalReferrals,      unit:'건', curr:totalReferrals, prev:prevReferrals },
-    { label:'리퍼럴 성사금액', value:fmt(totalRefAmount), unit:'원', curr:totalRefAmount, prev:prevRefAmount },
+    { label:'감사장 금액',      value:fmt(totalRefAmount), unit:'원', curr:totalRefAmount, prev:prevRefAmount },
     { label:'평균 1:1 (4주)',  value:avgOno.toFixed(1),   unit:'회', curr:avgOno,         prev:prevAvgOno    },
     { label:'비지터 초대 (4주)',value:totalVisitors,       unit:'명', curr:totalVisitors,  prev:prevVisitors  },
   ].map(k => `
@@ -311,7 +311,7 @@ function renderChartDual(id, labels, amounts, counts) {
   if (chartInstances[id]) chartInstances[id].destroy();
   chartInstances[id] = new Chart(ctx, {
     data: { labels, datasets: [
-      { type:'bar',  label:'성사금액(원)', data:amounts, backgroundColor:'#CC000033', borderColor:'#CC0000', borderWidth:1.5, yAxisID:'yAmt', order:2 },
+      { type:'bar',  label:'감사장 금액(원)', data:amounts, backgroundColor:'#CC000033', borderColor:'#CC0000', borderWidth:1.5, yAxisID:'yAmt', order:2 },
       { type:'line', label:'성사 건수',   data:counts, borderColor:'#1A1A2E', backgroundColor:'transparent', borderWidth:2, pointRadius:4, pointBackgroundColor:'#1A1A2E', tension:0.35, yAxisID:'yCnt', order:1 },
     ]},
     options: {
@@ -383,7 +383,7 @@ function renderMembers(filter='', lightFilter='') {
         <div class="mc-stat"><div class="mc-stat-val">${m.ono}</div><div class="mc-stat-label">1:1</div></div>
         <div class="mc-stat"><div class="mc-stat-val">${m.referrals}</div><div class="mc-stat-label">리퍼럴</div></div>
         <div class="mc-stat"><div class="mc-stat-val">${m.visitors}</div><div class="mc-stat-label">비지터</div></div>
-        <div class="mc-stat"><div class="mc-stat-val">${fmt(m.refAmountReceived)}</div><div class="mc-stat-label">성사금액</div></div>
+        <div class="mc-stat"><div class="mc-stat-val">${fmt(m.refAmountReceived)}</div><div class="mc-stat-label">감사장 금액</div></div>
       </div>
       <div class="mc-criteria">
         <span class="mc-crit ${m.critAttend?'ok':'fail'}">${m.critAttend?'✓':'✗'} 출석</span>

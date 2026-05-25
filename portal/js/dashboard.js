@@ -60,17 +60,35 @@ function buildDashboard(session, el, members, weekly, referral) {
   const prevRed    = prevAllStats.filter(s => s.light === 'red').length;
 
   const totalMembers = members.length;
-  const attendRecs   = weekly.filter(w => weeks4.includes(w.week_start) && w.attended);
-  const attendPct    = weeks4.length ? Math.round(attendRecs.length / (totalMembers * weeks4.length) * 100) : 0;
-  const prevAttendRecs = weekly.filter(w => weeksPrev.includes(w.week_start) && w.attended);
-  const prevAttendPct  = weeksPrev.length ? Math.round(prevAttendRecs.length / (totalMembers * weeksPrev.length) * 100) : 0;
 
-  const ref4  = referral.filter(r => weeks4.some(w  => sameWeek(r.referral_date, w)));
-  const refPrev = referral.filter(r => weeksPrev.some(w => sameWeek(r.referral_date, w)));
+  const w4Recs    = weekly.filter(w => weeks4.includes(w.week_start));
+  const wPrevRecs = weekly.filter(w => weeksPrev.includes(w.week_start));
+
+  const attendRecs     = w4Recs.filter(w => w.attended);
+  const attendPct      = (totalMembers * weeks4.length) ? Math.round(attendRecs.length / (totalMembers * weeks4.length) * 100) : 0;
+  const prevAttendRecs = wPrevRecs.filter(w => w.attended);
+  const prevAttendPct  = (totalMembers * weeksPrev.length) ? Math.round(prevAttendRecs.length / (totalMembers * weeksPrev.length) * 100) : 0;
+
+  const ref4     = referral.filter(r => weeks4.some(w    => sameWeek(r.referral_date, w)));
+  const refPrev  = referral.filter(r => weeksPrev.some(w => sameWeek(r.referral_date, w)));
   const ref4Amt  = ref4.reduce((s,r)  => s + (Number(r.amount)||0), 0);
   const refPrevAmt = refPrev.reduce((s,r) => s + (Number(r.amount)||0), 0);
-  const onoCnt  = weekly.filter(w => weeks4.includes(w.week_start)).reduce((s,w) => s + (w.one_on_one||0), 0);
-  const onoPrev = weekly.filter(w => weeksPrev.includes(w.week_start)).reduce((s,w) => s + (w.one_on_one||0), 0);
+
+  const onoCnt  = w4Recs.reduce((s,w)    => s + (w.one_on_one||0), 0);
+  const onoPrev = wPrevRecs.reduce((s,w) => s + (w.one_on_one||0), 0);
+
+  const visitorCnt  = w4Recs.reduce((s,w)    => s + (w.visitors_count||0), 0);
+  const visitorPrev = wPrevRecs.reduce((s,w) => s + (w.visitors_count||0), 0);
+
+  const eduTotal  = totalMembers * weeks4.length;
+  const eduCnt    = w4Recs.filter(w => w.education_attended).length;
+  const eduPct    = eduTotal ? Math.round(eduCnt / eduTotal * 100) : 0;
+  const eduPrevTotal = totalMembers * weeksPrev.length;
+  const eduPrevCnt   = wPrevRecs.filter(w => w.education_attended).length;
+  const eduPrevPct   = eduPrevTotal ? Math.round(eduPrevCnt / eduPrevTotal * 100) : 0;
+
+  const perMemberAmt  = totalMembers ? Math.round(ref4Amt  / totalMembers) : 0;
+  const perMemberPrev = totalMembers ? Math.round(refPrevAmt / totalMembers) : 0;
 
   // Personal stats
   const myId   = session.memberId;
@@ -86,7 +104,7 @@ function buildDashboard(session, el, members, weekly, referral) {
       ${isLeader ? `<a href="/portal/traffic-light.html" class="btn btn-primary btn-sm">트래픽라이트 →</a>` : ''}
     </div>
 
-    ${isLeader ? renderChapterKPI(totalMembers, greenCnt, yellowCnt, redCnt, prevGreen, prevYellow, prevRed, attendPct, prevAttendPct, ref4.length, refPrev.length, ref4Amt, refPrevAmt, onoCnt, onoPrev) : ''}
+    ${isLeader ? renderChapterKPI(totalMembers, attendPct, prevAttendPct, ref4.length, refPrev.length, ref4Amt, refPrevAmt, onoCnt, onoPrev, visitorCnt, visitorPrev, eduPct, eduPrevPct, perMemberAmt, perMemberPrev) : ''}
 
     ${myStats ? renderPersonalCard(session, myStats, weeks4.length) : ''}
 
@@ -104,7 +122,7 @@ function buildDashboard(session, el, members, weekly, referral) {
       <div class="card">
         <div class="card-title">주간 리퍼럴 건수 (최근 8주)</div>
         <canvas id="chartWeekly" height="160"></canvas>
-        <div class="card-title" style="margin-top:16px">월별 리퍼럴 성사금액</div>
+        <div class="card-title" style="margin-top:16px">월별 감사장 금액</div>
         <canvas id="chartMonthly" height="140"></canvas>
       </div>
     </div>
@@ -142,15 +160,18 @@ function buildDashboard(session, el, members, weekly, referral) {
 }
 
 /* ── Chapter KPI Block ── */
-function renderChapterKPI(total, green, yellow, red, pG, pY, pR, attend, pAttend, refCnt, pRefCnt, refAmt, pRefAmt, ono, pOno) {
+function renderChapterKPI(total, attend, pAttend, refCnt, pRefCnt, refAmt, pRefAmt, ono, pOno, visitor, pVisitor, edu, pEdu, perMember, pPerMember) {
   return `
+  <div style="margin-bottom:8px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--text-muted)">📊 챕터 KPI · 최근 4주</div>
   <div class="kpi-grid">
-    ${kpiCard('총 멤버', total, '')}
+    ${kpiCard('활성 멤버', total + '명', null)}
     ${kpiCard('출석률', attend + '%', deltaStr(attend, pAttend))}
-    ${kpiCard('리퍼럴 건수', refCnt + '건', deltaStr(refCnt, pRefCnt))}
-    ${kpiCard('리퍼럴 금액', fmtAmt(refAmt), deltaStr(refAmt, pRefAmt))}
+    ${kpiCard('교육 참여율', edu + '%', deltaStr(edu, pEdu))}
+    ${kpiCard('비지터 초대', visitor + '명', deltaStr(visitor, pVisitor))}
+    ${kpiCard('리퍼럴', refCnt + '건', deltaStr(refCnt, pRefCnt))}
+    ${kpiCard('감사장 금액', fmtAmt(refAmt), deltaStr(refAmt, pRefAmt))}
     ${kpiCard('1:1 횟수', ono + '회', deltaStr(ono, pOno))}
-    ${kpiCard('Green 멤버', green + '명', deltaStr(green, pG))}
+    ${kpiCard('1인당 감사장', fmtAmt(perMember), deltaStr(perMember, pPerMember))}
   </div>`;
 }
 
@@ -226,7 +247,7 @@ async function loadRecentMeetings(session) {
       el.innerHTML = '<div class="empty-state"><div class="es-icon">📋</div><p>등록된 회의록이 없습니다</p></div>';
       return;
     }
-    const typeLabel = { weekly_bni:'주간BNI', board:'의장단', membership:'멤버십위원회', leader_team:'리더팀' };
+    const typeLabel = { weekly_bni:'주간회의', board:'의장단', membership:'멤버십위원회', leader_team:'리더팀' };
     el.innerHTML = data.map(m => `
       <a href="/portal/meeting-detail.html?id=${m.id}" class="meeting-item">
         <span class="mi-date">${m.meeting_date}</span>
