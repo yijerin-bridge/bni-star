@@ -288,6 +288,17 @@ const MEMBERS_DEFAULT = [
     instagram: "", kakao: "", website: "",
     color: "#8E44AD", featured: false, photoUrl: "",
     testimonials: []
+  },
+  {
+    id: 33, name: "장지원", company: "온초심", category: "식품/외식",
+    specialty: "한정식",
+    headline: "상견례는 온초심에서 하세요~!",
+    targetCustomer: "상견례, 단체회식",
+    description: "신선한 재료로 만든 정성 가득한 한상, 온초심입니다.",
+    phone: "010-2461-6527", email: "", address: "경기 수원시 권선구 곡반정로 102 1층",
+    instagram: "", kakao: "", website: "",
+    color: "#566573", featured: true, photoUrl: "",
+    testimonials: []
   }
 ];
 
