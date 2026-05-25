@@ -55,14 +55,26 @@
     .cat-section { margin-bottom: 20px; }
     .cat-section-title { font-size: 12px; font-weight: 700; color: #374151; margin-bottom: 8px; }
 
-    /* ── 타임라인 탭 (역할별 임기 이력) ── */
-    .term-tab { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 16px; }
-    .term-chip {
-      padding: 5px 12px; border-radius: 20px; font-size: 12px; cursor: pointer;
-      border: 1.5px solid var(--border); background: #fff; color: var(--text-muted); transition: all .15s;
+    /* ── 임기 탭 바 ── */
+    .term-tab-bar {
+      display: flex; gap: 0; flex-wrap: wrap; margin-bottom: 0;
+      border-bottom: 2px solid var(--border); overflow-x: auto;
     }
-    .term-chip.active { border-color: var(--red); background: var(--red); color: #fff; }
-    .term-chip.current { border-color: var(--red); color: var(--red); font-weight: 600; }
+    .term-tab-item {
+      display: flex; align-items: center; gap: 6px;
+      padding: 9px 16px; cursor: pointer; font-size: 12px; font-weight: 500;
+      color: var(--text-muted); border-bottom: 2px solid transparent;
+      margin-bottom: -2px; white-space: nowrap; transition: color .15s, border-color .15s;
+    }
+    .term-tab-item:hover { color: #374151; }
+    .term-tab-item.active { color: var(--red); border-bottom-color: var(--red); font-weight: 700; }
+    .term-tab-del {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 18px; height: 18px; border-radius: 50%; border: none; background: transparent;
+      color: #9ca3af; font-size: 14px; cursor: pointer; line-height: 1; padding: 0;
+      transition: background .12s, color .12s;
+    }
+    .term-tab-del:hover { background: #fee2e2; color: #CC0000; }
   </style>
 </head>
 <body>
@@ -211,38 +223,47 @@ async function openDetail(roleId) {
   const role = allRoles.find(r => r.id === roleId);
   if (!role) return;
 
-  // 이 역할의 모든 인수인계 기록 (임기순)
-  const records = allRecords.filter(r => r.role_id === roleId).sort((a, b) => b.term_start?.localeCompare(a.term_start||''));
-
   const canEdit = canManageMembers(currentSession) || currentSession.roleType === role.role_type;
 
-  // 현재 활성 record (없으면 null)
+  let records = allRecords.filter(r => r.role_id === roleId)
+    .sort((a, b) => b.term_start?.localeCompare(a.term_start || ''));
+
   let activeRecordId = records[0]?.id || null;
 
   const renderDetail = () => {
-    const rec = records.find(r => r.id === activeRecordId);
+    records = allRecords.filter(r => r.role_id === roleId)
+      .sort((a, b) => b.term_start?.localeCompare(a.term_start || ''));
+    if (!records.find(r => r.id === activeRecordId)) activeRecordId = records[0]?.id || null;
+    const rec  = records.find(r => r.id === activeRecordId);
     const items = rec ? allItems.filter(i => i.handover_id === rec.id) : [];
 
     detailEl.innerHTML = `
+      <!-- 헤더 -->
       <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;flex-wrap:wrap">
-        <button class="btn btn-outline btn-sm" onclick="renderGrid();document.getElementById('gridView').classList.remove('hidden');document.getElementById('detailView').classList.remove('active')">← 목록</button>
+        <button class="btn btn-outline btn-sm" id="backBtn">← 목록</button>
         <span style="font-size:20px;font-weight:700">${getRoleIcon(role.name)} ${role.name}</span>
         <span class="badge badge-${role.role_type}">${TIER_META[role.role_type]?.label}</span>
         <div style="margin-left:auto;display:flex;gap:8px;flex-wrap:wrap">
-          ${canEdit ? `<button class="btn btn-outline btn-sm" id="newTermBtn">+ 새 임기 추가</button>` : ''}
+          ${canEdit ? `<button class="btn btn-outline btn-sm" id="newTermBtn">+ 새 임기</button>` : ''}
           ${canEdit && rec ? `<button class="btn btn-primary btn-sm" id="addItemBtn">+ 항목 추가</button>` : ''}
         </div>
       </div>
 
-      <!-- 임기 탭 -->
+      <!-- 임기 탭 바 -->
       ${records.length > 0 ? `
-      <div class="term-tab">
-        ${records.map(r => `
-          <div class="term-chip ${r.id === activeRecordId ? 'active' : r.term_end ? '' : 'current'}"
-               onclick="activeRecordId='${r.id}';renderDetail()">
-            ${r.term_start||'?'} ~ ${r.term_end||'현재'}
-            ${r.status==='complete' ? ' ✓' : ''}
-          </div>`).join('')}
+      <div class="term-tab-bar">
+        ${records.map(r => {
+          const isCurrent = !r.term_end;
+          const isActive  = r.id === activeRecordId;
+          return `
+            <div class="term-tab-item ${isActive ? 'active' : ''}" data-rid="${r.id}">
+              <span class="term-tab-label">
+                ${isCurrent ? '🟢 ' : ''}${r.term_start || '?'} ~ ${r.term_end || '현재'}
+                ${r.status === 'complete' ? ' ✓' : ''}
+              </span>
+              ${canEdit ? `<button class="term-tab-del" data-rid="${r.id}" title="임기 삭제">×</button>` : ''}
+            </div>`;
+        }).join('')}
       </div>` : ''}
 
       <!-- 항목 없을 때 -->
@@ -255,9 +276,12 @@ async function openDetail(roleId) {
 
       <!-- 항목 목록 -->
       ${rec ? `
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
-          <span style="font-size:12px;color:#9ca3af">${rec.term_start||'?'} ~ ${rec.term_end||'현재'} · ${rec.status==='complete'?'✓ 완료':'작성중'}</span>
-          ${canEdit && rec.status!=='complete' ? `<button class="btn btn-secondary btn-sm" onclick="markComplete('${rec.id}')">완료 처리</button>` : ''}
+        <div style="display:flex;justify-content:space-between;align-items:center;margin:16px 0 12px">
+          <span style="font-size:12px;color:#9ca3af">
+            ${rec.term_start || '?'} ~ ${rec.term_end || '현재'} &nbsp;·&nbsp;
+            ${rec.status === 'complete' ? '✓ 완료' : '작성중'}
+          </span>
+          ${canEdit && rec.status !== 'complete' ? `<button class="btn btn-secondary btn-sm" id="completeBtn">완료 처리</button>` : ''}
         </div>
 
         ${Object.entries(CAT_META).map(([cat, meta]) => {
@@ -268,7 +292,7 @@ async function openDetail(roleId) {
               <div class="cat-section-title">${meta.icon} ${meta.label} (${catItems.length})</div>
               ${catItems.map(item => `
                 <div class="ho-item-card ${cat}">
-                  ${canEdit ? `<span class="ho-item-del" onclick="deleteItem('${item.id}')">✕</span>` : ''}
+                  ${canEdit ? `<span class="ho-item-del" data-iid="${item.id}">✕</span>` : ''}
                   <div class="ho-item-title">${item.title}</div>
                   ${item.content ? `<div class="ho-item-content">${item.content}</div>` : ''}
                 </div>`).join('')}
@@ -279,15 +303,41 @@ async function openDetail(roleId) {
       ` : ''}
     `;
 
-    // 이벤트 바인딩
-    document.getElementById('addItemBtn')?.addEventListener('click', () => showAddItemForm(activeRecordId));
-    document.getElementById('newTermBtn')?.addEventListener('click',  () => showNewTermForm(roleId));
-    document.getElementById('newTermBtn2')?.addEventListener('click', () => showNewTermForm(roleId));
+    // ── 이벤트 바인딩 ──
+    detailEl.querySelector('#backBtn')?.addEventListener('click', () => {
+      renderGrid();
+      document.getElementById('gridView').classList.remove('hidden');
+      document.getElementById('detailView').classList.remove('active');
+    });
+    detailEl.querySelector('#addItemBtn')?.addEventListener('click', () => showAddItemForm(activeRecordId));
+    detailEl.querySelector('#newTermBtn')?.addEventListener('click',  () => showNewTermForm(roleId));
+    detailEl.querySelector('#newTermBtn2')?.addEventListener('click', () => showNewTermForm(roleId));
+    detailEl.querySelector('#completeBtn')?.addEventListener('click', () => markComplete(rec.id));
+
+    // 임기 탭 전환
+    detailEl.querySelectorAll('.term-tab-item').forEach(el => {
+      el.addEventListener('click', e => {
+        if (e.target.classList.contains('term-tab-del')) return;
+        activeRecordId = el.dataset.rid;
+        renderDetail();
+      });
+    });
+
+    // 임기 삭제 버튼
+    detailEl.querySelectorAll('.term-tab-del').forEach(btn => {
+      btn.addEventListener('click', e => {
+        e.stopPropagation();
+        deleteTerm(btn.dataset.rid, roleId);
+      });
+    });
+
+    // 항목 삭제
+    detailEl.querySelectorAll('.ho-item-del').forEach(btn => {
+      btn.addEventListener('click', () => deleteItem(btn.dataset.iid));
+    });
   };
 
-  // renderDetail을 클로저 밖에서도 쓸 수 있게
   window.renderDetail = renderDetail;
-  window.activeRecordId = activeRecordId;
   renderDetail();
 }
 
@@ -303,6 +353,17 @@ async function markComplete(recordId) {
   if (rec) openDetail(rec.role_id);
 }
 window.markComplete = markComplete;
+
+/* ── 임기 삭제 ── */
+async function deleteTerm(recordId, roleId) {
+  if (!confirm('이 임기와 모든 항목을 삭제하시겠습니까?\n되돌릴 수 없습니다.')) return;
+  // handover_items는 ON DELETE CASCADE이므로 record만 삭제
+  const { error } = await getSb().from('handover_records').delete().eq('id', recordId);
+  if (error) { alert('오류: ' + error.message); return; }
+  await loadAll();
+  openDetail(roleId);
+}
+window.deleteTerm = deleteTerm;
 
 /* ── 항목 삭제 ── */
 async function deleteItem(itemId) {
