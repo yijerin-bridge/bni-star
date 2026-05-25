@@ -66,7 +66,7 @@ const MEMBERS_DEFAULT = [
     description: "인테리어 디자이너 15년 경력. 상업 공간 특화 설계. 공간 기획부터 시공·가구 납품까지 원스톱 서비스. 합리적인 비용으로 최고의 공간을 만들어 드립니다.",
     phone: "010-6314-8999", email: "ianko83@naver.com", address: "경기 수원시 영통구 영통로 174번길 12, 그대가센트럴파크상가 101호 (망포동 722)",
     instagram: "design_ian.ko", kakao: "https://open.kakao.com/o/soUVe1Tc", website: "",
-    color: "#D35400", featured: true, photoUrl: "https://randomuser.me/api/portraits/men/41.jpg",
+    color: "#D35400", featured: true, photoUrl: "https://ocmnbwlhjovfycihyvnr.supabase.co/storage/v1/object/public/member-photos/member-1779705954380.png",
     testimonials: [{"metric":"인테리어 후 카페 매출 30% 상승","quote":"오픈 전 공간 기획부터 맡겼는데 손님들이 분위기 때문에 또 온다고 하더라고요. 인테리어가 마케팅이었어요."},{"metric":"사무실 리모델링 후 직원 만족도 95%","quote":"낡은 사무실을 바꾸고 싶었는데 예산이 빠듯했어요. 예산 안에서 최대한 이뻐 보이게 설계해줬고 직원들도 출근이 즐겁다고 하더라고요.","author":"최○○ 팀장님 · 스타트업"}]
   },
   {
