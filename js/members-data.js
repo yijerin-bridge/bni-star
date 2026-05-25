@@ -299,6 +299,17 @@ const MEMBERS_DEFAULT = [
     instagram: "", kakao: "", website: "",
     color: "#566573", featured: true, photoUrl: "",
     testimonials: []
+  },
+  {
+    id: 34, name: "김규리", company: "속리산규리펜션", category: "라이프/여행",
+    specialty: "펜션",
+    headline: "",
+    targetCustomer: "",
+    description: "",
+    phone: "010-2788-7720", email: "", address: "충북 보은군 속리산면 사내4길 5-12",
+    instagram: "", kakao: "", website: "https://naver.me/5mIPx2jo",
+    color: "#F39C12", featured: false, photoUrl: "",
+    testimonials: []
   }
 ];
 
