@@ -277,6 +277,17 @@ const MEMBERS_DEFAULT = [
     instagram: "", kakao: "", website: "",
     color: "#566573", featured: false, photoUrl: "",
     testimonials: []
+  },
+  {
+    id: 32, name: "이복순", company: "동네언니", category: "뷰티/패션",
+    specialty: "의류",
+    headline: "",
+    targetCustomer: "",
+    description: "",
+    phone: "010-7255-5334", email: "", address: "경기 수원시 권선구 세지로12번길 9-31",
+    instagram: "", kakao: "", website: "",
+    color: "#8E44AD", featured: false, photoUrl: "",
+    testimonials: []
   }
 ];
 
