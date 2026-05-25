@@ -321,6 +321,17 @@ const MEMBERS_DEFAULT = [
     instagram: "", kakao: "", website: "",
     color: "#117A8B", featured: false, photoUrl: "",
     testimonials: []
+  },
+  {
+    id: 36, name: "강종현", company: "법무법인 청목", category: "법률/세무",
+    specialty: "민사, 형사 전문 변호사",
+    headline: "",
+    targetCustomer: "",
+    description: "",
+    phone: "010-9178-5274", email: "", address: "",
+    instagram: "", kakao: "", website: "",
+    color: "#566573", featured: false, photoUrl: "",
+    testimonials: []
   }
 ];
 
