@@ -13,6 +13,19 @@
     .di-text { flex:1;font-size:13px; }
     .di-del { color:#CC0000;font-size:12px;cursor:pointer;padding:2px 8px; }
     .add-decision-row { display:flex;gap:8px;margin-top:10px; }
+
+    /* 참석자 그리드 */
+    .attendee-grid { display:flex;flex-wrap:wrap;gap:8px; }
+    .att-btn {
+      display:flex;flex-direction:column;align-items:center;gap:2px;
+      padding:8px 14px;border-radius:10px;border:1.5px solid var(--border);
+      background:#f9fafb;cursor:pointer;transition:all .15s;min-width:72px;
+    }
+    .att-btn:hover { border-color:#d1d5db;background:#f3f4f6; }
+    .att-btn.on  { border-color:#2563eb;background:#eff6ff; }
+    .att-name { font-size:13px;font-weight:600;color:#374151; }
+    .att-co   { font-size:10px;color:#9ca3af;max-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap; }
+    .att-btn.on .att-name { color:#1d4ed8; }
   </style>
 </head>
 <body>
@@ -22,9 +35,11 @@
 <script src="/portal/js/portal-auth.js"></script>
 <script src="/portal/js/portal-nav.js"></script>
 <script>
-const TYPE_LABEL = { weekly_bni:'주간 BNI', board:'의장단', membership:'멤버십위원회', leader_team:'리더팀' };
+const TYPE_LABEL = { weekly_bni:'주간회의', board:'의장단', membership:'멤버십위원회', leader_team:'리더팀' };
 let meeting = null, minutesData = null;
 let decisions = [];
+let allMembers = [];
+let attendedSet = new Set(); // member_id 집합
 
 document.addEventListener('DOMContentLoaded', async () => {
   const params = new URLSearchParams(location.search);
@@ -37,15 +52,25 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   bodyEl.innerHTML = '<div style="text-align:center;padding:48px;color:#9ca3af">불러오는 중...</div>';
 
-  const [mRes, minRes] = await Promise.all([
+  const [mRes, minRes, memRes, attRes] = await Promise.all([
     getSb().from('meetings').select('*').eq('id', meetingId).single(),
     getSb().from('meeting_minutes').select('*').eq('meeting_id', meetingId).single(),
+    getSb().from('members').select('id,name,company').eq('is_active', true).order('name'),
+    getSb().from('meeting_attendees').select('*').eq('meeting_id', meetingId),
   ]);
 
   if (mRes.error) { bodyEl.innerHTML = '<div class="alert-banner crit">회의를 찾을 수 없습니다</div>'; return; }
   meeting = mRes.data;
   minutesData = minRes.data;
   decisions = minutesData?.decisions || [];
+
+  // 멤버 목록 — Supabase 우선, 없으면 MEMBERS_DEFAULT fallback
+  allMembers = (memRes.data?.length ? memRes.data : (loadMembers?.() || [])).map(m => ({
+    id: m.legacy_id ?? m.id,
+    name: m.name,
+    company: m.company,
+  }));
+  attendedSet = new Set((attRes.data || []).filter(a => a.attended).map(a => a.member_id));
 
   const canEdit = canWriteMinutes(session, meeting.meeting_type);
   const isPublished = meeting.status === 'published';
@@ -65,6 +90,15 @@ document.addEventListener('DOMContentLoaded', async () => {
         ${canEdit && !isPublished ? `<button class="btn btn-secondary btn-sm" id="publishBtn">게시하기</button>` : ''}
         ${canEdit ? `<button class="btn btn-primary btn-sm" id="saveBtn">저장</button>` : ''}
       </div>
+    </div>
+
+    <!-- 참석자 -->
+    <div class="card" style="margin-bottom:16px">
+      <div class="card-title" style="margin-bottom:12px">
+        참석자
+        <span id="attendCount" style="margin-left:8px;font-size:12px;font-weight:400;color:#9ca3af"></span>
+      </div>
+      <div id="attendeeGrid" class="attendee-grid"></div>
     </div>
 
     <div class="section-row">
@@ -96,15 +130,55 @@ document.addEventListener('DOMContentLoaded', async () => {
   `;
 
   renderDecisions(canEdit);
+  renderAttendees(canEdit);
 
   // Buttons
   if (canEdit) {
-    document.getElementById('saveBtn').addEventListener('click', () => saveMinutes(meetingId));
+    document.getElementById('saveBtn').addEventListener('click', () => saveAll(meetingId));
     document.getElementById('addDecisionBtn')?.addEventListener('click', addDecision);
     document.getElementById('newDecision')?.addEventListener('keydown', e => { if (e.key === 'Enter') addDecision(); });
     document.getElementById('publishBtn')?.addEventListener('click', () => publishMeeting(meetingId));
   }
 });
+
+function renderAttendees(canEdit) {
+  const grid = document.getElementById('attendeeGrid');
+  const countEl = document.getElementById('attendCount');
+  if (!grid) return;
+
+  const update = () => {
+    countEl.textContent = `${attendedSet.size} / ${allMembers.length}명 출석`;
+  };
+
+  grid.innerHTML = allMembers.map(m => `
+    <button class="att-btn ${attendedSet.has(m.id) ? 'on' : ''}" data-mid="${m.id}">
+      <span class="att-name">${m.name}</span>
+      <span class="att-co">${m.company || ''}</span>
+    </button>`).join('');
+
+  if (canEdit) {
+    grid.querySelectorAll('.att-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const mid = Number(btn.dataset.mid);
+        if (attendedSet.has(mid)) { attendedSet.delete(mid); btn.classList.remove('on'); }
+        else                      { attendedSet.add(mid);    btn.classList.add('on'); }
+        update();
+      });
+    });
+  }
+
+  update();
+}
+
+async function saveAttendees(meetingId) {
+  await getSb().from('meeting_attendees').delete().eq('meeting_id', meetingId);
+  const rows = [...attendedSet].map(id => ({ meeting_id: meetingId, member_id: id, attended: true }));
+  if (rows.length) await getSb().from('meeting_attendees').insert(rows);
+}
+
+async function saveAll(meetingId) {
+  await Promise.all([saveMinutes(meetingId), saveAttendees(meetingId)]);
+}
 
 function renderDecisions(canEdit) {
   const el = document.getElementById('decisionList');
@@ -151,7 +225,7 @@ async function saveMinutes(meetingId) {
 }
 
 async function publishMeeting(meetingId) {
-  await saveMinutes(meetingId);
+  await saveAll(meetingId);
   const { error } = await getSb().from('meetings').update({ status: 'published' }).eq('id', meetingId);
   if (error) alert('게시 실패: ' + error.message);
   else { showToast('게시되었습니다'); setTimeout(() => location.reload(), 800); }

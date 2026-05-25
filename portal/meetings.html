@@ -15,7 +15,7 @@
 <script src="/portal/js/portal-auth.js"></script>
 <script src="/portal/js/portal-nav.js"></script>
 <script>
-const TYPE_LABEL = { weekly_bni:'주간 BNI', board:'의장단', membership:'멤버십위원회', leader_team:'리더팀' };
+const TYPE_LABEL = { weekly_bni:'주간회의', board:'의장단', membership:'멤버십위원회', leader_team:'리더팀' };
 const TYPE_ACCESS = { weekly_bni: ['board','leader','membership','member'], board:['board'], membership:['board','membership'], leader_team:['board','leader'] };
 
 document.addEventListener('DOMContentLoaded', async () => {
@@ -56,7 +56,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         </div>
         <div class="form-group">
           <label class="form-label">제목 (선택)</label>
-          <input type="text" id="nmTitle" class="form-input" placeholder="예: 5월 3주차 주간 BNI">
+          <input type="text" id="nmTitle" class="form-input" placeholder="예: 5월 3주차 주간회의">
         </div>
         <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:4px">
           <button class="btn btn-outline" id="cancelNewMeeting">취소</button>
