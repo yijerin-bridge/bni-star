@@ -5,8 +5,7 @@
 -- ============================================================
 
 -- 기존 역할 전부 삭제 후 재입력
-TRUNCATE TABLE member_roles;  -- 역할 배정도 초기화 (연결된 데이터 먼저)
-TRUNCATE TABLE roles RESTART IDENTITY;
+TRUNCATE TABLE roles RESTART IDENTITY CASCADE;
 
 INSERT INTO roles (name, tier, role_type, description) VALUES
   ('의장',               1, 'board',      '챕터 의장'),
