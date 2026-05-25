@@ -343,6 +343,17 @@ const MEMBERS_DEFAULT = [
     instagram: "", kakao: "", website: "",
     color: "#566573", featured: false, photoUrl: "",
     testimonials: []
+  },
+  {
+    id: 38, name: "박준홍", company: "스토리오브시스템", category: "IT/디지털",
+    specialty: "소프트웨어개발",
+    headline: "",
+    targetCustomer: "",
+    description: "",
+    phone: "010-2625-6411", email: "", address: "",
+    instagram: "", kakao: "", website: "",
+    color: "#784212", featured: false, photoUrl: "",
+    testimonials: []
   }
 ];
 
