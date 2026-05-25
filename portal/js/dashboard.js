@@ -93,9 +93,14 @@ function buildDashboard(session, el, members, weekly, referral) {
   const convRate     = visitorCnt  > 0 ? Math.round(newMemberCnt  / visitorCnt  * 100) : 0;
   const convRatePrev = visitorPrev > 0 ? Math.round(newMemberPrev / visitorPrev * 100) : 0;
 
-  // 멤버 갱신율 — 최근 4주 내 탈퇴자 기준: (전체 - 탈퇴) / 전체 * 100
-  // left_date는 비활성 멤버에게 있으므로 별도 쿼리가 필요. 현재는 활성멤버만 로드하므로 안내 텍스트 표시
-  const renewalRate = null; // 별도 데이터 필요
+  // 멤버 갱신율 — 별도 쿼리 필요 (비활성 멤버 left_date 기준)
+  const renewalRate = null;
+
+  // 리퍼럴 성사율 — amount > 0인 건 / 전체 리퍼럴
+  const closedRef4     = ref4.filter(r => (r.amount || 0) > 0).length;
+  const closedRefPrev  = refPrev.filter(r => (r.amount || 0) > 0).length;
+  const successRate     = ref4.length  > 0 ? Math.round(closedRef4    / ref4.length  * 100) : 0;
+  const successRatePrev = refPrev.length > 0 ? Math.round(closedRefPrev / refPrev.length * 100) : 0;
 
   // Personal stats
   const myId   = session.memberId;
@@ -118,7 +123,7 @@ function buildDashboard(session, el, members, weekly, referral) {
 
     <!-- ════ 챕터 현황 ════ -->
     <div class="dash-section-label">📊 챕터 현황</div>
-    ${renderChapterKPI({ totalMembers, newMemberCnt, newMemberPrev, visitorCnt, visitorPrev, convRate, convRatePrev, renewalRate, ref4Cnt: ref4.length, refPrevCnt: refPrev.length, ref4Amt, refPrevAmt, perMemberAmt, perMemberPrev, onoCnt, onoPrev })}
+    ${renderChapterKPI({ totalMembers, newMemberCnt, newMemberPrev, visitorCnt, visitorPrev, convRate, convRatePrev, renewalRate, ref4Cnt: ref4.length, refPrevCnt: refPrev.length, ref4Amt, refPrevAmt, perMemberAmt, perMemberPrev, onoCnt, onoPrev, successRate, successRatePrev })}
 
     <div class="section-row">
       <div class="card">
@@ -175,19 +180,20 @@ function buildDashboard(session, el, members, weekly, referral) {
 }
 
 /* ── Chapter KPI Block ── */
-function renderChapterKPI({ totalMembers, newMemberCnt, newMemberPrev, visitorCnt, visitorPrev, convRate, convRatePrev, renewalRate, ref4Cnt, refPrevCnt, ref4Amt, refPrevAmt, perMemberAmt, perMemberPrev, onoCnt, onoPrev }) {
+function renderChapterKPI({ totalMembers, newMemberCnt, newMemberPrev, visitorCnt, visitorPrev, convRate, convRatePrev, renewalRate, ref4Cnt, refPrevCnt, ref4Amt, refPrevAmt, perMemberAmt, perMemberPrev, onoCnt, onoPrev, successRate, successRatePrev }) {
   return `
   <div style="margin-bottom:8px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--text-muted)">챕터 KPI · 최근 4주</div>
-  <div class="kpi-grid" style="grid-template-columns:repeat(auto-fill,minmax(140px,1fr))">
-    ${kpiCard('활성 멤버',    totalMembers + '명',           null)}
-    ${kpiCard('신규 멤버',    newMemberCnt + '명',           deltaStr(newMemberCnt, newMemberPrev))}
-    ${kpiCard('비지터 초대',  visitorCnt + '명',             deltaStr(visitorCnt, visitorPrev))}
-    ${kpiCard('비지터 전환율', convRate + '%',               deltaStr(convRate, convRatePrev))}
-    ${kpiCard('멤버 갱신율',  renewalRate !== null ? renewalRate + '%' : '—', null)}
-    ${kpiCard('리퍼럴',       ref4Cnt + '건',                deltaStr(ref4Cnt, refPrevCnt))}
-    ${kpiCard('감사장 금액',  fmtAmt(ref4Amt),              deltaStr(ref4Amt, refPrevAmt))}
-    ${kpiCard('밸류시트',     fmtAmt(perMemberAmt),         deltaStr(perMemberAmt, perMemberPrev))}
-    ${kpiCard('원투원',       onoCnt + '회',                 deltaStr(onoCnt, onoPrev))}
+  <div class="kpi-grid" style="grid-template-columns:repeat(5,1fr)">
+    ${kpiCard('활성 멤버',     totalMembers + '명',                          null)}
+    ${kpiCard('신규 멤버',     newMemberCnt + '명',                          deltaStr(newMemberCnt, newMemberPrev))}
+    ${kpiCard('비지터 초대',   visitorCnt + '명',                            deltaStr(visitorCnt, visitorPrev))}
+    ${kpiCard('비지터 전환율', convRate + '%',                               deltaStr(convRate, convRatePrev))}
+    ${kpiCard('멤버 갱신율',   renewalRate !== null ? renewalRate + '%' : '—', null)}
+    ${kpiCard('원투원',        onoCnt + '회',                                deltaStr(onoCnt, onoPrev))}
+    ${kpiCard('리퍼럴',        ref4Cnt + '건',                               deltaStr(ref4Cnt, refPrevCnt))}
+    ${kpiCard('리퍼럴 성사율', successRate + '%',                            deltaStr(successRate, successRatePrev))}
+    ${kpiCard('감사장 금액',   fmtAmt(ref4Amt),                             deltaStr(ref4Amt, refPrevAmt))}
+    ${kpiCard('밸류시트(인당)', fmtAmt(perMemberAmt),                       deltaStr(perMemberAmt, perMemberPrev))}
   </div>`;
 }
 
