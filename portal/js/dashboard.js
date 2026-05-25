@@ -105,6 +105,10 @@ function buildDashboard(session, el, members, weekly, referral) {
     </div>
 
     ${isLeader ? `
+    <!-- ════ AI 디렉터 ════ -->
+    <div class="dash-section-label">🤖 AI 챕터 디렉터</div>
+    <div id="aiDirectorCard" class="card" style="margin-bottom:16px;display:none"></div>
+
     <!-- ════ 챕터 현황 ════ -->
     <div class="dash-section-label">📊 챕터 현황</div>
     ${renderChapterKPI(totalMembers, attendPct, prevAttendPct, ref4.length, refPrev.length, ref4Amt, refPrevAmt, onoCnt, onoPrev, visitorCnt, visitorPrev, eduPct, eduPrevPct, perMemberAmt, perMemberPrev)}
@@ -139,11 +143,6 @@ function buildDashboard(session, el, members, weekly, referral) {
     ${renderPersonalCard(session, myStats, weeks4.length)}
     ` : ''}
 
-    <!-- ════ AI 디렉터 (리더 이상만) ════ -->
-    ${isLeader ? `
-    <div class="dash-section-label">🤖 AI 챕터 디렉터</div>
-    <div id="aiDirectorCard" class="card" style="margin-bottom:16px;display:none"></div>
-    ` : ''}
 
     <!-- ════ 최근 회의 ════ -->
     <div class="dash-section-label">📋 최근 회의</div>
@@ -171,7 +170,7 @@ function buildDashboard(session, el, members, weekly, referral) {
 /* ── Chapter KPI Block ── */
 function renderChapterKPI(total, attend, pAttend, refCnt, pRefCnt, refAmt, pRefAmt, ono, pOno, visitor, pVisitor, edu, pEdu, perMember, pPerMember) {
   return `
-  <div style="margin-bottom:8px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--text-muted)">📊 챕터 KPI · 최근 4주</div>
+  <div style="margin-bottom:8px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--text-muted)">챕터 KPI · 최근 4주</div>
   <div class="kpi-grid">
     ${kpiCard('활성 멤버', total + '명', null)}
     ${kpiCard('출석률', attend + '%', deltaStr(attend, pAttend))}
