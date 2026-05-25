@@ -11,7 +11,7 @@ const MEMBERS_DEFAULT = [
     description: "맛있습니다.",
     phone: "010-5003-6491", email: "", address: "경기 수원시 영통구 영통로214번길 59 2층",
     instagram: "", kakao: "https://open.kakao.com/o/sEE4dK1h", website: "",
-    color: "#566573", featured: true, photoUrl: "https://randomuser.me/api/portraits/men/55.jpg",
+    color: "#566573", featured: true, photoUrl: "https://ocmnbwlhjovfycihyvnr.supabase.co/storage/v1/object/public/member-photos/member-1779705925339.png",
     testimonials: [{"metric":"회식 만족도 5.0, 단골 팀 3팀 확보","quote":"회사 회식 장소 고민이 많았는데 분위기도 좋고 가격도 합리적이에요. 팀원들이 너무 좋아해서 벌써 세 번째 방문입니다.","author":"박○○ 팀장님 · 제조업"}]
   },
   {
