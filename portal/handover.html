@@ -88,6 +88,31 @@ const TIER_META = {
   member:     { label: '일반멤버',     icon: '👤' },
 };
 
+// 역할 이름 → 개별 아이콘 (이름 부분 일치)
+const ROLE_ICON_MAP = [
+  { match: '의장',           icon: '👑' },
+  { match: '부의장',         icon: '🤝' },
+  { match: 'ST',             icon: '📋' },
+  { match: '컨트롤레터',     icon: '✉️' },
+  { match: '인터뷰',         icon: '🎤' },
+  { match: '커뮤니케이션',   icon: '📢' },
+  { match: '트래픽라이트',   icon: '🚦' },
+  { match: '도어퍼슨',       icon: '🚪' },
+  { match: '비지터',         icon: '👋' },
+  { match: '멘토링',         icon: '🌱' },
+  { match: '성장',           icon: '📈' },
+  { match: '교육',           icon: '📚' },
+  { match: '이벤트',         icon: '🎉' },
+  { match: 'PR',             icon: '📣' },
+  { match: '121',            icon: '☕' },
+  { match: '일반멤버',       icon: '👤' },
+];
+
+function getRoleIcon(roleName) {
+  const found = ROLE_ICON_MAP.find(m => roleName.includes(m.match));
+  return found ? found.icon : '📁';
+}
+
 const ROLE_ICON = {
   board: '👑', membership: '🚦', leader: '🎓', member: '👤',
 };
@@ -161,7 +186,7 @@ function renderGrid() {
               : `<span class="rf-status empty">미작성</span>`;
             return `
               <div class="role-folder" onclick="openDetail(${role.id})">
-                <div class="rf-icon">${ROLE_ICON[role.role_type]}</div>
+                <div class="rf-icon">${getRoleIcon(role.name)}</div>
                 <div class="rf-name">${role.name}</div>
                 <div class="rf-meta">
                   ${statusHtml}
@@ -201,7 +226,7 @@ async function openDetail(roleId) {
     detailEl.innerHTML = `
       <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;flex-wrap:wrap">
         <button class="btn btn-outline btn-sm" onclick="renderGrid();document.getElementById('gridView').classList.remove('hidden');document.getElementById('detailView').classList.remove('active')">← 목록</button>
-        <span style="font-size:20px;font-weight:700">${ROLE_ICON[role.role_type]} ${role.name}</span>
+        <span style="font-size:20px;font-weight:700">${getRoleIcon(role.name)} ${role.name}</span>
         <span class="badge badge-${role.role_type}">${TIER_META[role.role_type]?.label}</span>
         <div style="margin-left:auto;display:flex;gap:8px;flex-wrap:wrap">
           ${canEdit ? `<button class="btn btn-outline btn-sm" id="newTermBtn">+ 새 임기 추가</button>` : ''}
