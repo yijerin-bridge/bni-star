@@ -669,15 +669,19 @@ async function loadRecentReferral() {
 }
 
 /* ─── 필터 ─── */
+const MIN_MONTH = { year: 2026, month: 4 }; // 챕터 런칭: 2026-05
+
 function updateMonthLabel() {
   document.getElementById('monthLabel').textContent = `${selectedMonth.year}년 ${selectedMonth.month+1}월`;
   const now = new Date();
   document.getElementById('monthNext').disabled = selectedMonth.year>=now.getFullYear() && selectedMonth.month>=now.getMonth();
+  document.getElementById('monthPrev').disabled = selectedMonth.year<=MIN_MONTH.year && selectedMonth.month<=MIN_MONTH.month;
 }
 
 function initFilters() {
   updateMonthLabel();
   document.getElementById('monthPrev').addEventListener('click', () => {
+    if (selectedMonth.year<=MIN_MONTH.year && selectedMonth.month<=MIN_MONTH.month) return;
     if (selectedMonth.month===0) { selectedMonth.month=11; selectedMonth.year--; }
     else selectedMonth.month--;
     updateMonthLabel();
