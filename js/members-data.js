@@ -266,6 +266,17 @@ const MEMBERS_DEFAULT = [
     instagram: "", kakao: "", website: "www.kacademy.co.kr",
     color: "#8E44AD", featured: true, photoUrl: "https://ocmnbwlhjovfycihyvnr.supabase.co/storage/v1/object/public/member-photos/member-1777818100277.jpg",
     testimonials: []
+  },
+  {
+    id: 31, name: "이창호", company: "금성엘리베이터", category: "제조/유통",
+    specialty: "엘리베이터설비",
+    headline: "",
+    targetCustomer: "",
+    description: "",
+    phone: "010-7931-2410", email: "", address: "",
+    instagram: "", kakao: "", website: "",
+    color: "#566573", featured: false, photoUrl: "",
+    testimonials: []
   }
 ];
 
