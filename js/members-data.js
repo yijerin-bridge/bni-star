@@ -310,6 +310,17 @@ const MEMBERS_DEFAULT = [
     instagram: "", kakao: "", website: "https://naver.me/5mIPx2jo",
     color: "#F39C12", featured: false, photoUrl: "",
     testimonials: []
+  },
+  {
+    id: 35, name: "황동주", company: "초록목장", category: "식품/외식",
+    specialty: "정육점",
+    headline: "",
+    targetCustomer: "",
+    description: "",
+    phone: "010-3855-2145", email: "", address: "",
+    instagram: "", kakao: "", website: "",
+    color: "#117A8B", featured: false, photoUrl: "",
+    testimonials: []
   }
 ];
 
