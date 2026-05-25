@@ -139,6 +139,12 @@ function buildDashboard(session, el, members, weekly, referral) {
     ${renderPersonalCard(session, myStats, weeks4.length)}
     ` : ''}
 
+    <!-- ════ AI 디렉터 (리더 이상만) ════ -->
+    ${isLeader ? `
+    <div class="dash-section-label">🤖 AI 챕터 디렉터</div>
+    <div id="aiDirectorCard" class="card" style="margin-bottom:16px;display:none"></div>
+    ` : ''}
+
     <!-- ════ 최근 회의 ════ -->
     <div class="dash-section-label">📋 최근 회의</div>
     <div class="card" style="margin-bottom:16px">
@@ -155,6 +161,7 @@ function buildDashboard(session, el, members, weekly, referral) {
     renderDistChart(greenCnt, yellowCnt, redCnt);
     renderWeeklyChart(referral, weeks);
     renderMonthlyChart(referral);
+    renderAIDirector(allStats, members, referral, totalMembers);
   }
 
   // Load recent meetings async
@@ -378,4 +385,66 @@ function fmtAmt(v) {
   if (v >= 100000000) return (v/100000000).toFixed(1) + '억';
   if (v >= 10000)     return Math.round(v/10000) + '만';
   return v.toLocaleString() + '원';
+}
+
+/* ── AI 챕터 디렉터 ── */
+function renderAIDirector(allStats, members, referral, total) {
+  const el = document.getElementById('aiDirectorCard');
+  if (!el || !allStats.length) return;
+
+  const green  = allStats.filter(s => s.light === 'green').length;
+  const yellow = allStats.filter(s => s.light === 'yellow').length;
+  const red    = allStats.filter(s => s.light === 'red').length;
+  const newM   = allStats.filter(s => s.light === 'new').length;
+  const health = total ? Math.round((green * 100 + yellow * 50) / total) : 0;
+
+  const points = [];
+
+  // 전반적 건강도
+  if (health >= 80)
+    points.push({ type: 'positive', text: `챕터 건강 점수 ${health}점 — Green 멤버 ${green}명(${Math.round(green/total*100)}%)이 활발히 활동 중입니다.` });
+  else if (health >= 60)
+    points.push({ type: 'warning',  text: `챕터 건강 점수 ${health}점 — Yellow·Red 멤버 개별 면담을 통한 개선이 필요합니다.` });
+  else
+    points.push({ type: 'critical', text: `챕터 건강 점수 ${health}점으로 위험 수준입니다. 멤버십위원회의 즉각적인 개입이 필요합니다.` });
+
+  // Red 멤버
+  if (red > 0)
+    points.push({ type: 'action', text: `🔴 Red 멤버 ${red}명(${Math.round(red/total*100)}%) — 멤버십위원회 1:1 면담을 즉시 진행하세요.` });
+
+  // 미입력 멤버
+  if (newM > 0)
+    points.push({ type: 'warning', text: `⚪ 데이터 미입력 멤버 ${newM}명 — 정확한 현황 파악에 협조해 주세요.` });
+
+  // 평균 리퍼럴
+  const totalRefs = allStats.reduce((s, m) => s + (m.referrals || 0), 0);
+  const avgRefs   = total ? (totalRefs / total).toFixed(1) : 0;
+  if (parseFloat(avgRefs) < 1)
+    points.push({ type: 'action', text: `4주 평균 리퍼럴 멤버당 ${avgRefs}건 — 목표(1건) 미달입니다.` });
+
+  // 리퍼럴 MVP (statsMap 기준 상위 멤버)
+  const topIdx = allStats.reduce((best, s, i, arr) => s.referrals > arr[best].referrals ? i : best, 0);
+  const topMember = members[topIdx];
+  if (topMember && allStats[topIdx]?.referrals > 0)
+    points.push({ type: 'positive', text: `리퍼럴 MVP: ${topMember.name}님(${allStats[topIdx].referrals}건) — 미팅에서 공개 인정으로 챕터 문화를 강화하세요.` });
+
+  if (!points.length) { el.style.display = 'none'; return; }
+
+  const typeIcon = { positive: '✅', warning: '⚠️', critical: '🚨', action: '👉' };
+  el.style.display = 'block';
+  el.innerHTML = `
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+      <span style="font-size:22px">🤖</span>
+      <div>
+        <div style="font-weight:700;font-size:14px">AI 챕터 디렉터</div>
+        <div style="font-size:11px;color:#9ca3af">의장단 · 멤버십위원회 참고용 자동 분석</div>
+      </div>
+    </div>
+    <ul style="margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:8px">
+      ${points.map(p => `
+        <li style="display:flex;gap:10px;font-size:13px;line-height:1.5;padding:8px 12px;border-radius:8px;background:${
+          p.type==='positive'?'#f0fdf4':p.type==='critical'?'#fff1f2':p.type==='action'?'#eff6ff':'#fefce8'}">
+          <span>${typeIcon[p.type]}</span><span>${p.text}</span>
+        </li>`).join('')}
+    </ul>`;
 }

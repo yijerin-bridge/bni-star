@@ -45,8 +45,7 @@ document.addEventListener('DOMContentLoaded', () => {
   bodyEl.insertAdjacentHTML('beforeend', `
     <!-- 탭 네비게이션 -->
     <nav class="tab-nav" style="margin-bottom:0;border-radius:10px 10px 0 0;overflow:hidden">
-      <button class="tab-btn active" data-tab="dashboard">대시보드</button>
-      <button class="tab-btn" data-tab="members">개인 성과</button>
+      <button class="tab-btn active" data-tab="members">개인 성과</button>
       <button class="tab-btn" data-tab="network">리퍼럴 지도</button>
       <button class="tab-btn" data-tab="portfolio">직군 현황</button>
       <button class="tab-btn" data-tab="alerts">경고</button>
@@ -55,35 +54,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     <main class="main" style="padding-top:0">
 
-      <!-- ① 대시보드 -->
-      <div class="tab-panel active" id="panel-dashboard">
-        <div class="ai-director-card" id="ai-director-dashboard" style="display:none"></div>
-        <div class="kpi-grid" id="kpiGrid"></div>
-        <div class="section-row">
-          <div class="card half">
-            <div class="card-title">챕터 건강도 · 트래픽라이트 분포</div>
-            <div class="traffic-dist" id="trafficDist"></div>
-            <canvas id="chartDist" height="180"></canvas>
-          </div>
-          <div class="card half">
-            <div class="card-title">주간 리퍼럴 추이 (최근 8주)</div>
-            <canvas id="chartWeeklyTrend" height="160"></canvas>
-            <div class="card-title" style="margin-top:16px">월별 감사장 금액</div>
-            <canvas id="chartTrend" height="160"></canvas>
-          </div>
-        </div>
-        <div class="section-row">
-          <div class="card half"><div class="card-title">리퍼럴 Top 5</div><div class="rank-list" id="rankReferralTop"></div></div>
-          <div class="card half"><div class="card-title">리퍼럴 Bottom 5</div><div class="rank-list" id="rankReferralBottom"></div></div>
-        </div>
-        <div class="section-row">
-          <div class="card half"><div class="card-title">1:1 Top 5</div><div class="rank-list" id="rankOnoTop"></div></div>
-          <div class="card half"><div class="card-title">1:1 Bottom 5</div><div class="rank-list" id="rankOnoBottom"></div></div>
-        </div>
-      </div>
-
-      <!-- ② 개인 성과 -->
-      <div class="tab-panel" id="panel-members">
+      <!-- ① 개인 성과 -->
+      <div class="tab-panel active" id="panel-members">
         <div class="ai-director-card" id="ai-director-members" style="display:none"></div>
         <div class="month-nav">
           <button class="month-btn" id="monthPrev">&#8249;</button>

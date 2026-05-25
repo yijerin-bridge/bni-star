@@ -789,11 +789,10 @@ function renderAIDirector(tab) {
 
 /* ─── 전체 렌더 ─── */
 function renderAll() {
-  renderDashboard();
   renderMembers();
   renderPortfolio();
   renderAlerts();
-  ['dashboard','members','network','portfolio','alerts','input'].forEach(renderAIDirector);
+  ['members','network','portfolio','alerts','input'].forEach(renderAIDirector);
 }
 
 /* ─── 초기화 (포털에서 호출) ─── */
