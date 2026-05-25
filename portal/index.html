@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BNI STAR Portal</title>
+  <meta name="robots" content="noindex, nofollow">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/portal/css/portal.css">
+</head>
+<body>
+
+<div class="login-page">
+  <div class="login-card">
+    <div class="login-logo">
+      <div class="lg-title">BNI ★ <span>STAR</span> Portal</div>
+      <div class="lg-sub">챕터 전용 운영 플랫폼 · 개발 모드</div>
+    </div>
+
+    <p class="login-title">역할 선택으로 시작하기</p>
+    <p style="font-size:12px;color:#9ca3af;margin-bottom:16px">실제 로그인은 추후 연동 예정입니다. 현재는 역할을 직접 선택해 주세요.</p>
+
+    <div class="role-select-list" id="roleList">
+      <div class="role-select-item" data-role="board">
+        <span class="rsi-icon">👑</span>
+        <div class="rsi-info">
+          <div class="rsi-name">의장단 (Board)</div>
+          <div class="rsi-desc">회장·부회장·서기·재무 — 전체 접근</div>
+        </div>
+      </div>
+      <div class="role-select-item" data-role="membership">
+        <span class="rsi-icon">🚦</span>
+        <div class="rsi-info">
+          <div class="rsi-name">멤버십위원회</div>
+          <div class="rsi-desc">트래픽라이트·경고 전담</div>
+        </div>
+      </div>
+      <div class="role-select-item" data-role="leader">
+        <span class="rsi-icon">🎓</span>
+        <div class="rsi-info">
+          <div class="rsi-name">리더팀 (Leader Team)</div>
+          <div class="rsi-desc">교육·멘토링·방문객 담당</div>
+        </div>
+      </div>
+      <div class="role-select-item" data-role="member">
+        <span class="rsi-icon">👤</span>
+        <div class="rsi-info">
+          <div class="rsi-name">일반 멤버</div>
+          <div class="rsi-desc">개인 성과·회의록 열람</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="member-select-wrap" id="memberSelectWrap" style="display:none">
+      <label class="form-label" style="margin-top:0">내 이름 선택</label>
+      <select id="memberSelect" class="form-input">
+        <option value="">-- 선택 --</option>
+      </select>
+    </div>
+
+    <button class="login-btn" id="enterBtn" disabled>입장하기</button>
+
+    <div class="login-divider">또는</div>
+    <a href="/traffic/" style="display:block;text-align:center;color:#9ca3af;font-size:12px">기존 트래픽라이트 (레거시) →</a>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="/js/supabase-config.js"></script>
+<script src="/js/members-data.js"></script>
+<script src="/portal/js/portal-auth.js"></script>
+<script>
+let selectedRole = null;
+
+const roleItems  = document.querySelectorAll('.role-select-item');
+const memberWrap = document.getElementById('memberSelectWrap');
+const memberSel  = document.getElementById('memberSelect');
+const enterBtn   = document.getElementById('enterBtn');
+
+// Load members into dropdown
+(async () => {
+  const members = await loadPortalMembers();
+  members.sort((a,b) => a.name.localeCompare(b.name,'ko'));
+  members.forEach(m => {
+    const o = document.createElement('option');
+    o.value = m.legacy_id ?? m.id;
+    o.textContent = `${m.name} · ${m.company || ''}`;
+    memberSel.appendChild(o);
+  });
+})();
+
+roleItems.forEach(item => {
+  item.addEventListener('click', () => {
+    roleItems.forEach(i => i.classList.remove('selected'));
+    item.classList.add('selected');
+    selectedRole = item.dataset.role;
+    memberWrap.style.display = 'block';
+    checkReady();
+  });
+});
+
+memberSel.addEventListener('change', checkReady);
+
+function checkReady() {
+  enterBtn.disabled = !(selectedRole && memberSel.value);
+}
+
+enterBtn.addEventListener('click', () => {
+  if (!selectedRole || !memberSel.value) return;
+  const meta = ROLE_META[selectedRole];
+  const selOpt = memberSel.options[memberSel.selectedIndex];
+  setSession({
+    roleType: selectedRole,
+    tier: meta.tier,
+    memberId: Number(memberSel.value),
+    memberName: selOpt.textContent.split(' · ')[0],
+    enteredAt: Date.now(),
+  });
+  location.href = '/portal/dashboard.html';
+});
+
+// If already logged in, skip to dashboard
+if (getSession()) location.href = '/portal/dashboard.html';
+</script>
+</body>
+</html>

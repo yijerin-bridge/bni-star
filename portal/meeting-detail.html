@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>회의록 상세 — BNI STAR Portal</title>
+  <meta name="robots" content="noindex, nofollow">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/portal/css/portal.css">
+  <style>
+    .minutes-area { min-height: 240px; resize: vertical; }
+    .decision-item { display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #f3f4f6; }
+    .di-text { flex:1;font-size:13px; }
+    .di-del { color:#CC0000;font-size:12px;cursor:pointer;padding:2px 8px; }
+    .add-decision-row { display:flex;gap:8px;margin-top:10px; }
+  </style>
+</head>
+<body>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="/js/supabase-config.js"></script>
+<script src="/js/members-data.js"></script>
+<script src="/portal/js/portal-auth.js"></script>
+<script src="/portal/js/portal-nav.js"></script>
+<script>
+const TYPE_LABEL = { weekly_bni:'주간 BNI', board:'의장단', membership:'멤버십위원회', leader_team:'리더팀' };
+let meeting = null, minutesData = null;
+let decisions = [];
+
+document.addEventListener('DOMContentLoaded', async () => {
+  const params = new URLSearchParams(location.search);
+  const meetingId = params.get('id');
+  if (!meetingId) { location.href = '/portal/meetings.html'; return; }
+
+  const layout = renderPortalLayout({ title: '회의록 상세' });
+  if (!layout) return;
+  const { session, bodyEl } = layout;
+
+  bodyEl.innerHTML = '<div style="text-align:center;padding:48px;color:#9ca3af">불러오는 중...</div>';
+
+  const [mRes, minRes] = await Promise.all([
+    getSb().from('meetings').select('*').eq('id', meetingId).single(),
+    getSb().from('meeting_minutes').select('*').eq('meeting_id', meetingId).single(),
+  ]);
+
+  if (mRes.error) { bodyEl.innerHTML = '<div class="alert-banner crit">회의를 찾을 수 없습니다</div>'; return; }
+  meeting = mRes.data;
+  minutesData = minRes.data;
+  decisions = minutesData?.decisions || [];
+
+  const canEdit = canWriteMinutes(session, meeting.meeting_type);
+  const isPublished = meeting.status === 'published';
+
+  bodyEl.innerHTML = `
+    <div class="page-header">
+      <div>
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">
+          <span class="mi-type-badge ${meeting.meeting_type}">${TYPE_LABEL[meeting.meeting_type]||meeting.meeting_type}</span>
+          <span class="mi-status ${meeting.status}">${isPublished?'✓ 게시됨':'초안'}</span>
+        </div>
+        <h1>${meeting.title || '회의록'}</h1>
+        <p>${meeting.meeting_date}</p>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <a href="/portal/meetings.html" class="btn btn-outline btn-sm">← 목록</a>
+        ${canEdit && !isPublished ? `<button class="btn btn-secondary btn-sm" id="publishBtn">게시하기</button>` : ''}
+        ${canEdit ? `<button class="btn btn-primary btn-sm" id="saveBtn">저장</button>` : ''}
+      </div>
+    </div>
+
+    <div class="section-row">
+      <div class="card" style="grid-column:1/-1">
+        <div class="card-title">회의록 내용</div>
+        ${canEdit
+          ? `<textarea id="minutesContent" class="form-input minutes-area" placeholder="회의 내용을 마크다운 또는 자유 형식으로 작성하세요...">${minutesData?.content||''}</textarea>`
+          : `<div style="white-space:pre-wrap;font-size:13px;line-height:1.7">${minutesData?.content||'(내용 없음)'}</div>`}
+      </div>
+    </div>
+
+    <div class="section-row">
+      <div class="card">
+        <div class="card-title">결정 사항</div>
+        <div id="decisionList"></div>
+        ${canEdit ? `
+        <div class="add-decision-row">
+          <input type="text" id="newDecision" class="form-input" placeholder="새 결정 사항 입력..." style="flex:1">
+          <button class="btn btn-secondary btn-sm" id="addDecisionBtn">추가</button>
+        </div>` : ''}
+      </div>
+      <div class="card">
+        <div class="card-title">다음 액션</div>
+        ${canEdit
+          ? `<textarea id="nextActions" class="form-input" rows="5" placeholder="다음 주 액션 아이템을 입력하세요...">${minutesData?.next_actions||''}</textarea>`
+          : `<div style="white-space:pre-wrap;font-size:13px;line-height:1.7">${minutesData?.next_actions||'(없음)'}</div>`}
+      </div>
+    </div>
+  `;
+
+  renderDecisions(canEdit);
+
+  // Buttons
+  if (canEdit) {
+    document.getElementById('saveBtn').addEventListener('click', () => saveMinutes(meetingId));
+    document.getElementById('addDecisionBtn')?.addEventListener('click', addDecision);
+    document.getElementById('newDecision')?.addEventListener('keydown', e => { if (e.key === 'Enter') addDecision(); });
+    document.getElementById('publishBtn')?.addEventListener('click', () => publishMeeting(meetingId));
+  }
+});
+
+function renderDecisions(canEdit) {
+  const el = document.getElementById('decisionList');
+  if (!el) return;
+  if (!decisions.length) {
+    el.innerHTML = '<div style="color:#9ca3af;font-size:13px;padding:8px 0">결정 사항이 없습니다</div>';
+    return;
+  }
+  el.innerHTML = decisions.map((d,i) => `
+    <div class="decision-item">
+      <span class="di-text">${i+1}. ${d.text}</span>
+      ${canEdit ? `<span class="di-del" onclick="removeDecision(${i})">✕</span>` : ''}
+    </div>`).join('');
+}
+
+function addDecision() {
+  const inp = document.getElementById('newDecision');
+  const txt = inp?.value.trim();
+  if (!txt) return;
+  decisions.push({ text: txt, created_at: new Date().toISOString() });
+  inp.value = '';
+  renderDecisions(true);
+}
+
+function removeDecision(i) {
+  decisions.splice(i, 1);
+  renderDecisions(true);
+}
+
+async function saveMinutes(meetingId) {
+  const content     = document.getElementById('minutesContent')?.value || '';
+  const next_actions = document.getElementById('nextActions')?.value || '';
+  const payload = { meeting_id: meetingId, content, decisions: JSON.stringify(decisions), next_actions };
+  let error;
+  if (minutesData?.id) {
+    ({ error } = await getSb().from('meeting_minutes').update(payload).eq('id', minutesData.id));
+  } else {
+    const res = await getSb().from('meeting_minutes').insert(payload).select().single();
+    error = res.error;
+    if (!error) minutesData = res.data;
+  }
+  if (error) alert('저장 실패: ' + error.message);
+  else showToast('저장되었습니다');
+}
+
+async function publishMeeting(meetingId) {
+  await saveMinutes(meetingId);
+  const { error } = await getSb().from('meetings').update({ status: 'published' }).eq('id', meetingId);
+  if (error) alert('게시 실패: ' + error.message);
+  else { showToast('게시되었습니다'); setTimeout(() => location.reload(), 800); }
+}
+
+function showToast(msg) {
+  const t = document.createElement('div');
+  t.style.cssText = 'position:fixed;bottom:24px;right:24px;background:#1a1f2e;color:#fff;padding:10px 20px;border-radius:8px;font-size:13px;z-index:999;opacity:0;transition:opacity .3s';
+  t.textContent = msg;
+  document.body.appendChild(t);
+  requestAnimationFrame(() => { t.style.opacity = '1'; setTimeout(() => { t.style.opacity = '0'; setTimeout(() => t.remove(), 300); }, 2000); });
+}
+</script>
+</body>
+</html>

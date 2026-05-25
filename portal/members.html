@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>멤버 관리 — BNI STAR Portal</title>
+  <meta name="robots" content="noindex, nofollow">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/portal/css/portal.css">
+</head>
+<body>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="/js/supabase-config.js"></script>
+<script src="/js/members-data.js"></script>
+<script src="/portal/js/portal-auth.js"></script>
+<script src="/portal/js/portal-nav.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', async () => {
+  const layout = renderPortalLayout({ title: '멤버 관리' });
+  if (!layout) return;
+  const { session, bodyEl } = layout;
+
+  // Board only
+  if (!canManageMembers(session)) {
+    bodyEl.innerHTML = `<div class="alert-banner crit">접근 권한이 없습니다. 의장단만 접근 가능합니다.</div>`;
+    return;
+  }
+
+  bodyEl.innerHTML = `
+    <div class="page-header">
+      <div><h1>멤버 관리</h1><p>역할 및 임기 관리 · 의장단 전용</p></div>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-outline btn-sm" id="importBtn">기존 데이터 가져오기</button>
+        <button class="btn btn-primary" id="addMemberBtn">+ 멤버 추가</button>
+      </div>
+    </div>
+
+    <div class="tab-list">
+      <button class="tab-btn-portal active" data-view="active">현재 멤버</button>
+      <button class="tab-btn-portal" data-view="roles">역할 현황</button>
+      <button class="tab-btn-portal" data-view="all">전체 (탈퇴 포함)</button>
+    </div>
+
+    <div id="membersContent"><div style="text-align:center;padding:32px;color:#9ca3af">불러오는 중...</div></div>
+  `;
+
+  // Tabs
+  document.querySelectorAll('.tab-btn-portal').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.tab-btn-portal').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      loadView(btn.dataset.view);
+    });
+  });
+
+  document.getElementById('addMemberBtn').addEventListener('click', () => showAddMemberForm());
+  document.getElementById('importBtn').addEventListener('click', () => importFromLegacy());
+
+  loadView('active');
+});
+
+async function loadView(view) {
+  const el = document.getElementById('membersContent');
+  let q = getSb().from('members').select('*');
+  if (view === 'active') q = q.eq('is_active', true);
+  q = q.order('name');
+  const { data, error } = await q;
+  if (error) { el.innerHTML = `<div class="alert-banner crit">오류: ${error.message}</div>`; return; }
+
+  if (view === 'roles') {
+    loadRolesView(el, data || []);
+    return;
+  }
+
+  if (!data?.length) {
+    el.innerHTML = `<div class="empty-state"><div class="es-icon">👥</div><p>멤버가 없습니다</p><p style="margin-top:8px;font-size:12px">"기존 데이터 가져오기"로 members-data.js의 멤버를 불러오세요</p></div>`;
+    return;
+  }
+
+  el.innerHTML = `
+    <div style="overflow-x:auto">
+    <table class="data-table">
+      <thead><tr><th>이름</th><th>회사</th><th>직군</th><th>연락처</th><th>가입일</th><th>상태</th><th></th></tr></thead>
+      <tbody>${data.map(m => `
+        <tr>
+          <td><strong>${m.name}</strong></td>
+          <td>${m.company||''}</td>
+          <td>${m.category||''}</td>
+          <td>${m.phone||''}</td>
+          <td>${m.joined_date||''}</td>
+          <td>${m.is_active ? '<span class="badge badge-membership">활동중</span>' : '<span class="badge badge-member">탈퇴</span>'}</td>
+          <td>
+            <button class="btn btn-outline btn-sm" onclick="editMember(${m.id})">편집</button>
+            ${m.is_active ? `<button class="btn btn-outline btn-sm" style="color:#CC0000;margin-left:4px" onclick="deactivateMember(${m.id}, '${m.name}')">탈퇴</button>` : ''}
+          </td>
+        </tr>`).join('')}
+      </tbody>
+    </table>
+    </div>`;
+
+  window.deactivateMember = async (id, name) => {
+    if (!confirm(`${name} 님을 탈퇴 처리하시겠습니까?`)) return;
+    const { error } = await getSb().from('members').update({ is_active: false, left_date: new Date().toISOString().slice(0,10) }).eq('id', id);
+    if (error) alert('오류: ' + error.message);
+    else location.reload();
+  };
+}
+
+async function loadRolesView(el, members) {
+  const { data: memberRoles } = await getSb().from('member_roles')
+    .select('*, roles(name,tier,role_type), members(name,company)')
+    .eq('is_current', true).order('created_at');
+  const { data: roles } = await getSb().from('roles').select('*').order('tier').order('name');
+
+  const assigned = new Set((memberRoles||[]).map(mr => mr.member_id));
+  const unassigned = members.filter(m => !assigned.has(m.id));
+
+  el.innerHTML = `
+    <div class="section-row">
+      <div class="card">
+        <div class="card-title">현재 역할 배정</div>
+        ${(memberRoles||[]).length === 0
+          ? '<div style="color:#9ca3af;font-size:13px">배정된 역할이 없습니다</div>'
+          : `<table class="data-table">
+              <thead><tr><th>멤버</th><th>역할</th><th>임기 시작</th><th></th></tr></thead>
+              <tbody>${(memberRoles||[]).map(mr => `
+                <tr>
+                  <td>${mr.members?.name||''} <span style="color:#9ca3af;font-size:11px">${mr.members?.company||''}</span></td>
+                  <td><span class="badge badge-${mr.roles?.role_type}">${mr.roles?.name||''}</span></td>
+                  <td>${mr.term_start||''}</td>
+                  <td><button class="btn btn-outline btn-sm" onclick="endRole(${mr.id})">종료</button></td>
+                </tr>`).join('')}
+              </tbody>
+            </table>`}
+        <button class="btn btn-secondary btn-sm" style="margin-top:12px" onclick="showAssignRoleForm()">+ 역할 배정</button>
+      </div>
+      <div class="card">
+        <div class="card-title">역할 미배정 멤버 (${unassigned.length}명)</div>
+        ${unassigned.map(m => `<div style="padding:6px 0;font-size:13px;border-bottom:1px solid #f3f4f6">${m.name} <span style="color:#9ca3af">${m.company||''}</span></div>`).join('')||'<div style="color:#9ca3af;font-size:13px">없음</div>'}
+      </div>
+    </div>`;
+
+  window.endRole = async (mrId) => {
+    if (!confirm('이 역할 임기를 종료하시겠습니까?')) return;
+    const { error } = await getSb().from('member_roles').update({ is_current: false, term_end: new Date().toISOString().slice(0,10) }).eq('id', mrId);
+    if (error) alert('오류: ' + error.message);
+    else location.reload();
+  };
+
+  window.showAssignRoleForm = () => {
+    const form = document.createElement('div');
+    form.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;display:flex;align-items:center;justify-content:center';
+    form.innerHTML = `
+      <div style="background:#fff;border-radius:14px;padding:28px;width:100%;max-width:420px;margin:24px">
+        <h2 style="font-size:16px;font-weight:700;margin-bottom:20px">역할 배정</h2>
+        <div class="form-group">
+          <label class="form-label">멤버</label>
+          <select id="arMember" class="form-input">
+            ${members.map(m => `<option value="${m.id}">${m.name} · ${m.company||''}</option>`).join('')}
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">역할</label>
+          <select id="arRole" class="form-input">
+            ${(roles||[]).map(r => `<option value="${r.id}">[T${r.tier}] ${r.name}</option>`).join('')}
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">임기 시작</label>
+          <input type="date" id="arStart" class="form-input" value="${new Date().toISOString().slice(0,10)}">
+        </div>
+        <div style="display:flex;gap:10px;justify-content:flex-end">
+          <button class="btn btn-outline" onclick="this.closest('div[style]').remove()">취소</button>
+          <button class="btn btn-primary" id="confirmAssign">배정</button>
+        </div>
+      </div>`;
+    document.body.appendChild(form);
+    form.querySelector('#confirmAssign').addEventListener('click', async () => {
+      const member_id  = Number(form.querySelector('#arMember').value);
+      const role_id    = Number(form.querySelector('#arRole').value);
+      const term_start = form.querySelector('#arStart').value;
+      const { error } = await getSb().from('member_roles').insert({ member_id, role_id, term_start, is_current: true });
+      if (error) alert('오류: ' + error.message);
+      else { form.remove(); location.reload(); }
+    });
+  };
+}
+
+function showAddMemberForm() {
+  const form = document.createElement('div');
+  form.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;display:flex;align-items:center;justify-content:center;overflow-y:auto';
+  form.innerHTML = `
+    <div style="background:#fff;border-radius:14px;padding:28px;width:100%;max-width:460px;margin:24px">
+      <h2 style="font-size:16px;font-weight:700;margin-bottom:20px">멤버 추가</h2>
+      <div class="form-row2">
+        <div class="form-group"><label class="form-label">이름 *</label><input type="text" id="nm_name" class="form-input"></div>
+        <div class="form-group"><label class="form-label">회사</label><input type="text" id="nm_company" class="form-input"></div>
+      </div>
+      <div class="form-row2">
+        <div class="form-group"><label class="form-label">직군</label><input type="text" id="nm_category" class="form-input"></div>
+        <div class="form-group"><label class="form-label">전화</label><input type="tel" id="nm_phone" class="form-input"></div>
+      </div>
+      <div class="form-group"><label class="form-label">이메일</label><input type="email" id="nm_email" class="form-input"></div>
+      <div class="form-group"><label class="form-label">가입일</label><input type="date" id="nm_joined" class="form-input" value="${new Date().toISOString().slice(0,10)}"></div>
+      <div style="display:flex;gap:10px;justify-content:flex-end">
+        <button class="btn btn-outline" onclick="this.closest('div[style]').remove()">취소</button>
+        <button class="btn btn-primary" id="confirmAddMember">추가</button>
+      </div>
+    </div>`;
+  document.body.appendChild(form);
+  form.querySelector('#confirmAddMember').addEventListener('click', async () => {
+    const name    = form.querySelector('#nm_name').value.trim();
+    if (!name) return;
+    const payload = {
+      name, is_active: true,
+      company:     form.querySelector('#nm_company').value.trim() || null,
+      category:    form.querySelector('#nm_category').value.trim() || null,
+      phone:       form.querySelector('#nm_phone').value.trim() || null,
+      email:       form.querySelector('#nm_email').value.trim() || null,
+      joined_date: form.querySelector('#nm_joined').value || null,
+    };
+    const { error } = await getSb().from('members').insert(payload);
+    if (error) alert('오류: ' + error.message);
+    else { form.remove(); location.reload(); }
+  });
+}
+
+window.editMember = async (id) => {
+  const { data: m } = await getSb().from('members').select('*').eq('id', id).single();
+  if (!m) return;
+  const form = document.createElement('div');
+  form.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;display:flex;align-items:center;justify-content:center;overflow-y:auto';
+  form.innerHTML = `
+    <div style="background:#fff;border-radius:14px;padding:28px;width:100%;max-width:460px;margin:24px">
+      <h2 style="font-size:16px;font-weight:700;margin-bottom:20px">${m.name} 편집</h2>
+      <div class="form-row2">
+        <div class="form-group"><label class="form-label">이름</label><input type="text" id="em_name" class="form-input" value="${m.name}"></div>
+        <div class="form-group"><label class="form-label">회사</label><input type="text" id="em_company" class="form-input" value="${m.company||''}"></div>
+      </div>
+      <div class="form-row2">
+        <div class="form-group"><label class="form-label">직군</label><input type="text" id="em_category" class="form-input" value="${m.category||''}"></div>
+        <div class="form-group"><label class="form-label">전화</label><input type="tel" id="em_phone" class="form-input" value="${m.phone||''}"></div>
+      </div>
+      <div class="form-group"><label class="form-label">이메일</label><input type="email" id="em_email" class="form-input" value="${m.email||''}"></div>
+      <div style="display:flex;gap:10px;justify-content:flex-end">
+        <button class="btn btn-outline" onclick="this.closest('div[style]').remove()">취소</button>
+        <button class="btn btn-primary" id="confirmEditMember">저장</button>
+      </div>
+    </div>`;
+  document.body.appendChild(form);
+  form.querySelector('#confirmEditMember').addEventListener('click', async () => {
+    const payload = {
+      name:     form.querySelector('#em_name').value.trim(),
+      company:  form.querySelector('#em_company').value.trim() || null,
+      category: form.querySelector('#em_category').value.trim() || null,
+      phone:    form.querySelector('#em_phone').value.trim() || null,
+      email:    form.querySelector('#em_email').value.trim() || null,
+    };
+    const { error } = await getSb().from('members').update(payload).eq('id', id);
+    if (error) alert('오류: ' + error.message);
+    else { form.remove(); location.reload(); }
+  });
+};
+
+async function importFromLegacy() {
+  if (!confirm('members-data.js의 멤버를 Supabase members 테이블에 가져옵니다.\n이미 존재하는 멤버(legacy_id 기준)는 건너뜁니다.\n계속하시겠습니까?')) return;
+  const payload = (MEMBERS_DEFAULT || []).map(m => ({
+    legacy_id:   m.id,
+    name:        m.name,
+    company:     m.company || null,
+    category:    m.category || null,
+    phone:       m.phone || null,
+    email:       m.email || null,
+    is_active:   true,
+    photo_url:   m.photoUrl || null,
+  }));
+  const { error } = await getSb().from('members').upsert(payload, { onConflict: 'legacy_id', ignoreDuplicates: true });
+  if (error) alert('오류: ' + error.message);
+  else { alert(`${payload.length}명 가져오기 완료`); location.reload(); }
+}
+</script>
+</body>
+</html>

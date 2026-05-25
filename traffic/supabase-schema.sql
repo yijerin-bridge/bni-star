@@ -18,7 +18,7 @@ CREATE TABLE IF NOT EXISTS traffic_weekly_records (
   UNIQUE(member_id, week_start)
 );
 
--- 레퍼럴 흐름 (A → B)
+-- 리퍼럴 흐름 (A → B)
 CREATE TABLE IF NOT EXISTS traffic_referral_flows (
   id             UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   from_member_id INTEGER NOT NULL,

@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>회의록 — BNI STAR Portal</title>
+  <meta name="robots" content="noindex, nofollow">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/portal/css/portal.css">
+</head>
+<body>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="/js/supabase-config.js"></script>
+<script src="/js/members-data.js"></script>
+<script src="/portal/js/portal-auth.js"></script>
+<script src="/portal/js/portal-nav.js"></script>
+<script>
+const TYPE_LABEL = { weekly_bni:'주간 BNI', board:'의장단', membership:'멤버십위원회', leader_team:'리더팀' };
+const TYPE_ACCESS = { weekly_bni: ['board','leader','membership','member'], board:['board'], membership:['board','membership'], leader_team:['board','leader'] };
+
+document.addEventListener('DOMContentLoaded', async () => {
+  const layout = renderPortalLayout({ title: '회의록' });
+  if (!layout) return;
+  const { session, bodyEl } = layout;
+
+  // Build UI
+  bodyEl.innerHTML = `
+    <div class="page-header">
+      <div><h1>회의록</h1><p>챕터 주간 회의 및 운영 회의 기록</p></div>
+      ${canWriteMinutes(session,'weekly_bni') ? `<button class="btn btn-primary" id="newMeetingBtn">+ 새 회의 만들기</button>` : ''}
+    </div>
+
+    <div class="tab-list">
+      <button class="tab-btn-portal active" data-mtype="">전체</button>
+      ${Object.entries(TYPE_LABEL).filter(([t]) => TYPE_ACCESS[t]?.includes(session.roleType)).map(([t,l]) =>
+        `<button class="tab-btn-portal" data-mtype="${t}">${l}</button>`
+      ).join('')}
+    </div>
+
+    <div id="meetingList"><div style="text-align:center;padding:32px;color:#9ca3af">불러오는 중...</div></div>
+
+    <!-- New Meeting Modal -->
+    <div id="newMeetingModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;display:none;align-items:center;justify-content:center">
+      <div style="background:#fff;border-radius:14px;padding:28px;width:100%;max-width:460px;margin:24px">
+        <h2 style="font-size:16px;font-weight:700;margin-bottom:20px">새 회의 만들기</h2>
+        <div class="form-group">
+          <label class="form-label">회의 유형</label>
+          <select id="nmType" class="form-input">
+            ${Object.entries(TYPE_LABEL).filter(([t]) => canWriteMinutes(session,t)).map(([t,l]) =>
+              `<option value="${t}">${l}</option>`).join('')}
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">날짜</label>
+          <input type="date" id="nmDate" class="form-input" value="${todayStr()}">
+        </div>
+        <div class="form-group">
+          <label class="form-label">제목 (선택)</label>
+          <input type="text" id="nmTitle" class="form-input" placeholder="예: 5월 3주차 주간 BNI">
+        </div>
+        <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:4px">
+          <button class="btn btn-outline" id="cancelNewMeeting">취소</button>
+          <button class="btn btn-primary" id="confirmNewMeeting">만들기</button>
+        </div>
+      </div>
+    </div>
+  `;
+
+  // Tabs
+  let currentType = '';
+  document.querySelectorAll('.tab-btn-portal').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.tab-btn-portal').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      currentType = btn.dataset.mtype;
+      loadMeetings(currentType);
+    });
+  });
+
+  // Modal
+  const modal = document.getElementById('newMeetingModal');
+  const newBtn = document.getElementById('newMeetingBtn');
+  if (newBtn) newBtn.addEventListener('click', () => { modal.style.display = 'flex'; });
+  document.getElementById('cancelNewMeeting')?.addEventListener('click', () => { modal.style.display = 'none'; });
+  document.getElementById('confirmNewMeeting')?.addEventListener('click', async () => {
+    const type  = document.getElementById('nmType').value;
+    const date  = document.getElementById('nmDate').value;
+    const title = document.getElementById('nmTitle').value || TYPE_LABEL[type] + ' ' + date;
+    if (!date) return;
+    const { data, error } = await getSb().from('meetings').insert({ meeting_type: type, meeting_date: date, title }).select().single();
+    if (error) { alert('오류: ' + error.message); return; }
+    modal.style.display = 'none';
+    location.href = `/portal/meeting-detail.html?id=${data.id}`;
+  });
+
+  loadMeetings('');
+});
+
+async function loadMeetings(type) {
+  const el = document.getElementById('meetingList');
+  el.innerHTML = '<div style="text-align:center;padding:32px;color:#9ca3af">불러오는 중...</div>';
+  let q = getSb().from('meetings').select('*').order('meeting_date', { ascending: false }).limit(50);
+  if (type) q = q.eq('meeting_type', type);
+  const { data, error } = await q;
+  if (error || !data?.length) {
+    el.innerHTML = `<div class="empty-state"><div class="es-icon">📋</div><p>${error ? '오류 발생' : '등록된 회의가 없습니다'}</p></div>`;
+    return;
+  }
+  el.innerHTML = `<div class="meeting-list">${data.map(m => `
+    <a href="/portal/meeting-detail.html?id=${m.id}" class="meeting-item">
+      <span class="mi-date">${m.meeting_date}</span>
+      <span class="mi-type-badge ${m.meeting_type}">${TYPE_LABEL[m.meeting_type]||m.meeting_type}</span>
+      <span class="mi-title">${m.title || '회의록'}</span>
+      <span class="mi-status ${m.status}">${m.status==='published'?'✓ 게시됨':'초안'}</span>
+    </a>`).join('')}</div>`;
+}
+
+function todayStr() { return new Date().toISOString().slice(0,10); }
+</script>
+</body>
+</html>

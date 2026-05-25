@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>챕터 히스토리 — BNI STAR Portal</title>
+  <meta name="robots" content="noindex, nofollow">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/portal/css/portal.css">
+  <style>
+    .timeline { position:relative; padding-left: 28px; }
+    .timeline::before { content:''; position:absolute; left:8px; top:0; bottom:0; width:2px; background:var(--border); }
+    .tl-item { position:relative; padding-bottom:20px; }
+    .tl-dot { position:absolute; left:-24px; top:2px; width:14px; height:14px; border-radius:50%; border:2px solid; background:#fff; }
+    .tl-item.policy     .tl-dot { border-color:#2563eb; background:#2563eb; }
+    .tl-item.member     .tl-dot { border-color:#16a34a; background:#16a34a; }
+    .tl-item.achievement .tl-dot { border-color:#f59e0b; background:#f59e0b; }
+    .tl-item.warning    .tl-dot { border-color:#CC0000; background:#CC0000; }
+    .tl-item.system     .tl-dot { border-color:#8b5cf6; background:#8b5cf6; }
+    .tl-date { font-size:11px; color:#9ca3af; margin-bottom:3px; }
+    .tl-title { font-size:14px; font-weight:600; }
+    .tl-content { font-size:13px; color:#6b7280; margin-top:4px; }
+    .tl-cat-badge { font-size:10px; padding:1px 7px; border-radius:10px; font-weight:600; margin-left:8px; }
+    .tl-item.policy     .tl-cat-badge { background:#dbeafe;color:#1e3a8a; }
+    .tl-item.member     .tl-cat-badge { background:#dcfce7;color:#166534; }
+    .tl-item.achievement .tl-cat-badge { background:#fef3c7;color:#78350f; }
+    .tl-item.warning    .tl-cat-badge { background:#fee2e2;color:#7f1d1d; }
+    .tl-item.system     .tl-cat-badge { background:#ede9fe;color:#4c1d95; }
+  </style>
+</head>
+<body>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="/js/supabase-config.js"></script>
+<script src="/js/members-data.js"></script>
+<script src="/portal/js/portal-auth.js"></script>
+<script src="/portal/js/portal-nav.js"></script>
+<script>
+const CAT_LABEL = { policy:'정책·결정', member:'멤버변동', achievement:'성과·기록', warning:'경고', system:'시스템' };
+const CAT_ICON  = { policy:'📜', member:'👥', achievement:'🏆', warning:'⚠️', system:'⚙️' };
+
+document.addEventListener('DOMContentLoaded', async () => {
+  const layout = renderPortalLayout({ title: '챕터 히스토리' });
+  if (!layout) return;
+  const { session, bodyEl } = layout;
+  const canAdd = session.roleType !== 'member';
+
+  bodyEl.innerHTML = `
+    <div class="page-header">
+      <div><h1>챕터 히스토리</h1><p>챕터의 주요 사건·결정·성과를 영구 기록합니다</p></div>
+      ${canAdd ? `<button class="btn btn-primary" id="addHistoryBtn">+ 기록 추가</button>` : ''}
+    </div>
+
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px" id="catFilter">
+      <button class="btn btn-outline btn-sm active" data-cat="" style="transition:all .15s">전체</button>
+      ${Object.entries(CAT_LABEL).map(([c,l]) =>
+        `<button class="btn btn-outline btn-sm" data-cat="${c}">${CAT_ICON[c]} ${l}</button>`).join('')}
+    </div>
+
+    <div id="timelineEl"><div style="text-align:center;padding:48px;color:#9ca3af">불러오는 중...</div></div>
+  `;
+
+  if (canAdd) document.getElementById('addHistoryBtn').addEventListener('click', () => showAddForm(session));
+
+  // Filter buttons
+  let currentCat = '';
+  document.querySelectorAll('#catFilter button').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('#catFilter button').forEach(b => { b.classList.remove('active'); b.style.background=''; b.style.color=''; });
+      btn.classList.add('active');
+      currentCat = btn.dataset.cat;
+      loadHistory(session, currentCat);
+    });
+  });
+
+  loadHistory(session, '');
+});
+
+async function loadHistory(session, cat) {
+  const el = document.getElementById('timelineEl');
+  const tier = ROLE_META[session.roleType]?.tier ?? 3;
+
+  let q = getSb().from('chapter_history').select('*').order('event_date', { ascending: false }).limit(100);
+  if (cat) q = q.eq('category', cat);
+  // visibility filter: non-board only sees 'all' items
+  if (tier > 1) q = q.eq('visibility', 'all');
+
+  const { data, error } = await q;
+  if (error || !data?.length) {
+    el.innerHTML = `<div class="empty-state"><div class="es-icon">📜</div><p>${error ? '오류 발생' : '기록된 히스토리가 없습니다'}</p></div>`;
+    return;
+  }
+
+  // Group by year
+  const byYear = {};
+  data.forEach(item => {
+    const yr = item.event_date?.slice(0,4) || '미상';
+    if (!byYear[yr]) byYear[yr] = [];
+    byYear[yr].push(item);
+  });
+
+  el.innerHTML = Object.entries(byYear).sort(([a],[b]) => b.localeCompare(a)).map(([yr, items]) => `
+    <div style="margin-bottom:28px">
+      <div style="font-size:18px;font-weight:700;margin-bottom:16px;color:#1a1f2e">${yr}년</div>
+      <div class="timeline">
+        ${items.map(item => `
+          <div class="tl-item ${item.category}">
+            <div class="tl-dot"></div>
+            <div class="tl-date">${item.event_date}
+              <span class="tl-cat-badge">${CAT_ICON[item.category]} ${CAT_LABEL[item.category]}</span>
+            </div>
+            <div class="tl-title">${item.title}</div>
+            ${item.content ? `<div class="tl-content">${item.content}</div>` : ''}
+          </div>`).join('')}
+      </div>
+    </div>`).join('');
+}
+
+function showAddForm(session) {
+  const tier = ROLE_META[session.roleType]?.tier ?? 3;
+  const form = document.createElement('div');
+  form.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;display:flex;align-items:center;justify-content:center';
+  form.innerHTML = `
+    <div style="background:#fff;border-radius:14px;padding:28px;width:100%;max-width:460px;margin:24px">
+      <h2 style="font-size:16px;font-weight:700;margin-bottom:20px">히스토리 기록 추가</h2>
+      <div class="form-group">
+        <label class="form-label">날짜</label>
+        <input type="date" id="addHDate" class="form-input" value="${new Date().toISOString().slice(0,10)}">
+      </div>
+      <div class="form-group">
+        <label class="form-label">유형</label>
+        <select id="addHCat" class="form-input">
+          ${Object.entries(CAT_LABEL).map(([c,l]) => `<option value="${c}">${CAT_ICON[c]} ${l}</option>`).join('')}
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">제목</label>
+        <input type="text" id="addHTitle" class="form-input" placeholder="기록 제목">
+      </div>
+      <div class="form-group">
+        <label class="form-label">내용 (선택)</label>
+        <textarea id="addHContent" class="form-input" rows="3"></textarea>
+      </div>
+      ${tier === 1 ? `
+      <div class="form-group">
+        <label class="form-label">열람 권한</label>
+        <select id="addHVis" class="form-input">
+          <option value="all">전체 공개</option>
+          <option value="leader">리더 이상</option>
+          <option value="board">의장단만</option>
+        </select>
+      </div>` : ''}
+      <div style="display:flex;gap:10px;justify-content:flex-end">
+        <button class="btn btn-outline" id="cancelAddH">취소</button>
+        <button class="btn btn-primary" id="confirmAddH">추가</button>
+      </div>
+    </div>`;
+  document.body.appendChild(form);
+
+  document.getElementById('cancelAddH').addEventListener('click', () => form.remove());
+  document.getElementById('confirmAddH').addEventListener('click', async () => {
+    const event_date = document.getElementById('addHDate').value;
+    const category   = document.getElementById('addHCat').value;
+    const title      = document.getElementById('addHTitle').value.trim();
+    const content    = document.getElementById('addHContent').value.trim() || null;
+    const visibility = document.getElementById('addHVis')?.value || 'all';
+    if (!title || !event_date) return;
+    const { error } = await getSb().from('chapter_history').insert({ event_date, category, title, content, visibility });
+    if (error) { alert('오류: ' + error.message); return; }
+    form.remove();
+    location.reload();
+  });
+}
+</script>
+</body>
+</html>

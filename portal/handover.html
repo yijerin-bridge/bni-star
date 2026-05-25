@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>인수인계 — BNI STAR Portal</title>
+  <meta name="robots" content="noindex, nofollow">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/portal/css/portal.css">
+  <style>
+    .handover-card { border-left: 4px solid var(--border); padding-left: 14px; margin-bottom: 12px; }
+    .handover-card.decision  { border-color: #2563eb; }
+    .handover-card.ongoing   { border-color: #ca8a04; }
+    .handover-card.contact   { border-color: #16a34a; }
+    .handover-card.resource  { border-color: #8b5cf6; }
+    .handover-card.caution   { border-color: #CC0000; }
+    .handover-card.achievement { border-color: #f59e0b; }
+    .cat-icon { decision:'🔵', ongoing:'🟡', contact:'📞', resource:'🔗', caution:'⚠️', achievement:'🏆' }
+    .ho-cat-badge { display:inline-block;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600;margin-bottom:6px; }
+  </style>
+</head>
+<body>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="/js/supabase-config.js"></script>
+<script src="/js/members-data.js"></script>
+<script src="/portal/js/portal-auth.js"></script>
+<script src="/portal/js/portal-nav.js"></script>
+<script>
+const CAT_META = {
+  decision:    { label:'결정사항', icon:'🔵', color:'#bfdbfe', textColor:'#1e3a8a' },
+  ongoing:     { label:'진행중 업무', icon:'🟡', color:'#fef9c3', textColor:'#713f12' },
+  contact:     { label:'외부 연락처', icon:'📞', color:'#bbf7d0', textColor:'#14532d' },
+  resource:    { label:'참고자료',   icon:'🔗', color:'#ede9fe', textColor:'#4c1d95' },
+  caution:     { label:'주의사항',   icon:'⚠️', color:'#fee2e2', textColor:'#7f1d1d' },
+  achievement: { label:'성과/업적',  icon:'🏆', color:'#fef3c7', textColor:'#78350f' },
+};
+
+document.addEventListener('DOMContentLoaded', async () => {
+  const layout = renderPortalLayout({ title: '인수인계' });
+  if (!layout) return;
+  const { session, bodyEl } = layout;
+  const canEdit = session.roleType !== 'member';
+
+  bodyEl.innerHTML = `
+    <div class="page-header">
+      <div><h1>인수인계 문서</h1><p>역할별 임기 인수인계 기록 · 챕터 기억의 연속성</p></div>
+      ${canEdit ? `<button class="btn btn-primary" id="newHandoverBtn">+ 인수인계 만들기</button>` : ''}
+    </div>
+    <div id="handoverContent"><div style="text-align:center;padding:48px;color:#9ca3af">불러오는 중...</div></div>
+  `;
+
+  if (canEdit) {
+    document.getElementById('newHandoverBtn').addEventListener('click', () => showNewHandoverForm(session, bodyEl));
+  }
+
+  loadHandovers(session, bodyEl);
+});
+
+async function loadHandovers(session, bodyEl) {
+  const el = document.getElementById('handoverContent');
+  const { data: records, error } = await getSb().from('handover_records')
+    .select('*, roles(name,role_type)').order('created_at', { ascending: false });
+
+  if (error || !records?.length) {
+    el.innerHTML = `<div class="empty-state"><div class="es-icon">🤝</div><p>등록된 인수인계 문서가 없습니다</p><p style="margin-top:8px;font-size:12px">임기가 끝날 때 다음 담당자를 위해 인수인계를 작성해주세요</p></div>`;
+    return;
+  }
+
+  // Load items for each record
+  const { data: allItems } = await getSb().from('handover_items').select('*');
+  const itemsMap = {};
+  (allItems||[]).forEach(item => {
+    if (!itemsMap[item.handover_id]) itemsMap[item.handover_id] = [];
+    itemsMap[item.handover_id].push(item);
+  });
+
+  el.innerHTML = records.map(r => {
+    const items = itemsMap[r.id] || [];
+    const roleName = r.roles?.name || '역할 미지정';
+    const canEditThis = canManageMembers(session) || session.roleType === r.roles?.role_type;
+
+    return `
+    <div class="card" id="ho-${r.id}">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+        <div>
+          <span style="font-size:16px;font-weight:700">${roleName}</span>
+          <span style="margin-left:8px;font-size:12px;color:#9ca3af">${r.term_start||'?'} ~ ${r.term_end||'현재'}</span>
+          <span class="mi-status ${r.status}" style="margin-left:8px">${r.status==='complete'?'✓ 완료':'작성중'}</span>
+        </div>
+        ${canEditThis ? `<button class="btn btn-outline btn-sm" onclick="addItem('${r.id}')">+ 항목 추가</button>` : ''}
+      </div>
+      ${Object.entries(CAT_META).map(([cat, meta]) => {
+        const catItems = items.filter(i => i.category === cat);
+        if (!catItems.length) return '';
+        return `<div style="margin-bottom:12px">
+          <div style="font-size:11px;font-weight:600;color:#6b7280;margin-bottom:6px;text-transform:uppercase">${meta.icon} ${meta.label}</div>
+          ${catItems.map(item => `
+            <div class="handover-card ${cat}">
+              <div style="font-size:13px;font-weight:600">${item.title}</div>
+              ${item.content ? `<div style="font-size:12px;color:#6b7280;margin-top:3px">${item.content}</div>` : ''}
+            </div>`).join('')}
+        </div>`;
+      }).join('')}
+      ${items.length === 0 ? '<div style="color:#9ca3af;font-size:13px">항목이 없습니다. 항목 추가 버튼을 눌러 작성하세요.</div>' : ''}
+    </div>`;
+  }).join('');
+
+  setupAddItem(session);
+}
+
+let activeHandoverId = null;
+function addItem(handoverId) {
+  activeHandoverId = handoverId;
+  const existing = document.getElementById('addItemForm');
+  if (existing) existing.remove();
+
+  const form = document.createElement('div');
+  form.id = 'addItemForm';
+  form.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;display:flex;align-items:center;justify-content:center';
+  form.innerHTML = `
+    <div style="background:#fff;border-radius:14px;padding:28px;width:100%;max-width:460px;margin:24px">
+      <h2 style="font-size:16px;font-weight:700;margin-bottom:20px">인수인계 항목 추가</h2>
+      <div class="form-group">
+        <label class="form-label">유형</label>
+        <select id="addItemCat" class="form-input">
+          ${Object.entries(CAT_META).map(([c,m]) => `<option value="${c}">${m.icon} ${m.label}</option>`).join('')}
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">제목</label>
+        <input type="text" id="addItemTitle" class="form-input" placeholder="항목 제목">
+      </div>
+      <div class="form-group">
+        <label class="form-label">내용 (선택)</label>
+        <textarea id="addItemContent" class="form-input" rows="3" placeholder="상세 내용"></textarea>
+      </div>
+      <div style="display:flex;gap:10px;justify-content:flex-end">
+        <button class="btn btn-outline" id="cancelAddItem">취소</button>
+        <button class="btn btn-primary" id="confirmAddItem">추가</button>
+      </div>
+    </div>`;
+  document.body.appendChild(form);
+
+  document.getElementById('cancelAddItem').addEventListener('click', () => form.remove());
+  document.getElementById('confirmAddItem').addEventListener('click', async () => {
+    const cat     = document.getElementById('addItemCat').value;
+    const title   = document.getElementById('addItemTitle').value.trim();
+    const content = document.getElementById('addItemContent').value.trim();
+    if (!title) return;
+    const { error } = await getSb().from('handover_items').insert({
+      handover_id: activeHandoverId, category: cat, title, content,
+    });
+    if (error) { alert('오류: ' + error.message); return; }
+    form.remove();
+    location.reload();
+  });
+}
+
+function setupAddItem() { window.addItem = addItem; }
+
+async function showNewHandoverForm(session, bodyEl) {
+  const { data: roles } = await getSb().from('roles').select('*');
+  const form = document.createElement('div');
+  form.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;display:flex;align-items:center;justify-content:center';
+  form.innerHTML = `
+    <div style="background:#fff;border-radius:14px;padding:28px;width:100%;max-width:460px;margin:24px">
+      <h2 style="font-size:16px;font-weight:700;margin-bottom:20px">인수인계 문서 만들기</h2>
+      <div class="form-group">
+        <label class="form-label">역할</label>
+        <select id="newHoRole" class="form-input">
+          ${(roles||[]).map(r => `<option value="${r.id}">${r.name}</option>`).join('')}
+        </select>
+      </div>
+      <div class="form-row2">
+        <div class="form-group">
+          <label class="form-label">임기 시작</label>
+          <input type="date" id="newHoStart" class="form-input">
+        </div>
+        <div class="form-group">
+          <label class="form-label">임기 종료</label>
+          <input type="date" id="newHoEnd" class="form-input">
+        </div>
+      </div>
+      <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:4px">
+        <button class="btn btn-outline" id="cancelNewHo">취소</button>
+        <button class="btn btn-primary" id="confirmNewHo">만들기</button>
+      </div>
+    </div>`;
+  document.body.appendChild(form);
+
+  document.getElementById('cancelNewHo').addEventListener('click', () => form.remove());
+  document.getElementById('confirmNewHo').addEventListener('click', async () => {
+    const role_id    = Number(document.getElementById('newHoRole').value);
+    const term_start = document.getElementById('newHoStart').value;
+    const term_end   = document.getElementById('newHoEnd').value || null;
+    const { error } = await getSb().from('handover_records').insert({ role_id, term_start, term_end });
+    if (error) { alert('오류: ' + error.message); return; }
+    form.remove();
+    location.reload();
+  });
+}
+</script>
+</body>
+</html>
