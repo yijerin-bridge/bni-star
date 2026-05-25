@@ -43,11 +43,17 @@ function canAccess(session, requiredTier = 3, requiredTypes = null) {
 }
 
 // 트래픽라이트 접근 — 부의장, [멤버십] 트래픽라이트 담당만
+// roleName 미배정(member_roles 미입력) 상태에서는 roleType 폴백 허용
 function canAccessTraffic(s) {
   if (!s) return false;
-  if (s.roleType === 'board'      && s.roleName === '부의장')               return true;
-  if (s.roleType === 'membership' && s.roleName === '[멤버십] 트래픽라이트') return true;
-  return false;
+  const hasRoleName = !!s.roleName;
+  if (hasRoleName) {
+    if (s.roleType === 'board'      && s.roleName === '부의장')               return true;
+    if (s.roleType === 'membership' && s.roleName === '[멤버십] 트래픽라이트') return true;
+    return false;
+  }
+  // roleName 미배정 폴백: board 또는 membership이면 허용
+  return s.roleType === 'board' || s.roleType === 'membership';
 }
 // 트래픽라이트 데이터 입력/수정 (접근 가능한 동일 역할만)
 function canEditTraffic(s) { return canAccessTraffic(s); }
