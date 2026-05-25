@@ -9,242 +9,251 @@
   <link rel="stylesheet" href="/portal/css/portal.css">
   <link rel="stylesheet" href="/traffic/css/traffic.css">
   <style>
-    /* Portal layout overrides for traffic embed */
-    body { background: var(--bg); }
-    .traffic-embed { padding: 0; }
-    .traffic-embed .header { display: none !important; }  /* portal topbar replaces this */
-    .traffic-embed .tab-nav { margin-top: 0; }
-    .traffic-embed .main { padding-top: 0; }
-    /* Adjust app container */
-    .traffic-embed .app { background: transparent; box-shadow: none; }
+    /* portal 레이아웃에서 traffic CSS 충돌 방지 */
+    .traffic-body .card { background: var(--card-bg, #fff); }
+    .traffic-body .tab-nav { border-radius: 0; margin: 0; }
+    .traffic-body .main { padding: 16px; }
   </style>
 </head>
 <body>
+
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="/js/supabase-config.js"></script>
 <script src="/js/members-data.js"></script>
 <script src="/portal/js/portal-auth.js"></script>
 <script src="/portal/js/portal-nav.js"></script>
-<script>
-// Override: portal auth replaces password check in traffic.js
-window.__PORTAL_AUTH_BYPASS__ = true;
+<script src="/portal/js/traffic-light.js"></script>
 
+<script>
 document.addEventListener('DOMContentLoaded', () => {
   const layout = renderPortalLayout({ title: '트래픽라이트' });
   if (!layout) return;
   const { session, bodyEl } = layout;
 
-  // Access check: only board and membership can see traffic
-  if (!canEditTraffic(session) && ROLE_META[session.roleType]?.tier > 1) {
-    // leader tier2 gets read-only, member tier3 gets blocked
-    if (ROLE_META[session.roleType]?.tier >= 3) {
-      bodyEl.innerHTML = `<div class="alert-banner crit">접근 권한이 없습니다. 멤버십위원회 또는 의장단만 접근 가능합니다.</div>`;
-      return;
-    }
+  const canEdit = canEditTraffic(session);
+
+  // 일반멤버(tier3)는 읽기 전용 안내
+  if (ROLE_META[session.roleType]?.tier >= 3) {
+    bodyEl.insertAdjacentHTML('afterbegin', `
+      <div class="alert-banner info" style="margin-bottom:12px">
+        읽기 전용 모드입니다. 데이터 입력은 멤버십위원회 또는 의장단만 가능합니다.
+      </div>`);
   }
 
-  // Inject the full traffic app into the portal body
-  bodyEl.classList.add('traffic-embed');
-  bodyEl.innerHTML = `
-    <div class="app show" id="app">
-      <nav class="tab-nav">
-        <button class="tab-btn active" data-tab="dashboard">대시보드</button>
-        <button class="tab-btn" data-tab="members">개인 성과</button>
-        <button class="tab-btn" data-tab="network">리퍼럴 지도</button>
-        <button class="tab-btn" data-tab="portfolio">직군 현황</button>
-        <button class="tab-btn" data-tab="alerts">경고</button>
-        ${canEditTraffic(session) ? `<button class="tab-btn" data-tab="input">데이터 입력</button>` : ''}
-      </nav>
-      <main class="main">
-        <!-- ① 대시보드 -->
-        <div class="tab-panel active" id="panel-dashboard">
-          <div class="ai-director-card" id="ai-director-dashboard" style="display:none"></div>
-          <div class="kpi-grid" id="kpiGrid"></div>
-          <div class="section-row">
-            <div class="card half">
-              <div class="card-title">챕터 건강도 · 트래픽라이트 분포</div>
-              <div class="traffic-dist" id="trafficDist"></div>
-              <canvas id="chartDist" height="180"></canvas>
+  bodyEl.classList.add('traffic-body');
+  bodyEl.insertAdjacentHTML('beforeend', `
+    <!-- 탭 네비게이션 -->
+    <nav class="tab-nav" style="margin-bottom:0;border-radius:10px 10px 0 0;overflow:hidden">
+      <button class="tab-btn active" data-tab="dashboard">대시보드</button>
+      <button class="tab-btn" data-tab="members">개인 성과</button>
+      <button class="tab-btn" data-tab="network">리퍼럴 지도</button>
+      <button class="tab-btn" data-tab="portfolio">직군 현황</button>
+      <button class="tab-btn" data-tab="alerts">경고</button>
+      ${canEdit ? `<button class="tab-btn" data-tab="input">데이터 입력</button>` : ''}
+    </nav>
+
+    <main class="main" style="padding-top:0">
+
+      <!-- ① 대시보드 -->
+      <div class="tab-panel active" id="panel-dashboard">
+        <div class="ai-director-card" id="ai-director-dashboard" style="display:none"></div>
+        <div class="kpi-grid" id="kpiGrid"></div>
+        <div class="section-row">
+          <div class="card half">
+            <div class="card-title">챕터 건강도 · 트래픽라이트 분포</div>
+            <div class="traffic-dist" id="trafficDist"></div>
+            <canvas id="chartDist" height="180"></canvas>
+          </div>
+          <div class="card half">
+            <div class="card-title">주간 리퍼럴 추이 (최근 8주)</div>
+            <canvas id="chartWeeklyTrend" height="160"></canvas>
+            <div class="card-title" style="margin-top:16px">월별 리퍼럴 성사금액</div>
+            <canvas id="chartTrend" height="160"></canvas>
+          </div>
+        </div>
+        <div class="section-row">
+          <div class="card half"><div class="card-title">리퍼럴 Top 5</div><div class="rank-list" id="rankReferralTop"></div></div>
+          <div class="card half"><div class="card-title">리퍼럴 Bottom 5</div><div class="rank-list" id="rankReferralBottom"></div></div>
+        </div>
+        <div class="section-row">
+          <div class="card half"><div class="card-title">1:1 Top 5</div><div class="rank-list" id="rankOnoTop"></div></div>
+          <div class="card half"><div class="card-title">1:1 Bottom 5</div><div class="rank-list" id="rankOnoBottom"></div></div>
+        </div>
+      </div>
+
+      <!-- ② 개인 성과 -->
+      <div class="tab-panel" id="panel-members">
+        <div class="ai-director-card" id="ai-director-members" style="display:none"></div>
+        <div class="month-nav">
+          <button class="month-btn" id="monthPrev">&#8249;</button>
+          <span class="month-label" id="monthLabel"></span>
+          <button class="month-btn" id="monthNext">&#8250;</button>
+        </div>
+        <div class="toolbar">
+          <input type="text" id="memberSearch" class="search-input" placeholder="이름 검색...">
+          <select id="lightFilter" class="filter-select">
+            <option value="">전체</option>
+            <option value="green">🟢 Green</option>
+            <option value="yellow">🟡 Yellow</option>
+            <option value="red">🔴 Red</option>
+            <option value="new">⚪ 미입력</option>
+          </select>
+        </div>
+        <div class="member-grid" id="memberGrid"></div>
+      </div>
+
+      <!-- ③ 리퍼럴 흐름 지도 -->
+      <div class="tab-panel" id="panel-network">
+        <div class="ai-director-card" id="ai-director-network" style="display:none"></div>
+        <div class="card" style="padding:16px 16px 8px">
+          <div class="card-title">리퍼럴 흐름 네트워크 · 허브/고립 멤버</div>
+          <div class="network-legend">
+            <span class="legend-item"><span class="dot big"></span> 허브 (리퍼럴 多)</span>
+            <span class="legend-item"><span class="dot small"></span> 고립 (리퍼럴 0)</span>
+            <span class="legend-item"><span class="line thick"></span> 금액 큰 리퍼럴</span>
+          </div>
+        </div>
+        <div id="networkContainer"></div>
+      </div>
+
+      <!-- ④ 직군 현황 -->
+      <div class="tab-panel" id="panel-portfolio">
+        <div class="ai-director-card" id="ai-director-portfolio" style="display:none"></div>
+        <div class="section-row">
+          <div class="card half"><div class="card-title">직군별 인원</div><canvas id="chartCategory" height="260"></canvas></div>
+          <div class="card half"><div class="card-title">직군별 리퍼럴 기여도</div><canvas id="chartCatReferral" height="260"></canvas></div>
+        </div>
+        <div class="card" style="margin-top:0">
+          <div class="card-title">직군별 트래픽라이트 현황</div>
+          <div class="cat-table-wrap"><table class="cat-table" id="catTable"></table></div>
+        </div>
+      </div>
+
+      <!-- ⑤ 경고 -->
+      <div class="tab-panel" id="panel-alerts">
+        <div class="ai-director-card" id="ai-director-alerts" style="display:none"></div>
+        <div class="alert-info">멤버십위원회 액션 대상 — 자동 감지</div>
+        <div id="alertList"></div>
+      </div>
+
+      <!-- ⑥ 데이터 입력 (멤버십위원회 · 의장단만) -->
+      ${canEdit ? `
+      <div class="tab-panel" id="panel-input">
+        <div class="ai-director-card" id="ai-director-input" style="display:none"></div>
+        <div class="input-tabs">
+          <button class="input-tab active" data-itab="weekly">주간 활동 입력</button>
+          <button class="input-tab" data-itab="referral">리퍼럴 흐름 입력</button>
+        </div>
+
+        <!-- 주간 활동 입력 -->
+        <div class="input-panel active" id="ipanel-weekly">
+          <div class="card">
+            <div class="card-title" id="weeklyFormTitle">주간 활동 기록</div>
+            <div class="form-row">
+              <label class="form-label">주차 (수요일 기준)</label>
+              <input type="date" id="fWeekStart" class="form-input">
             </div>
-            <div class="card half">
-              <div class="card-title">주간 리퍼럴 추이 (최근 8주)</div>
-              <canvas id="chartWeeklyTrend" height="160"></canvas>
-              <div class="card-title" style="margin-top:16px">월별 리퍼럴 성사금액</div>
-              <canvas id="chartTrend" height="160"></canvas>
+            <div class="form-row">
+              <label class="form-label">멤버 선택</label>
+              <select id="fMember" class="form-input"></select>
             </div>
-          </div>
-          <div class="section-row">
-            <div class="card half"><div class="card-title">리퍼럴 Top 5</div><div class="rank-list" id="rankReferralTop"></div></div>
-            <div class="card half"><div class="card-title">리퍼럴 Bottom 5</div><div class="rank-list" id="rankReferralBottom"></div></div>
-          </div>
-          <div class="section-row">
-            <div class="card half"><div class="card-title">1:1 Top 5</div><div class="rank-list" id="rankOnoTop"></div></div>
-            <div class="card half"><div class="card-title">1:1 Bottom 5</div><div class="rank-list" id="rankOnoBottom"></div></div>
-          </div>
-        </div>
-
-        <!-- ② 개인 성과 -->
-        <div class="tab-panel" id="panel-members">
-          <div class="ai-director-card" id="ai-director-members" style="display:none"></div>
-          <div class="month-nav">
-            <button class="month-btn" id="monthPrev">&#8249;</button>
-            <span class="month-label" id="monthLabel"></span>
-            <button class="month-btn" id="monthNext">&#8250;</button>
-          </div>
-          <div class="toolbar">
-            <input type="text" id="memberSearch" class="search-input" placeholder="이름 검색...">
-            <select id="lightFilter" class="filter-select">
-              <option value="">전체</option>
-              <option value="green">🟢 Green</option>
-              <option value="yellow">🟡 Yellow</option>
-              <option value="red">🔴 Red</option>
-              <option value="new">⚪ 미입력</option>
-            </select>
-          </div>
-          <div class="member-grid" id="memberGrid"></div>
-        </div>
-
-        <!-- ③ 리퍼럴 흐름 지도 -->
-        <div class="tab-panel" id="panel-network">
-          <div class="ai-director-card" id="ai-director-network" style="display:none"></div>
-          <div class="card" style="padding:16px 16px 8px">
-            <div class="card-title">리퍼럴 흐름 네트워크 · 허브/고립 멤버</div>
-            <div class="network-legend">
-              <span class="legend-item"><span class="dot big"></span> 허브 (리퍼럴 多)</span>
-              <span class="legend-item"><span class="dot small"></span> 고립 (리퍼럴 0)</span>
-              <span class="legend-item"><span class="line thick"></span> 금액 큰 리퍼럴</span>
-            </div>
-          </div>
-          <div id="networkContainer"></div>
-        </div>
-
-        <!-- ④ 직군 현황 -->
-        <div class="tab-panel" id="panel-portfolio">
-          <div class="ai-director-card" id="ai-director-portfolio" style="display:none"></div>
-          <div class="section-row">
-            <div class="card half"><div class="card-title">직군별 인원</div><canvas id="chartCategory" height="260"></canvas></div>
-            <div class="card half"><div class="card-title">직군별 리퍼럴 기여도</div><canvas id="chartCatReferral" height="260"></canvas></div>
-          </div>
-          <div class="card" style="margin-top:0">
-            <div class="card-title">직군별 트래픽라이트 현황</div>
-            <div class="cat-table-wrap"><table class="cat-table" id="catTable"></table></div>
-          </div>
-        </div>
-
-        <!-- ⑤ 경고 -->
-        <div class="tab-panel" id="panel-alerts">
-          <div class="ai-director-card" id="ai-director-alerts" style="display:none"></div>
-          <div class="alert-info">멤버십위원회 액션 대상 — 자동 감지</div>
-          <div id="alertList"></div>
-        </div>
-
-        <!-- ⑥ 데이터 입력 -->
-        ${canEditTraffic(session) ? `
-        <div class="tab-panel" id="panel-input">
-          <div class="ai-director-card" id="ai-director-input" style="display:none"></div>
-          <div class="input-tabs">
-            <button class="input-tab active" data-itab="weekly">주간 활동 입력</button>
-            <button class="input-tab" data-itab="referral">리퍼럴 흐름 입력</button>
-          </div>
-          <div class="input-panel active" id="ipanel-weekly">
-            <div class="card">
-              <div class="card-title" id="weeklyFormTitle">주간 활동 기록</div>
+            <div class="form-grid">
               <div class="form-row">
-                <label class="form-label">주차 (수요일 기준)</label>
-                <input type="date" id="fWeekStart" class="form-input">
-              </div>
-              <div class="form-row">
-                <label class="form-label">멤버 선택</label>
-                <select id="fMember" class="form-input"></select>
-              </div>
-              <div class="form-grid">
-                <div class="form-row">
-                  <label class="form-label">출석</label>
-                  <div class="toggle-wrap">
-                    <button class="toggle-btn active" id="toggleYes" onclick="setAttend(true)">출석</button>
-                    <button class="toggle-btn" id="toggleNo" onclick="setAttend(false)">결석</button>
-                  </div>
-                </div>
-                <div class="form-row">
-                  <label class="form-label">1:1 횟수</label>
-                  <input type="number" id="fOno" class="form-input" min="0" value="0">
-                </div>
-                <div class="form-row">
-                  <label class="form-label">교육</label>
-                  <div class="toggle-wrap">
-                    <button class="toggle-btn active" id="toggleEduY" onclick="setEdu(true)">참여</button>
-                    <button class="toggle-btn" id="toggleEduN" onclick="setEdu(false)">미참여</button>
-                  </div>
-                </div>
-                <div class="form-row">
-                  <label class="form-label">비지터 초대 수</label>
-                  <input type="number" id="fVisitors" class="form-input" min="0" value="0">
+                <label class="form-label">출석</label>
+                <div class="toggle-wrap">
+                  <button class="toggle-btn active" id="toggleYes" onclick="setAttend(true)">출석</button>
+                  <button class="toggle-btn" id="toggleNo" onclick="setAttend(false)">결석</button>
                 </div>
               </div>
               <div class="form-row">
-                <label class="form-label">메모</label>
-                <textarea id="fNotes" class="form-input" rows="2" placeholder="선택 입력"></textarea>
+                <label class="form-label">1:1 횟수</label>
+                <input type="number" id="fOno" class="form-input" min="0" value="0">
               </div>
-              <div class="form-btns">
-                <button class="submit-btn" id="submitWeekly">저장</button>
-                <button class="cancel-btn" id="cancelWeekly" style="display:none">취소</button>
-              </div>
-              <div class="form-msg" id="weeklyMsg"></div>
-            </div>
-            <div class="card" style="margin-top:12px">
-              <div class="card-title">최근 입력 내역</div>
-              <div id="recentWeekly" class="recent-list"></div>
-            </div>
-          </div>
-          <div class="input-panel" id="ipanel-referral">
-            <div class="card">
-              <div class="card-title" id="referralFormTitle">리퍼럴 기록 (누가 → 누구에게)</div>
-              <div class="form-row"><label class="form-label">리퍼럴 준 멤버</label><select id="fFrom" class="form-input"></select></div>
-              <div class="form-row"><label class="form-label">리퍼럴 받은 멤버</label><select id="fTo" class="form-input"></select></div>
-              <div class="form-grid">
-                <div class="form-row"><label class="form-label">날짜</label><input type="date" id="fRefDate" class="form-input"></div>
-                <div class="form-row">
-                  <label class="form-label">리퍼럴 유형</label>
-                  <div class="toggle-wrap">
-                    <button class="toggle-btn active" id="toggleT1" onclick="setRefType('T1')">T1 직접소비</button>
-                    <button class="toggle-btn" id="toggleT2" onclick="setRefType('T2')">T2 소개</button>
-                  </div>
+              <div class="form-row">
+                <label class="form-label">교육</label>
+                <div class="toggle-wrap">
+                  <button class="toggle-btn active" id="toggleEduY" onclick="setEdu(true)">참여</button>
+                  <button class="toggle-btn" id="toggleEduN" onclick="setEdu(false)">미참여</button>
                 </div>
               </div>
-              <div class="form-row" id="rowIntroduced" style="display:none">
-                <label class="form-label">소개받은 사람 이름 (T2)</label>
-                <input type="text" id="fIntroduced" class="form-input" placeholder="소개받은 분 성함">
+              <div class="form-row">
+                <label class="form-label">비지터 초대 수</label>
+                <input type="number" id="fVisitors" class="form-input" min="0" value="0">
               </div>
-              <div class="form-row"><label class="form-label">리퍼럴 금액 (원)</label><input type="number" id="fRefAmount" class="form-input" min="0" value="0" step="10000"></div>
-              <div class="form-row"><label class="form-label">내용</label><textarea id="fRefDesc" class="form-input" rows="2" placeholder="리퍼럴 내용 간략히"></textarea></div>
-              <div class="form-btns">
-                <button class="submit-btn" id="submitReferral">저장</button>
-                <button class="cancel-btn" id="cancelReferral" style="display:none">취소</button>
-              </div>
-              <div class="form-msg" id="referralMsg"></div>
             </div>
-            <div class="card" style="margin-top:12px">
-              <div class="card-title">리퍼럴 내역</div>
-              <div id="recentReferral" class="recent-list"></div>
+            <div class="form-row">
+              <label class="form-label">메모</label>
+              <textarea id="fNotes" class="form-input" rows="2" placeholder="선택 입력"></textarea>
             </div>
+            <div class="form-btns">
+              <button class="submit-btn" id="submitWeekly">저장</button>
+              <button class="cancel-btn" id="cancelWeekly" style="display:none">취소</button>
+            </div>
+            <div class="form-msg" id="weeklyMsg"></div>
+          </div>
+          <div class="card" style="margin-top:12px">
+            <div class="card-title">최근 입력 내역</div>
+            <div id="recentWeekly" class="recent-list"></div>
           </div>
         </div>
-        ` : ''}
-      </main>
-    </div>
-  `;
 
-  // Hidden compat elements for traffic.js
-  const compat = document.createElement('div');
-  compat.style.display = 'none';
-  compat.innerHTML = '<span id="chapterBadge"></span>';
-  bodyEl.appendChild(compat);
+        <!-- 리퍼럴 흐름 입력 -->
+        <div class="input-panel" id="ipanel-referral">
+          <div class="card">
+            <div class="card-title" id="referralFormTitle">리퍼럴 기록 (누가 → 누구에게)</div>
+            <div class="form-row">
+              <label class="form-label">리퍼럴 준 멤버</label>
+              <select id="fFrom" class="form-input"></select>
+            </div>
+            <div class="form-row">
+              <label class="form-label">리퍼럴 받은 멤버</label>
+              <select id="fTo" class="form-input"></select>
+            </div>
+            <div class="form-grid">
+              <div class="form-row">
+                <label class="form-label">날짜</label>
+                <input type="date" id="fRefDate" class="form-input">
+              </div>
+              <div class="form-row">
+                <label class="form-label">리퍼럴 유형</label>
+                <div class="toggle-wrap">
+                  <button class="toggle-btn active" id="toggleT1" onclick="setRefType('T1')">T1 직접소비</button>
+                  <button class="toggle-btn" id="toggleT2" onclick="setRefType('T2')">T2 소개</button>
+                </div>
+              </div>
+            </div>
+            <div class="form-row" id="rowIntroduced" style="display:none">
+              <label class="form-label">소개받은 사람 이름 (T2)</label>
+              <input type="text" id="fIntroduced" class="form-input" placeholder="소개받은 분 성함">
+            </div>
+            <div class="form-row">
+              <label class="form-label">리퍼럴 금액 (원)</label>
+              <input type="number" id="fRefAmount" class="form-input" min="0" value="0" step="10000">
+            </div>
+            <div class="form-row">
+              <label class="form-label">내용</label>
+              <textarea id="fRefDesc" class="form-input" rows="2" placeholder="리퍼럴 내용 간략히"></textarea>
+            </div>
+            <div class="form-btns">
+              <button class="submit-btn" id="submitReferral">저장</button>
+              <button class="cancel-btn" id="cancelReferral" style="display:none">취소</button>
+            </div>
+            <div class="form-msg" id="referralMsg"></div>
+          </div>
+          <div class="card" style="margin-top:12px">
+            <div class="card-title">리퍼럴 내역</div>
+            <div id="recentReferral" class="recent-list"></div>
+          </div>
+        </div>
+      </div>
+      ` : ''}
 
-  // Load traffic.js after DOM is ready
-  const script = document.createElement('script');
-  script.src = '/traffic/js/traffic.js';
-  document.body.appendChild(script);
+    </main>
+  `);
+
+  // 트래픽라이트 초기화
+  initTrafficLight(canEdit);
 });
 </script>
 </body>
