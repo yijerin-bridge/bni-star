@@ -99,16 +99,16 @@ function buildDashboard(session, el, members, weekly, referral) {
     <div class="page-header">
       <div>
         <h1>안녕하세요, ${session.memberName || ''}님 👋</h1>
-        <p>${new Date().toLocaleDateString('ko-KR', {year:'numeric',month:'long',day:'numeric'})} 기준 · 최근 4주 데이터</p>
+        <p>${new Date().toLocaleDateString('ko-KR', {year:'numeric',month:'long',day:'numeric'})} · 최근 4주 기준</p>
       </div>
       ${isLeader ? `<a href="/portal/traffic-light.html" class="btn btn-primary btn-sm">트래픽라이트 →</a>` : ''}
     </div>
 
-    ${isLeader ? renderChapterKPI(totalMembers, attendPct, prevAttendPct, ref4.length, refPrev.length, ref4Amt, refPrevAmt, onoCnt, onoPrev, visitorCnt, visitorPrev, eduPct, eduPrevPct, perMemberAmt, perMemberPrev) : ''}
-
-    ${myStats ? renderPersonalCard(session, myStats, weeks4.length) : ''}
-
     ${isLeader ? `
+    <!-- ════ 챕터 현황 ════ -->
+    <div class="dash-section-label">📊 챕터 현황</div>
+    ${renderChapterKPI(totalMembers, attendPct, prevAttendPct, ref4.length, refPrev.length, ref4Amt, refPrevAmt, onoCnt, onoPrev, visitorCnt, visitorPrev, eduPct, eduPrevPct, perMemberAmt, perMemberPrev)}
+
     <div class="section-row">
       <div class="card">
         <div class="card-title">트래픽라이트 현황</div>
@@ -131,17 +131,19 @@ function buildDashboard(session, el, members, weekly, referral) {
       ${renderRankCard('리퍼럴 Top 5', topN(members, statsMap, 'referrals', 5))}
       ${renderRankCard('1:1 Top 5', topN(members, statsMap, 'ono', 5))}
     </div>
+    ` : ''}
 
-    <div class="card">
-      <div class="card-title">최근 회의</div>
+    <!-- ════ 내 현황 ════ -->
+    ${myStats ? `
+    <div class="dash-section-label" style="margin-top:${isLeader?'8px':'0'}">👤 내 현황</div>
+    ${renderPersonalCard(session, myStats, weeks4.length)}
+    ` : ''}
+
+    <!-- ════ 최근 회의 ════ -->
+    <div class="dash-section-label">📋 최근 회의</div>
+    <div class="card" style="margin-bottom:16px">
       <div id="recentMeetings"><div style="color:#9ca3af;font-size:13px">회의록 로딩 중...</div></div>
     </div>
-    ` : `
-    <div class="card">
-      <div class="card-title">최근 회의</div>
-      <div id="recentMeetings"><div style="color:#9ca3af;font-size:13px">회의록 로딩 중...</div></div>
-    </div>
-    `}
 
     <div class="section-row" style="margin-top:0">
       ${renderQuickNav(session)}
@@ -193,19 +195,28 @@ function deltaStr(curr, prev) {
 function renderPersonalCard(session, stats, weeks) {
   const lightEmoji = { green: '🟢', yellow: '🟡', red: '🔴' }[stats.light] || '⚪';
   const lightLabel = { green: 'Green', yellow: 'Yellow', red: 'Red' }[stats.light] || '미입력';
+  const accentColor = { green:'#16a34a', yellow:'#ca8a04', red:'#CC0000' }[stats.light] || '#e5e7eb';
   return `
-  <div class="card" style="border-left: 4px solid ${{green:'#16a34a',yellow:'#ca8a04',red:'#CC0000'}[stats.light]||'#ccc'}">
-    <div class="card-title">내 성과 (최근 ${weeks}주)</div>
-    <div style="display:flex;align-items:center;gap:20px;flex-wrap:wrap">
-      <div style="font-size:28px">${lightEmoji} <span style="font-size:18px;font-weight:700">${lightLabel}</span></div>
-      <div style="display:flex;gap:20px;flex-wrap:wrap">
-        <div><div style="font-size:11px;color:#9ca3af">출석</div><div style="font-size:18px;font-weight:700">${stats.attendance}/${weeks}</div></div>
-        <div><div style="font-size:11px;color:#9ca3af">1:1</div><div style="font-size:18px;font-weight:700">${stats.ono}회</div></div>
-        <div><div style="font-size:11px;color:#9ca3af">리퍼럴</div><div style="font-size:18px;font-weight:700">${stats.referrals}건</div></div>
+  <div class="card" style="border-left:4px solid ${accentColor};margin-bottom:16px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+      <div style="display:flex;align-items:center;gap:8px">
+        <span style="font-size:20px">${lightEmoji}</span>
+        <span style="font-size:15px;font-weight:700;color:${accentColor}">${lightLabel}</span>
+        <span style="font-size:11px;color:#9ca3af">최근 ${weeks}주</span>
       </div>
-      <a href="/portal/my-performance.html" class="btn btn-outline btn-sm" style="margin-left:auto">상세 보기 →</a>
+      <a href="/portal/my-performance.html" class="btn btn-outline btn-sm">상세 보기 →</a>
+    </div>
+    <div class="kpi-grid" style="grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:10px">
+      ${myKpiCard('출석', stats.attendance + '/' + weeks + '회')}
+      ${myKpiCard('비지터 초대', stats.visitors + '명')}
+      ${myKpiCard('1:1 미팅', stats.ono + '회')}
+      ${myKpiCard('리퍼럴', stats.referrals + '건')}
     </div>
   </div>`;
+}
+
+function myKpiCard(label, value) {
+  return `<div class="kpi-card" style="padding:12px 14px"><div class="kpi-label">${label}</div><div class="kpi-num" style="font-size:20px">${value}</div></div>`;
 }
 
 /* ── Rank Card ── */
@@ -334,6 +345,7 @@ function calcMemberStats(memberId, weekly, referral, weeks) {
   const wRecs = weekly.filter(w => weeks.includes(w.week_start) && w.member_id == memberId);
   const attendance = wRecs.filter(w => w.attended).length;
   const ono        = wRecs.reduce((s, w) => s + (w.one_on_one||0), 0);
+  const visitors   = wRecs.reduce((s, w) => s + (w.visitors_count||0), 0);
   const referrals  = referral.filter(r => r.from_member_id == memberId && weeks.some(w => sameWeek(r.referral_date, w))).length;
   const n = weeks.length;
   const critAttend   = attendance >= Math.ceil(n * CRITERIA_P.attendanceRate);
@@ -343,7 +355,7 @@ function calcMemberStats(memberId, weekly, referral, weeks) {
   if (critAttend && critOno && critReferral) light = 'green';
   else if (critAttend && (critOno || critReferral)) light = 'yellow';
   else if (!wRecs.length) light = 'new';
-  return { attendance, ono, referrals, light };
+  return { attendance, ono, visitors, referrals, light };
 }
 
 function topN(members, statsMap, field, n) {

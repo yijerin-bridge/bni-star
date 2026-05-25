@@ -114,6 +114,14 @@ input, select, textarea { font-family: inherit; font-size: inherit; }
 .card-value { font-size: 28px; font-weight: 700; }
 .card-sub { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
 
+/* ── Dashboard Section Label ── */
+.dash-section-label {
+  font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .8px;
+  color: var(--text-muted); margin-bottom: 12px; margin-top: 4px;
+  display: flex; align-items: center; gap: 8px;
+}
+.dash-section-label::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
 /* ── KPI Grid ── */
 .kpi-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px,1fr)); gap: 14px; margin-bottom: 20px; }
 .kpi-card { background: var(--card); border-radius: 12px; border: 1px solid var(--border); padding: 18px 20px; }
