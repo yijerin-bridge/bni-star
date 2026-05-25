@@ -42,8 +42,15 @@ function canAccess(session, requiredTier = 3, requiredTypes = null) {
   return true;
 }
 
-// 트래픽라이트 데이터 입력/수정
-function canEditTraffic(s) { return canAccess(s, 2, ['board','membership']); }
+// 트래픽라이트 접근 — 부의장, [멤버십] 트래픽라이트 담당만
+function canAccessTraffic(s) {
+  if (!s) return false;
+  if (s.roleType === 'board'      && s.roleName === '부의장')               return true;
+  if (s.roleType === 'membership' && s.roleName === '[멤버십] 트래픽라이트') return true;
+  return false;
+}
+// 트래픽라이트 데이터 입력/수정 (접근 가능한 동일 역할만)
+function canEditTraffic(s) { return canAccessTraffic(s); }
 // 회의록 작성
 function canWriteMinutes(s, meetingType) {
   if (!s) return false;
@@ -68,7 +75,7 @@ function getNavItems(session) {
     { href: '/portal/my-performance.html', icon: '📊', label: '내 성과',       always: true },
     { href: '/portal/meetings.html',       icon: '📋', label: '회의록',        always: true },
   ];
-  if (t === 'board' || t === 'membership') {
+  if (canAccessTraffic(session)) {
     items.push({ href: '/portal/traffic-light.html', icon: '🚦', label: '트래픽라이트', always: false });
   }
   items.push({ href: '/portal/handover.html', icon: '🤝', label: '인수인계', always: true });

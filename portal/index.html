@@ -77,13 +77,20 @@ const memberWrap = document.getElementById('memberSelectWrap');
 const memberSel  = document.getElementById('memberSelect');
 const enterBtn   = document.getElementById('enterBtn');
 
-// Load members into dropdown
+// Load members + current role names
 (async () => {
-  const members = await loadPortalMembers();
+  const [members, roleRes] = await Promise.all([
+    loadPortalMembers(),
+    getSb().from('member_roles').select('member_id, roles(name)').eq('is_current', true),
+  ]);
+  const roleNameMap = {};
+  (roleRes.data || []).forEach(mr => { if (mr.roles) roleNameMap[mr.member_id] = mr.roles.name; });
+
   members.sort((a,b) => a.name.localeCompare(b.name,'ko'));
   members.forEach(m => {
     const o = document.createElement('option');
     o.value = m.legacy_id ?? m.id;
+    o.dataset.roleName = roleNameMap[m.id] || '';
     o.textContent = `${m.name} · ${m.company || ''}`;
     memberSel.appendChild(o);
   });
@@ -110,11 +117,12 @@ enterBtn.addEventListener('click', () => {
   const meta = ROLE_META[selectedRole];
   const selOpt = memberSel.options[memberSel.selectedIndex];
   setSession({
-    roleType: selectedRole,
-    tier: meta.tier,
-    memberId: Number(memberSel.value),
+    roleType:   selectedRole,
+    tier:       meta.tier,
+    memberId:   Number(memberSel.value),
     memberName: selOpt.textContent.split(' · ')[0],
-    enteredAt: Date.now(),
+    roleName:   selOpt.dataset.roleName || null,
+    enteredAt:  Date.now(),
   });
   location.href = '/portal/dashboard.html';
 });

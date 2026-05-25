@@ -31,15 +31,13 @@ document.addEventListener('DOMContentLoaded', () => {
   if (!layout) return;
   const { session, bodyEl } = layout;
 
-  const canEdit = canEditTraffic(session);
-
-  // 일반멤버(tier3)는 읽기 전용 안내
-  if (ROLE_META[session.roleType]?.tier >= 3) {
-    bodyEl.insertAdjacentHTML('afterbegin', `
-      <div class="alert-banner info" style="margin-bottom:12px">
-        읽기 전용 모드입니다. 데이터 입력은 멤버십위원회 또는 의장단만 가능합니다.
-      </div>`);
+  // 접근 제한 — 부의장 / [멤버십] 트래픽라이트 담당만
+  if (!canAccessTraffic(session)) {
+    bodyEl.innerHTML = `<div class="alert-banner crit" style="margin-top:24px">접근 권한이 없습니다. 부의장 또는 멤버십위원회 트래픽라이트 담당만 이용할 수 있습니다.</div>`;
+    return;
   }
+
+  const canEdit = canEditTraffic(session);
 
   bodyEl.classList.add('traffic-body');
   bodyEl.insertAdjacentHTML('beforeend', `
