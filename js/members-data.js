@@ -332,6 +332,17 @@ const MEMBERS_DEFAULT = [
     instagram: "", kakao: "", website: "",
     color: "#566573", featured: false, photoUrl: "",
     testimonials: []
+  },
+  {
+    id: 37, name: "성영모", company: "강남여성병원", category: "의료/건강",
+    specialty: "산부인과",
+    headline: "",
+    targetCustomer: "",
+    description: "",
+    phone: "010-2013-6530", email: "", address: "경기 수원시 팔달구 중부대로 96",
+    instagram: "", kakao: "", website: "",
+    color: "#566573", featured: false, photoUrl: "",
+    testimonials: []
   }
 ];
 
