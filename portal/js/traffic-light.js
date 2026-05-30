@@ -300,35 +300,51 @@ function renderWeekTable(name, recs) {
   if (!tbody) return;
   const recMap = Object.fromEntries(recs.map(r=>[r.week_date, r]));
 
-  // 전체 주차 기준으로 표시 (W번호는 WEEKS_ALL 기준)
-  tbody.innerHTML = WEEKS_ALL.map((w, i) => {
-    const r    = recMap[w];
-    const past = w <= TODAY;
-    const label = r ? (r.absent?'❌ 결석': r.late?'⚠️ 지각':'✅ 출석') : '—';
-    const rowCls = past ? '' : 'projected-row';
+  // 24주 초과분 = 숨김 대상 (오래된 주차)
+  const hiddenCount = Math.max(0, WEEKS_ALL.length - 24);
 
+  const makeRow = (w, i, hidden) => {
+    const r     = recMap[w];
+    const past  = w <= TODAY;
+    const label = r ? (r.absent?'❌ 결석': r.late?'⚠️ 지각':'✅ 출석') : '—';
+    const rowCls = [past ? '' : 'projected-row', hidden ? 'week-hidden' : ''].join(' ').trim();
     return `
-    <tr class="${rowCls}" id="wr-${i}">
+    <tr class="${rowCls}" id="wr-${i}" ${hidden ? 'style="display:none"' : ''}>
       <td style="text-align:left;font-weight:700;color:#9ca3af">W${i+1}</td>
       <td style="text-align:left;white-space:nowrap">
         ${w} ${!past?'<span style="font-size:10px;color:#9ca3af">(예상)</span>':''}
         ${r?.is_estimated?'<span style="font-size:10px;color:#9ca3af">추정</span>':''}
       </td>
       <td>${label}</td>
-      <td>${r?.given_t1??'—'}</td>
-      <td>${r?.given_t2??'—'}</td>
-      <td>${r?.visitors??'—'}</td>
-      <td>${r?.one_on_one??'—'}</td>
-      <td>${r ? fmtWan(r.tyfcb||0) : '—'}</td>
-      <td>${r?.ceu??'—'}</td>
-      <td>
-        <button class="btn btn-outline btn-sm" onclick="openWeekEdit('${w}','${name}')">
-          ${r ? '수정' : '입력'}
-        </button>
-      </td>
+      <td>${r?.given_t1??'—'}</td><td>${r?.given_t2??'—'}</td>
+      <td>${r?.visitors??'—'}</td><td>${r?.one_on_one??'—'}</td>
+      <td>${r ? fmtWan(r.tyfcb||0) : '—'}</td><td>${r?.ceu??'—'}</td>
+      <td><button class="btn btn-outline btn-sm" onclick="openWeekEdit('${w}','${name}')">${r?'수정':'입력'}</button></td>
     </tr>`;
-  }).join('');
+  };
+
+  // 숨김 주차 토글 행
+  const toggleRow = hiddenCount > 0 ? `
+    <tr id="week-toggle-row">
+      <td colspan="10" style="text-align:center;padding:8px;background:#f9fafb;cursor:pointer;font-size:12px;color:#6b7280;user-select:none"
+          onclick="toggleOldWeeks(this)">
+        ▶ 이전 ${hiddenCount}주차 보기 (W1~W${hiddenCount})
+      </td>
+    </tr>` : '';
+
+  tbody.innerHTML = toggleRow +
+    WEEKS_ALL.map((w, i) => makeRow(w, i, i < hiddenCount)).join('');
 }
+
+window.toggleOldWeeks = function(cell) {
+  const hidden = document.querySelectorAll('.week-hidden');
+  const isHidden = hidden[0]?.style.display === 'none';
+  hidden.forEach(r => r.style.display = isHidden ? '' : 'none');
+  const count = hidden.length;
+  cell.innerHTML = isHidden
+    ? `▼ 이전 ${count}주차 숨기기 (W1~W${count})`
+    : `▶ 이전 ${count}주차 보기 (W1~W${count})`;
+};
 
 /* ── 주간 데이터 편집 모달 ── */
 function openWeekEdit(weekDate, memberName) {
@@ -452,16 +468,36 @@ function renderInput() {
   const el = document.getElementById('tl-input');
   const lastPast = [...WEEKS_ALL].filter(w => w <= TODAY).pop();
 
+  const hiddenCount = Math.max(0, WEEKS_ALL.length - 24);
+  const visibleWeeks = WEEKS_ALL.slice(hiddenCount); // 최근 24주
+  const oldWeeks     = WEEKS_ALL.slice(0, hiddenCount);
+
   el.innerHTML = `
     <div class="card" style="margin-bottom:12px">
-      <div class="card-title">주차 선택 <span style="font-size:11px;font-weight:400;color:#9ca3af">· W${WEEKS_ALL.length}까지 자동 확장</span></div>
+      <div class="card-title">주차 선택 <span style="font-size:11px;font-weight:400;color:#9ca3af">· 총 W${WEEKS_ALL.length}</span></div>
+
+      ${oldWeeks.length ? `
+      <div id="old-week-btns" style="display:none;flex-wrap:wrap;gap:8px;margin-bottom:8px;padding:8px;background:#f9fafb;border-radius:8px">
+        ${oldWeeks.map((w,i) => `
+          <button class="btn btn-outline btn-sm" style="opacity:.6" onclick="loadWeekInput('${w}',${i+1})">
+            W${i+1}<br><span style="font-size:10px">${w.slice(5)}</span>
+          </button>`).join('')}
+      </div>
+      <button style="font-size:12px;color:#9ca3af;background:none;border:none;cursor:pointer;margin-bottom:8px;padding:4px 0"
+        onclick="const b=document.getElementById('old-week-btns');const show=b.style.display==='none';b.style.display=show?'flex':'none';this.textContent=show?'▼ 이전 ${oldWeeks.length}주 숨기기':'▶ 이전 ${oldWeeks.length}주 보기'">
+        ▶ 이전 ${oldWeeks.length}주 보기
+      </button>` : ''}
+
       <div style="display:flex;gap:8px;flex-wrap:wrap">
-        ${WEEKS_ALL.map((w, i) => `
+        ${visibleWeeks.map((w) => {
+          const i = WEEKS_ALL.indexOf(w);
+          return `
           <button class="btn btn-outline btn-sm ${w > TODAY ? 'projected-row' : ''}"
             style="${w===lastPast?'border-color:var(--red);color:var(--red);font-weight:700':''}"
             onclick="loadWeekInput('${w}', ${i+1})">
             W${i+1}<br><span style="font-size:10px">${w.slice(5)}</span>
-          </button>`).join('')}
+          </button>`;
+        }).join('')}
       </div>
     </div>
     <div id="week-input-body"></div>
