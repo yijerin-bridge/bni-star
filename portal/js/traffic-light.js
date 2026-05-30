@@ -258,11 +258,26 @@ function renderDetail(preselect = null) {
         <option value="">-- 선택 --</option>
         ${names.map(n=>`<option value="${n}" ${n===preselect?'selected':''}>${n}</option>`).join('')}
       </select>
+      <button id="shareBtn" class="btn btn-outline btn-sm" style="margin-left:auto;display:none">🔗 공유 링크 복사</button>
     </div>
     <div id="det-body"></div>
   `;
-  el.querySelector('#det-member').addEventListener('change', e => renderMemberDetail(e.target.value));
-  if (preselect) renderMemberDetail(preselect);
+  el.querySelector('#det-member').addEventListener('change', e => {
+    renderMemberDetail(e.target.value);
+    const btn = document.getElementById('shareBtn');
+    if (btn) btn.style.display = e.target.value ? '' : 'none';
+  });
+  el.querySelector('#shareBtn').addEventListener('click', () => {
+    const name = document.getElementById('det-member').value;
+    if (!name) return;
+    const url = `${location.origin}/portal/member-view.html?name=${encodeURIComponent(name)}`;
+    navigator.clipboard.writeText(url).then(() => showToast('공유 링크 복사됨!')).catch(() => prompt('링크를 복사하세요:', url));
+  });
+  if (preselect) {
+    renderMemberDetail(preselect);
+    const btn = document.getElementById('shareBtn');
+    if (btn) btn.style.display = '';
+  }
 }
 
 function renderMemberDetail(name) {
@@ -1664,7 +1679,7 @@ function genAIMember(name, recs, sc) {
   const lMsg = {
     green:  '모든 항목 기준 충족 — 챕터의 모범이 되고 있습니다! 이 활동을 유지해 주세요.',
     yellow: 'Green까지 한 걸음 남았습니다. 아래 항목만 집중하면 달성 가능합니다.',
-    red:    '활동 강화가 필요합니다. 담당자와 함께 실천 계획을 세워보세요.',
+    red:    '활동 강화가 필요합니다. 트래픽라이트위원·원투원코디·멘토링코디와 면담을 통해 실천 계획을 세워보세요.',
     gray:   `${name}님의 BNI 활동이 저조합니다. 지금 바로 리퍼럴·1:1·비지터 활동을 시작해 보세요!`,
   };
   tips.push({
@@ -1675,7 +1690,7 @@ function genAIMember(name, recs, sc) {
 
   // 항목별 — "부족" 대신 구체적 행동 촉구
   if (sc.breakdown.absence < 15)
-    tips.push({type:'action', icon:'📅', text:`결석 ${sc.stats.absN}회 (${15-sc.breakdown.absence}점 손실) — 매주 미팅 참석을 최우선으로 잡아주세요. 불가피하면 대리인을 보내세요.`});
+    tips.push({type:'action', icon:'📅', text:`결석 ${sc.stats.absN}회 (${15-sc.breakdown.absence}점 손실) — 매주 미팅 참석을 최우선으로 잡아주세요. 불가피하면 대리인을 보내세요. 계속될 경우 멘토링코디와 상담을 권장합니다.`});
 
   if (sc.breakdown.late < 10)
     tips.push({type:'action', icon:'⏰', text:`지각/조퇴 ${sc.stats.lateN}회 — 미팅 10분 전 도착을 습관화하면 ${10-sc.breakdown.late}점 바로 회복됩니다.`});
@@ -1683,7 +1698,7 @@ function genAIMember(name, recs, sc) {
   if (sc.breakdown.referral < 20) {
     const avg = parseFloat(sc.stats.avgRef) || 0;
     const next = avg < 0.5 ? '주 1건' : avg < 1.0 ? '주 1건 이상' : '주 1.2건';
-    tips.push({type:'action', icon:'🤝', text:`리퍼럴 주평균 ${sc.stats.avgRef}건 → 목표 ${next}. 이번 주 1:1 미팅에서 "소개해 줄 분 있으세요?"라고 직접 물어보세요.`});
+    tips.push({type:'action', icon:'🤝', text:`리퍼럴 주평균 ${sc.stats.avgRef}건 → 목표 ${next}. 이번 주 1:1 미팅에서 "소개해 줄 분 있으세요?"라고 직접 물어보세요. 어렵다면 원투원코디에게 도움을 요청하세요.`});
   }
 
   if (sc.breakdown.visitor < 20) {
