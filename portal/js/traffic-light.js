@@ -33,6 +33,31 @@ function getLast24Weeks(allWeeks) {
   return past.slice(-24);
 }
 
+// 멤버 개인 주차 배열 — 가입일 기준 24주 보장
+function getMemberWeeks(joinedDate) {
+  // 가입일이 없으면 챕터 런칭일 사용
+  const joinStr = joinedDate || CHAPTER_LAUNCH;
+  const joinD   = new Date(joinStr + 'T00:00:00Z');
+
+  // WEEKS_ALL 중 가입일 이후 첫 번째 수요일
+  const firstWeek = WEEKS_ALL.find(w => w >= joinStr) || WEEKS_ALL[0];
+  const startIdx  = WEEKS_ALL.indexOf(firstWeek);
+
+  // 가입일부터 24주 끝 날짜
+  const minEnd = new Date(firstWeek + 'T00:00:00Z');
+  minEnd.setUTCDate(minEnd.getUTCDate() + 23 * 7);
+
+  // WEEKS_ALL 포함 + 24주 보장 확장
+  const extended = [...WEEKS_ALL];
+  let last = new Date(extended[extended.length - 1] + 'T00:00:00Z');
+  while (last < minEnd) {
+    last.setUTCDate(last.getUTCDate() + 7);
+    extended.push(last.toISOString().slice(0, 10));
+  }
+
+  return extended.slice(startIdx); // 가입 주차부터
+}
+
 // 페이지 로드 시 한 번만 계산
 const WEEKS_ALL  = getAllWeeks();
 const WEEKS_24   = getLast24Weeks(WEEKS_ALL); // 채점 기준 (최근 24주)
@@ -84,7 +109,7 @@ let allMembers = [], allWeeklyRecs = [];
 
 async function loadAll() {
   const [memRes, recRes] = await Promise.all([
-    getSb().from('members').select('id,legacy_id,name,company').eq('is_active', true).order('name'),
+    getSb().from('members').select('id,legacy_id,name,company,joined_date').eq('is_active', true).order('name'),
     getSb().from('weekly_records').select('*').order('week_date'),
   ]);
   allMembers    = (memRes.data || []).map(m => ({ ...m, uid: m.legacy_id ?? m.id }));
@@ -223,6 +248,10 @@ function renderMemberDetail(name) {
   const el = document.getElementById('det-body');
   if (!name) { el.innerHTML = ''; return; }
 
+  const member   = allMembers.find(m => m.name === name);
+  const memWeeks = getMemberWeeks(member?.joined_date);  // 가입일 기준 24주+
+  const isNew    = member?.joined_date && member.joined_date > CHAPTER_LAUNCH;
+
   const recs = allWeeklyRecs.filter(r => r.member_name === name);
   const sc   = calcMemberScore(recs);
   const lEmoji = {green:'🟢',yellow:'🟡',red:'🔴',gray:'⚫'}[sc.light]||'⚫';
@@ -234,7 +263,12 @@ function renderMemberDetail(name) {
       <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;flex-wrap:wrap">
         <span style="font-size:28px;font-weight:900">${sc.total}</span>
         <span style="font-size:20px">${lEmoji}</span>
-        <span style="font-size:13px;color:#6b7280">${sc.stats.n||0}주 기록 기준 · ${WEEKS_ALL.filter(w=>w<=TODAY).length}주차</span>
+        <span style="font-size:13px;color:#6b7280">
+          ${sc.stats.n||0}주 기록 기준 ·
+          ${isNew
+            ? `가입 ${member.joined_date} · 개인 ${memWeeks.filter(w=>w<=TODAY).length}주차`
+            : `챕터 ${WEEKS_ALL.filter(w=>w<=TODAY).length}주차`}
+        </span>
       </div>
       <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px">
         ${[
@@ -260,8 +294,11 @@ function renderMemberDetail(name) {
     <!-- 24주 테이블 -->
     <div class="card">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
-        <div class="card-title" style="margin:0">24주 주간 기록</div>
-        <span style="font-size:11px;color:#9ca3af">미래 주차는 예상치 입력 가능</span>
+        <div class="card-title" style="margin:0">
+          ${isNew ? `개인 ${memWeeks.length}주 기록` : '24주 주간 기록'}
+          ${isNew ? `<span style="font-size:11px;font-weight:400;color:#9ca3af;margin-left:6px">가입일 기준</span>` : ''}
+        </div>
+        <span style="font-size:11px;color:#9ca3af">미래 주차 예상치 입력 가능</span>
       </div>
       <div style="overflow-x:auto">
         <table class="detail-table" id="week-table">
@@ -292,16 +329,16 @@ function renderMemberDetail(name) {
       ${aiFb.map(t=>`<div class="ai-tip ${t.type}" style="margin-bottom:6px"><span>${t.icon}</span><span>${t.text}</span></div>`).join('')}`;
   }
 
-  renderWeekTable(name, recs);
+  renderWeekTable(name, recs, memWeeks);
 }
 
-function renderWeekTable(name, recs) {
+function renderWeekTable(name, recs, weeksList = WEEKS_ALL) {
   const tbody = document.getElementById('week-tbody');
   if (!tbody) return;
   const recMap = Object.fromEntries(recs.map(r=>[r.week_date, r]));
 
   // 24주 초과분 = 숨김 대상 (오래된 주차)
-  const hiddenCount = Math.max(0, WEEKS_ALL.length - 24);
+  const hiddenCount = Math.max(0, weeksList.length - 24);
 
   const makeRow = (w, i, hidden) => {
     const r     = recMap[w];
@@ -328,12 +365,12 @@ function renderWeekTable(name, recs) {
     <tr id="week-toggle-row">
       <td colspan="10" style="text-align:center;padding:8px;background:#f9fafb;cursor:pointer;font-size:12px;color:#6b7280;user-select:none"
           onclick="toggleOldWeeks(this)">
-        ▶ 이전 ${hiddenCount}주차 보기 (W1~W${hiddenCount})
+        ▶ 이전 ${hiddenCount}주 보기
       </td>
     </tr>` : '';
 
   tbody.innerHTML = toggleRow +
-    WEEKS_ALL.map((w, i) => makeRow(w, i, i < hiddenCount)).join('');
+    weeksList.map((w, i) => makeRow(w, i, i < hiddenCount)).join('');
 }
 
 window.toggleOldWeeks = function(cell) {
