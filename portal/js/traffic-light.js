@@ -280,7 +280,7 @@ function renderMemberDetail(name) {
           ['결석',     sc.breakdown.absence,  `/15`,  `${sc.stats.absN||0}번`],
           ['지각/조퇴', sc.breakdown.late,    `/10`,  `${sc.stats.lateN||0}번`],
           ['리퍼럴',   sc.breakdown.referral, `/20`,  `주평균 ${sc.stats.avgRef||'0.00'}건`],
-          ['감사장',   sc.breakdown.tyfcb,    `/15`,  fmtWan(sc.stats.totTyf||0)+'원'],
+          ['감사장',   sc.breakdown.tyfcb,    `/15`,  fmtComma(sc.stats.totTyf||0)+'원'],
           ['비지터',   sc.breakdown.visitor,  `/20`,  `주평균 ${sc.stats.avgVis||'0.00'}명`],
           ['1:1',     sc.breakdown.ono,      `/10`,  `주평균 ${sc.stats.avgOno||'0.00'}회`],
           ['교육',     sc.breakdown.ceu,      `/10`,  `누적 ${sc.stats.totCeu||0}점`],
@@ -394,7 +394,7 @@ function renderWeekTable(name, recs, weeksList = WEEKS_ALL) {
       <td>${r?.given_t1??'—'}</td><td>${r?.given_t2??'—'}</td>
       <td>${r?.received_t1??'—'}</td><td>${r?.received_t2??'—'}</td>
       <td>${r?.visitors??'—'}</td><td>${r?.one_on_one??'—'}</td>
-      <td>${r ? fmtWan(r.tyfcb||0) : '—'}</td><td>${r?.ceu??'—'}</td>
+      <td>${r ? fmtComma(r.tyfcb||0) : '—'}</td><td>${r?.ceu??'—'}</td>
       <td><button class="btn btn-outline btn-sm" onclick="openWeekEdit('${w}','${name}')">${r?'수정':'입력'}</button></td>
     </tr>`;
   };
@@ -771,7 +771,7 @@ function showVPPreview(text, memberName) {
             <td>${r.given_t1}</td><td>${r.given_t2}</td>
             <td>${r.received_t1}</td><td>${r.received_t2}</td>
             <td>${r.visitors}</td><td>${r.one_on_one}</td>
-            <td>${fmtWan(r.tyfcb)}</td><td>${r.ceu}</td>
+            <td>${fmtComma(r.tyfcb)}</td><td>${r.ceu}</td>
           </tr>`).join('')}
         </tbody>
       </table>
@@ -962,7 +962,7 @@ function showPastePreview(data, date, weeks) {
               <td class="${m.matched?'match-ok':'match-no'}">${m.matched?'✓':'✗'}</td>
               <td>${attendLabel(m)}</td>
               <td>${m.given_t1||0}</td><td>${m.given_t2||0}</td><td>${m.visitors||0}</td>
-              <td>${m.one_on_one||0}</td><td>${fmtWan(m.tyfcb||0)}</td><td>${m.ceu||0}</td>
+              <td>${m.one_on_one||0}</td><td>${fmtComma(m.tyfcb||0)}</td><td>${m.ceu||0}</td>
             </tr>`).join('')}
           </tbody>
         </table>
@@ -1065,7 +1065,7 @@ function showFilePreview(data, saveDate, weeksAuto, periodStart, periodEnd, file
               <td class="${m.matched?'match-ok':'match-no'}">${m.matched?'✓':'✗'}</td>
               <td>${m.attendance}</td><td>${m.absence}</td><td>${m.late_leave||0}</td>
               <td>${m.given_t1}</td><td>${m.given_t2||0}</td><td>${m.visitors}</td>
-              <td>${m.one_on_one}</td><td>${fmtWan(m.tyfcb)}</td><td>${m.ceu}</td>
+              <td>${m.one_on_one}</td><td>${fmtComma(m.tyfcb)}</td><td>${m.ceu}</td>
             </tr>`).join('')}
           </tbody>
         </table>
@@ -1331,7 +1331,7 @@ function showImportPreview(parsed) {
               <td>${m.attendance}</td><td>${m.absence}</td><td>${m.late_leave||0}</td>
               <td>${m.given_t1}</td><td>${m.given_t2||0}</td>
               <td>${m.visitors}</td><td>${m.one_on_one}</td>
-              <td>${fmtWan(m.tyfcb)}</td><td>${m.ceu}</td>
+              <td>${fmtComma(m.tyfcb)}</td><td>${m.ceu}</td>
             </tr>`).join('')}
           </tbody>
         </table>
@@ -1445,7 +1445,7 @@ function genAIMember(name, recs, sc) {
   }
   if (sc.breakdown.tyfcb < 15) {
     const needed = sc.stats.totTyf < 25000000 ? '2,500만' : sc.stats.totTyf < 50000000 ? '5,000만' : '1억';
-    tips.push({type:'action',icon:'👉',text:`감사장 누적 ${fmtWan(sc.stats.totTyf)}원 (다음 목표: ${needed}원) — 받은 리퍼럴이 성사되면 반드시 감사장을 기록하세요.`});
+    tips.push({type:'action',icon:'👉',text:`감사장 누적 ${fmtComma(sc.stats.totTyf)}원 (다음 목표: ${needed}원) — 받은 리퍼럴이 성사되면 반드시 감사장을 기록하세요.`});
   }
   if (sc.breakdown.visitor < 20) tips.push({type:'action',icon:'👉',text:`주평균 비지터 ${sc.stats.avgVis}명 (목표 0.6명) — 주변 비즈니스 파트너를 방문객으로 초대해 보세요.`});
   if (sc.breakdown.ono < 10)     tips.push({type:'action',icon:'👉',text:`주평균 1:1 ${sc.stats.avgOno}회 (목표 2회) — 매주 2번의 1:1 미팅이 리퍼럴 활성화의 핵심입니다.`});
@@ -1470,6 +1470,10 @@ function createModal(innerHtml) {
   document.body.appendChild(modal);
   modal.addEventListener('click', e => { if(e.target===modal) modal.remove(); });
   return modal;
+}
+
+function fmtComma(v) {
+  return (Number(v)||0).toLocaleString('ko-KR');
 }
 
 function fmtWan(v) {
