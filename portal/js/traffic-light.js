@@ -296,6 +296,31 @@ function renderMemberDetail(name) {
     <!-- AI 개인 피드백 -->
     <div id="det-ai" class="card" style="margin-bottom:16px;display:none"></div>
 
+    <!-- VP 리포트 붙여넣기 -->
+    <div class="card" style="margin-bottom:16px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+        <div>
+          <div class="card-title" style="margin:0">📋 VP 리포트 붙여넣기</div>
+          <div style="font-size:11px;color:#9ca3af;margin-top:2px">BNI Connect → 개인 부의장 리포트 → 날짜 행부터 전체 선택 후 Ctrl+C</div>
+        </div>
+        <button class="btn btn-outline btn-sm" id="togglePaste" onclick="
+          const a=document.getElementById('pasteSection');
+          const show=a.style.display==='none';
+          a.style.display=show?'':'none';
+          this.textContent=show?'접기':'펼치기';
+        ">펼치기</button>
+      </div>
+      <div id="pasteSection" style="display:none">
+        <textarea id="vpPasteArea" class="form-input" rows="6"
+          placeholder="미팅일&#9;참석&#9;준 T1&#9;준 T2&#9;받은 T1&#9;받은 T2&#9;비지터&#9;1-2-1&#9;감사장&#9;CEU&#10;2026. 5. 20.&#9;출석&#9;1&#9;0&#9;0&#9;0&#9;0&#9;1&#9;0&#9;0"
+          style="font-size:12px;font-family:monospace;margin-bottom:8px"></textarea>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-primary btn-sm" id="vpParseBtn">미리보기</button>
+        </div>
+        <div id="vpPreview" style="margin-top:10px"></div>
+      </div>
+    </div>
+
     <!-- 24주 테이블 -->
     <div class="card">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
@@ -309,10 +334,11 @@ function renderMemberDetail(name) {
         <table class="detail-table" id="week-table">
           <thead>
             <tr>
-              <th style="text-align:left;width:60px">주차</th>
+              <th style="text-align:left;width:48px">주차</th>
               <th style="text-align:left">날짜</th>
               <th>출결</th>
               <th>준T1</th><th>준T2</th>
+              <th>받은T1</th><th>받은T2</th>
               <th>비지터</th><th>1:1</th>
               <th>감사장</th><th>CEU</th>
               <th></th>
@@ -335,6 +361,13 @@ function renderMemberDetail(name) {
   }
 
   renderWeekTable(name, recs, memWeeks);
+
+  // VP 리포트 붙여넣기
+  document.getElementById('vpParseBtn')?.addEventListener('click', () => {
+    const text = document.getElementById('vpPasteArea')?.value.trim();
+    if (!text) return;
+    showVPPreview(text, name);
+  });
 }
 
 function renderWeekTable(name, recs, weeksList = WEEKS_ALL) {
@@ -359,6 +392,7 @@ function renderWeekTable(name, recs, weeksList = WEEKS_ALL) {
       </td>
       <td>${label}</td>
       <td>${r?.given_t1??'—'}</td><td>${r?.given_t2??'—'}</td>
+      <td>${r?.received_t1??'—'}</td><td>${r?.received_t2??'—'}</td>
       <td>${r?.visitors??'—'}</td><td>${r?.one_on_one??'—'}</td>
       <td>${r ? fmtWan(r.tyfcb||0) : '—'}</td><td>${r?.ceu??'—'}</td>
       <td><button class="btn btn-outline btn-sm" onclick="openWeekEdit('${w}','${name}')">${r?'수정':'입력'}</button></td>
@@ -657,6 +691,114 @@ function renderImport() {
 
 /* ── 붙여넣기 파싱 ── */
 // "5월 13일" / "5/13" / "2026-05-13" / "26.5.13" 등 유연 파싱
+/* ── VP 리포트 붙여넣기 파서 ── */
+function parseVPReport(text) {
+  const lines = text.split('\n').map(l => l.split('\t').map(c => c.trim())).filter(l => l.some(c=>c));
+  const result = [];
+
+  for (const r of lines) {
+    // 첫 컬럼이 날짜인 행만 처리
+    const date = parseDateKR(r[0]);
+    if (!date) continue;
+
+    // 가장 가까운 WEEKS_ALL 수요일로 스냅
+    const weekDate = snapToNearestWeek(date);
+
+    const attendStr = (r[1]||'').trim();
+    const absent  = attendStr.includes('결석') || attendStr.toUpperCase() === 'A';
+    const late    = attendStr.includes('지각') || attendStr.toUpperCase() === 'L';
+    const attended = !absent;
+
+    const n = i => Math.max(0, Number(String(r[i]||'').replace(/,/g,''))||0);
+    result.push({
+      week_date:   weekDate,
+      original_date: date,
+      attended, absent, late,
+      given_t1:    n(2),
+      given_t2:    n(3),
+      received_t1: n(4),
+      received_t2: n(5),
+      visitors:    n(6),
+      one_on_one:  n(7),
+      tyfcb:       n(8),
+      ceu:         n(9),
+    });
+  }
+  return result;
+}
+
+function snapToNearestWeek(dateStr) {
+  if (!WEEKS_ALL.length) return dateStr;
+  const d = new Date(dateStr + 'T00:00:00Z');
+  const best = WEEKS_ALL.reduce((b, w) => {
+    const db = Math.abs(new Date(b+'T00:00:00Z') - d);
+    const dw = Math.abs(new Date(w+'T00:00:00Z') - d);
+    return dw < db ? w : b;
+  }, WEEKS_ALL[0]);
+  // 4일 이내면 스냅, 아니면 원래 날짜
+  return Math.abs(new Date(best+'T00:00:00Z') - d) <= 4*86400000 ? best : dateStr;
+}
+
+function showVPPreview(text, memberName) {
+  const prev  = document.getElementById('vpPreview');
+  const rows  = parseVPReport(text);
+  if (!rows.length) {
+    prev.innerHTML = '<div style="color:#CC0000;font-size:12px">날짜 형식 행을 찾지 못했습니다. 날짜가 포함된 행부터 복사해주세요.</div>';
+    return;
+  }
+
+  prev.innerHTML = `
+    <div style="font-size:12px;color:#6b7280;margin-bottom:8px">${rows.length}개 행 인식 · 저장 후 테이블에 반영됩니다</div>
+    <div class="preview-table-wrap">
+      <table class="preview-table">
+        <thead><tr><th>저장날짜</th><th>원본날짜</th><th>출결</th><th>준T1</th><th>준T2</th><th>받은T1</th><th>받은T2</th><th>비지터</th><th>1:1</th><th>감사장</th><th>CEU</th></tr></thead>
+        <tbody>
+          ${rows.map(r=>`<tr>
+            <td><strong>${r.week_date}</strong></td>
+            <td style="color:#9ca3af">${r.original_date}</td>
+            <td>${r.absent?'❌결석':r.late?'⚠️지각':'✅출석'}</td>
+            <td>${r.given_t1}</td><td>${r.given_t2}</td>
+            <td>${r.received_t1}</td><td>${r.received_t2}</td>
+            <td>${r.visitors}</td><td>${r.one_on_one}</td>
+            <td>${fmtWan(r.tyfcb)}</td><td>${r.ceu}</td>
+          </tr>`).join('')}
+        </tbody>
+      </table>
+    </div>
+    <button class="btn btn-primary btn-sm" id="vpSaveBtn" style="margin-top:10px">저장</button>
+  `;
+
+  document.getElementById('vpSaveBtn')?.addEventListener('click', async () => {
+    const mem  = allMembers.find(m => m.name === memberName);
+    const dbRows = rows.map(r => ({
+      member_id:   mem?.id || null,
+      member_name: memberName,
+      week_date:   r.week_date,
+      attended:    r.attended,
+      absent:      r.absent,
+      late:        r.late,
+      given_t1:    r.given_t1,
+      given_t2:    r.given_t2,
+      received_t1: r.received_t1,
+      received_t2: r.received_t2,
+      visitors:    r.visitors,
+      one_on_one:  r.one_on_one,
+      tyfcb:       r.tyfcb,
+      ceu:         r.ceu,
+      is_estimated: false,
+    }));
+
+    const { error } = await getSb().from('weekly_records').upsert(dbRows, { onConflict:'member_name,week_date' });
+    if (error) { alert('저장 실패: ' + error.message); return; }
+    showToast(`${dbRows.length}주 데이터 저장 완료`);
+    document.getElementById('vpPasteArea').value = '';
+    document.getElementById('vpPreview').innerHTML = '';
+    document.getElementById('pasteSection').style.display = 'none';
+    document.getElementById('togglePaste').textContent = '펼치기';
+    await reloadAndRefreshDetail(memberName);
+  });
+}
+
 function parseFlexDate(str) {
   const s = (str || '').trim();
   if (!s) return '';
