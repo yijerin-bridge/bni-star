@@ -295,16 +295,22 @@ function renderMemberDetail(name) {
       </div>
       <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px">
         ${[
-          ['결석',     sc.breakdown.absence,  `/15`,  `${sc.stats.absN||0}번`],
-          ['지각/조퇴', sc.breakdown.late,    `/10`,  `${sc.stats.lateN||0}번`],
-          ['리퍼럴',   sc.breakdown.referral, `/20`,  `주평균 ${sc.stats.avgRef||'0.00'}건`],
-          ['감사장',   sc.breakdown.tyfcb,    `/15`,  fmtComma(sc.stats.totTyf||0)+'원'],
-          ['비지터',   sc.breakdown.visitor,  `/20`,  `주평균 ${sc.stats.avgVis||'0.00'}명`],
-          ['1:1',     sc.breakdown.ono,      `/10`,  `주평균 ${sc.stats.avgOno||'0.00'}회`],
-          ['교육',     sc.breakdown.ceu,      `/10`,  `누적 ${sc.stats.totCeu||0}점`],
-        ].map(([label, score, max, detail]) => `
-          <div style="background:#f9fafb;border-radius:8px;padding:10px 12px">
-            <div style="font-size:10px;color:#9ca3af;margin-bottom:2px">${label}</div>
+          ['결석',     sc.breakdown.absence,  `/15`,  `${sc.stats.absN||0}번`,              '0번=15 / 1번=10 / 2번=5 / 3번+=0'],
+          ['지각/조퇴', sc.breakdown.late,    `/10`,  `${sc.stats.lateN||0}번`,             '0번=10 / 1번=5 / 2번+=0'],
+          ['리퍼럴',   sc.breakdown.referral, `/20`,  `주평균 ${sc.stats.avgRef||'0.00'}건`, '주평균 1.2+건=20 / 1.0+건=15 / 0.75+건=10 / 0.5+건=5 / 미만=0'],
+          ['감사장',   sc.breakdown.tyfcb,    `/15`,  fmtComma(sc.stats.totTyf||0)+'원',    '1억+=15 / 5천만+=10 / 2500만+=5 / 미만=0'],
+          ['비지터',   sc.breakdown.visitor,  `/20`,  `주평균 ${sc.stats.avgVis||'0.00'}명`, '주평균 0.6+명=20 / 0.4+명=15 / 0.2+명=10 / 0.1+명=5 / 미만=0'],
+          ['1:1',     sc.breakdown.ono,      `/10`,  `주평균 ${sc.stats.avgOno||'0.00'}회`, '주평균 2+회=10 / 1+회=5 / 미만=0'],
+          ['교육',     sc.breakdown.ceu,      `/10`,  `누적 ${sc.stats.totCeu||0}점`,        '누적 15+점=10 / 5+점=5 / 미만=0'],
+        ].map(([label, score, max, detail, criteria]) => `
+          <div style="background:#f9fafb;border-radius:8px;padding:10px 12px;position:relative">
+            <div style="display:flex;align-items:center;gap:4px;margin-bottom:2px">
+              <span style="font-size:10px;color:#9ca3af">${label}</span>
+              <span class="score-tip" title="${criteria}"
+                style="width:14px;height:14px;border-radius:50%;background:#e5e7eb;color:#9ca3af;
+                       font-size:9px;font-weight:700;display:inline-flex;align-items:center;
+                       justify-content:center;cursor:help;flex-shrink:0">?</span>
+            </div>
             <div style="font-size:16px;font-weight:700">${score}<span style="font-size:11px;font-weight:400;color:#9ca3af">${max}</span></div>
             <div style="font-size:10px;color:#6b7280;margin-top:2px">${detail}</div>
           </div>`).join('')}
