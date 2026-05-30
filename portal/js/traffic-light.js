@@ -128,7 +128,7 @@ async function initTrafficLight(session, bodyEl) {
       <button class="tl-tab active" data-tab="overview">📊 전체 현황</button>
       <button class="tl-tab" data-tab="detail">👤 개인 상세</button>
       <button class="tl-tab" data-tab="input">✏️ 주간 입력</button>
-      <button class="tl-tab" data-tab="import">📁 PALMS 가져오기</button>
+      <button class="tl-tab" data-tab="import">📋 PALMS 분석</button>
       <button class="tl-tab" data-tab="criteria">📋 점수 기준</button>
     </div>
     <div class="tl-panel active" id="tl-overview"></div>
@@ -667,15 +667,15 @@ function renderImport() {
 
   el.innerHTML = `
     <div class="card" style="margin-bottom:12px">
-      <div class="card-title" style="margin-bottom:8px">PALMS 파일 업로드</div>
+      <div class="card-title" style="margin-bottom:8px">PALMS 챕터 분석</div>
       <p style="font-size:12px;color:#6b7280;margin-bottom:16px">
-        PALMS .xls/.xlsx 파일을 업로드하면 말일자 기준으로 저장됩니다.<br>
-        주평균은 <strong>실제 경과 주수</strong>로 자동 계산됩니다.
+        PALMS .xls/.xlsx 파일을 업로드하면 챕터 전체 요약과 멤버별 피드백을 보여줍니다.<br>
+        <strong>데이터는 저장되지 않습니다.</strong> 분석 결과만 확인하세요.
       </p>
       <div class="upload-zone" id="uploadZone">
-        <div style="font-size:36px;margin-bottom:8px">📊</div>
+        <div style="font-size:36px;margin-bottom:8px">📋</div>
         <div style="font-weight:700;font-size:14px;margin-bottom:4px">파일 드래그 또는 클릭</div>
-        <div style="font-size:12px;color:#9ca3af">.xls, .xlsx</div>
+        <div style="font-size:12px;color:#9ca3af">.xls, .xlsx — 저장 없이 분석만</div>
         <input type="file" id="palmsFile" accept=".xls,.xlsx" style="display:none">
       </div>
     </div>
@@ -685,10 +685,10 @@ function renderImport() {
   const zone = el.querySelector('#uploadZone');
   const inp  = el.querySelector('#palmsFile');
   zone.addEventListener('click', () => inp.click());
-  inp.addEventListener('change', () => handleFile(inp.files[0]));
+  inp.addEventListener('change', () => handleFileAnalysis(inp.files[0]));
   zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('drag'); });
   zone.addEventListener('dragleave', () => zone.classList.remove('drag'));
-  zone.addEventListener('drop', e => { e.preventDefault(); zone.classList.remove('drag'); handleFile(e.dataTransfer.files[0]); });
+  zone.addEventListener('drop', e => { e.preventDefault(); zone.classList.remove('drag'); handleFileAnalysis(e.dataTransfer.files[0]); });
 }
 
 /* ── 붙여넣기 파싱 ── */
@@ -1025,6 +1025,149 @@ async function handleFile(file) {
         .xls / .xlsx 파일만 지원합니다.
       </div>`;
   }
+}
+
+/* ── PALMS 분석 전용 (저장 없음) ── */
+async function handleFileAnalysis(file) {
+  if (!file) return;
+  const prev = document.getElementById('importPreview');
+  prev.innerHTML = `<div style="text-align:center;padding:24px;color:#9ca3af">📋 분석 중...</div>`;
+  try {
+    const ab = await file.arrayBuffer();
+    let wb;
+    try { wb = XLSX.read(ab, { type:'array', codepage:949, cellDates:true }); }
+    catch { wb = XLSX.read(ab, { type:'array' }); }
+    const ws   = wb.Sheets[wb.SheetNames[0]];
+    const rows = XLSX.utils.sheet_to_json(ws, { header:1, defval:'', raw:false });
+    const { periodStart, periodEnd, data } = parsePALMS(rows);
+    if (!data.length) { prev.innerHTML = `<div class="alert-banner crit">멤버 데이터를 찾지 못했습니다.</div>`; return; }
+    showPALMSAnalysis(data, periodStart, periodEnd, file.name);
+  } catch(e) {
+    prev.innerHTML = `<div class="alert-banner crit">파싱 실패: ${e.message}</div>`;
+  }
+}
+
+function showPALMSAnalysis(data, periodStart, periodEnd, fileName) {
+  const prev = document.getElementById('importPreview');
+  const n    = data.length;
+
+  // 챕터 집계
+  const totAttend  = data.filter(m => (m.attendance||0) > 0).length;
+  const totAbsent  = data.reduce((s,m) => s + (m.absence||0), 0);
+  const totRef     = data.reduce((s,m) => s + (m.given_t1||0) + (m.given_t2||0), 0);
+  const totRecv    = data.reduce((s,m) => s + (m.received_t1||0) + (m.received_t2||0), 0);
+  const totVis     = data.reduce((s,m) => s + (m.visitors||0), 0);
+  const totOno     = data.reduce((s,m) => s + (m.one_on_one||0), 0);
+  const totTyf     = data.reduce((s,m) => s + (Number(m.tyfcb)||0), 0);
+  const totCeu     = data.reduce((s,m) => s + (m.ceu||0), 0);
+  const attendRate = Math.round(totAttend / n * 100);
+
+  // 랭킹
+  const topRef = [...data].filter(m=>(m.given_t1||0)+(m.given_t2||0)>0)
+    .sort((a,b) => ((b.given_t1||0)+(b.given_t2||0)) - ((a.given_t1||0)+(a.given_t2||0))).slice(0,3);
+  const topTyf = [...data].filter(m=>(m.tyfcb||0)>0)
+    .sort((a,b) => (b.tyfcb||0)-(a.tyfcb||0)).slice(0,3);
+  const topOno = [...data].filter(m=>(m.one_on_one||0)>0)
+    .sort((a,b) => (b.one_on_one||0)-(a.one_on_one||0)).slice(0,3);
+  const zeroRef = data.filter(m => (m.given_t1||0)+(m.given_t2||0) === 0);
+  const absentees = data.filter(m => (m.absence||0) > 0);
+
+  // AI 피드백
+  const tips = [];
+  if (attendRate >= 90) tips.push({ type:'positive', icon:'✅', text:`출석률 ${attendRate}% — 챕터 참여도가 매우 높습니다.` });
+  else if (attendRate >= 75) tips.push({ type:'warning', icon:'⚠️', text:`출석률 ${attendRate}% — 일부 개선이 필요합니다.` });
+  else tips.push({ type:'critical', icon:'🚨', text:`출석률 ${attendRate}% — 출석 관리가 시급합니다.` });
+
+  if (totRef > 0) tips.push({ type:'positive', icon:'🤝', text:`총 리퍼럴 ${totRef}건 — 인당 평균 ${(totRef/n).toFixed(1)}건입니다.` });
+  if (zeroRef.length > 0) tips.push({ type:'action', icon:'👉', text:`리퍼럴 0건 멤버 ${zeroRef.length}명 (${zeroRef.slice(0,3).map(m=>m.member_name).join(', ')}${zeroRef.length>3?' 외':''}): 1:1 미팅 및 리퍼럴 독려가 필요합니다.` });
+  if (absentees.length > 0) tips.push({ type:'warning', icon:'⚠️', text:`결석 발생 멤버 ${absentees.length}명 (${absentees.map(m=>m.member_name).join(', ')}): 확인이 필요합니다.` });
+  if (totTyf > 0) tips.push({ type:'positive', icon:'💰', text:`감사장 총액 ${fmtComma(totTyf)}원 — 인당 평균 ${fmtComma(Math.round(totTyf/n))}원입니다.` });
+  if (totVis > 0) tips.push({ type:'positive', icon:'🙋', text:`비지터 ${totVis}명 초대 — 챕터 성장 가능성이 있습니다.` });
+  else tips.push({ type:'action', icon:'👉', text:`이 기간 비지터 초대가 없습니다. 각 멤버에게 비지터 초대를 독려하세요.` });
+
+  prev.innerHTML = `
+    <!-- 기간 헤더 -->
+    <div class="card" style="margin-bottom:12px;border-left:4px solid var(--red)">
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
+        <div>
+          <div style="font-size:16px;font-weight:700">${periodStart||'?'} ~ ${periodEnd||'?'}</div>
+          <div style="font-size:12px;color:#9ca3af;margin-top:2px">${fileName} · ${n}명</div>
+        </div>
+        <span style="font-size:11px;color:#9ca3af;background:#f9fafb;padding:4px 10px;border-radius:20px">저장 없음 — 분석 전용</span>
+      </div>
+    </div>
+
+    <!-- 챕터 KPI -->
+    <div class="card" style="margin-bottom:12px">
+      <div class="card-title" style="margin-bottom:12px">챕터 요약</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:10px">
+        ${[
+          ['출석률', attendRate+'%', attendRate>=90?'#16a34a':attendRate>=75?'#ca8a04':'#CC0000'],
+          ['결석',   totAbsent+'건',  '#CC0000'],
+          ['리퍼럴', totRef+'건',     '#2563eb'],
+          ['감사장', fmtComma(totTyf)+'원', '#16a34a'],
+          ['비지터', totVis+'명',     '#7c3aed'],
+          ['1:1',    totOno+'회',     '#0891b2'],
+          ['CEU',    totCeu+'점',     '#6b7280'],
+        ].map(([label,val,color])=>`
+          <div style="background:#f9fafb;border-radius:8px;padding:12px">
+            <div style="font-size:10px;color:#9ca3af;margin-bottom:4px">${label}</div>
+            <div style="font-size:18px;font-weight:700;color:${color}">${val}</div>
+          </div>`).join('')}
+      </div>
+    </div>
+
+    <!-- AI 피드백 -->
+    <div class="card" style="margin-bottom:12px">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+        <span style="font-size:18px">🤖</span>
+        <span style="font-weight:700;font-size:13px">AI 챕터 피드백</span>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:7px">
+        ${tips.map(t=>`<div class="ai-tip ${t.type}"><span>${t.icon}</span><span>${t.text}</span></div>`).join('')}
+      </div>
+    </div>
+
+    <!-- 랭킹 -->
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;margin-bottom:12px">
+      ${topRef.length ? `<div class="card" style="margin-bottom:0">
+        <div class="card-title" style="margin-bottom:10px">🏆 리퍼럴 TOP</div>
+        ${topRef.map((m,i)=>`<div class="rank-item"><span class="rank-num ${i===0?'top1':i===1?'top2':'top3'}">${i+1}</span><span class="rank-name">${m.member_name}</span><span class="rank-val">${(m.given_t1||0)+(m.given_t2||0)}건</span></div>`).join('')}
+      </div>` : ''}
+      ${topTyf.length ? `<div class="card" style="margin-bottom:0">
+        <div class="card-title" style="margin-bottom:10px">💰 감사장 TOP</div>
+        ${topTyf.map((m,i)=>`<div class="rank-item"><span class="rank-num ${i===0?'top1':i===1?'top2':'top3'}">${i+1}</span><span class="rank-name">${m.member_name}</span><span class="rank-val">${fmtComma(m.tyfcb)}원</span></div>`).join('')}
+      </div>` : ''}
+      ${topOno.length ? `<div class="card" style="margin-bottom:0">
+        <div class="card-title" style="margin-bottom:10px">🤝 1:1 TOP</div>
+        ${topOno.map((m,i)=>`<div class="rank-item"><span class="rank-num ${i===0?'top1':i===1?'top2':'top3'}">${i+1}</span><span class="rank-name">${m.member_name}</span><span class="rank-val">${m.one_on_one}회</span></div>`).join('')}
+      </div>` : ''}
+    </div>
+
+    <!-- 전체 멤버 테이블 -->
+    <div class="card">
+      <div class="card-title" style="margin-bottom:12px">전체 멤버 상세</div>
+      <div class="preview-table-wrap">
+        <table class="preview-table">
+          <thead><tr>
+            <th>이름</th><th>출석</th><th>결석</th><th>준T1</th><th>준T2</th>
+            <th>받은T1</th><th>받은T2</th><th>비지터</th><th>1:1</th><th>감사장</th><th>CEU</th>
+          </tr></thead>
+          <tbody>
+            ${[...data].sort((a,b)=>a.member_name.localeCompare(b.member_name,'ko')).map(m=>`
+            <tr class="${(m.absence||0)>0?'unmatched':''}">
+              <td><strong>${m.member_name}</strong></td>
+              <td>${m.attendance||0}</td><td>${m.absence||0}</td>
+              <td>${m.given_t1||0}</td><td>${m.given_t2||0}</td>
+              <td>${m.received_t1||0}</td><td>${m.received_t2||0}</td>
+              <td>${m.visitors||0}</td><td>${m.one_on_one||0}</td>
+              <td>${fmtComma(m.tyfcb||0)}</td><td>${m.ceu||0}</td>
+            </tr>`).join('')}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  `;
 }
 
 function calcWeeksInPeriod(start, end) {
