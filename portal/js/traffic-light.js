@@ -390,7 +390,7 @@ function renderWeekTable(name, recs, weeksList = WEEKS_ALL) {
   const makeRow = (w, i, hidden) => {
     const r     = recMap[w];
     const past  = w <= TODAY;
-    const label = r ? (r.absent?'❌ 결석': r.late?'⚠️ 지각': r.substitute?'🔄 대리인': r.sick?'🏥 병가':'✅ 출석') : '—';
+    const label = r ? (r.absent?'❌ 결석': r.late?'⚠️ 지각/조퇴': r.substitute?'🔄 대리인': r.sick?'🏥 병가':'✅ 출석') : '—';
     const rowCls = [past ? '' : 'projected-row', hidden ? 'week-hidden' : ''].join(' ').trim();
     return `
     <tr class="${rowCls}" id="wr-${i}" ${hidden ? 'style="display:none"' : ''}>
@@ -445,14 +445,26 @@ function openWeekEdit(weekDate, memberName) {
 
     <div class="form-group" style="margin-bottom:16px">
       <label class="form-label">출결</label>
-      <div class="toggle-wrap" id="attend-toggle" style="flex-wrap:wrap;gap:6px">
-        <button class="toggle-btn ${attendVal==='present'?'active':''}"    data-v="present"    onclick="setAttendToggle(this)">✅ 출석</button>
-        <button class="toggle-btn ${attendVal==='late'?'active':''}"       data-v="late"       onclick="setAttendToggle(this)">⚠️ 지각</button>
-        <button class="toggle-btn ${attendVal==='absent'?'active':''}"     data-v="absent"     onclick="setAttendToggle(this)">❌ 결석</button>
-        <button class="toggle-btn ${attendVal==='substitute'?'active':''}" data-v="substitute" onclick="setAttendToggle(this)">🔄 대리인</button>
-        <button class="toggle-btn ${attendVal==='sick'?'active':''}"       data-v="sick"       onclick="setAttendToggle(this)">🏥 병가</button>
+      <div id="attend-toggle" style="display:grid;grid-template-columns:repeat(5,1fr);gap:7px">
+        ${[
+          {v:'present',    icon:'✅', label:'출석',    color:'#16a34a', bg:'#f0fdf4'},
+          {v:'late',       icon:'⚠️', label:'지각/조퇴',color:'#ca8a04', bg:'#fefce8'},
+          {v:'absent',     icon:'❌', label:'결석',    color:'#CC0000', bg:'#fff1f2'},
+          {v:'substitute', icon:'🔄', label:'대리인',  color:'#2563eb', bg:'#eff6ff'},
+          {v:'sick',       icon:'🏥', label:'병가',    color:'#7c3aed', bg:'#f5f3ff'},
+        ].map(o => `
+          <button data-v="${o.v}" onclick="setAttendToggle(this)"
+            style="border:2px solid ${attendVal===o.v ? o.color : '#e5e7eb'};
+                   background:${attendVal===o.v ? o.bg : '#fff'};
+                   border-radius:10px;padding:10px 4px;cursor:pointer;
+                   display:flex;flex-direction:column;align-items:center;gap:4px;
+                   font-family:inherit;transition:all .15s"
+            data-color="${o.color}" data-bg="${o.bg}">
+            <span style="font-size:18px">${o.icon}</span>
+            <span style="font-size:10px;font-weight:600;color:${attendVal===o.v ? o.color : '#6b7280'}">${o.label}</span>
+          </button>`).join('')}
       </div>
-      <div style="font-size:11px;color:#9ca3af;margin-top:4px">대리인·병가는 출석으로 인정됩니다</div>
+      <div style="font-size:11px;color:#9ca3af;margin-top:6px">대리인·병가는 출석으로 인정</div>
     </div>
 
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
@@ -539,8 +551,14 @@ function openWeekEdit(weekDate, memberName) {
 window.openWeekEdit = openWeekEdit;
 
 function setAttendToggle(btn) {
-  btn.closest('#attend-toggle').querySelectorAll('.toggle-btn').forEach(b=>b.classList.remove('active'));
-  btn.classList.add('active');
+  btn.closest('#attend-toggle').querySelectorAll('button').forEach(b => {
+    b.style.borderColor = '#e5e7eb';
+    b.style.background  = '#fff';
+    b.querySelector('span:last-child').style.color = '#6b7280';
+  });
+  btn.style.borderColor = btn.dataset.color;
+  btn.style.background  = btn.dataset.bg;
+  btn.querySelector('span:last-child').style.color = btn.dataset.color;
   window._editAttend = btn.dataset.v;
 }
 window.setAttendToggle = setAttendToggle;
@@ -783,7 +801,7 @@ function showVPPreview(text, memberName) {
           ${rows.map(r=>`<tr>
             <td><strong>${r.week_date}</strong></td>
             <td style="color:#9ca3af">${r.original_date}</td>
-            <td>${r.absent?'❌결석':r.late?'⚠️지각':r.substitute?'🔄대리인':r.sick?'🏥병가':'✅출석'}</td>
+            <td>${r.absent?'❌결석':r.late?'⚠️지각/조퇴':r.substitute?'🔄대리인':r.sick?'🏥병가':'✅출석'}</td>
             <td>${r.given_t1}</td><td>${r.given_t2}</td>
             <td>${r.received_t1}</td><td>${r.received_t2}</td>
             <td>${r.visitors}</td><td>${r.one_on_one}</td>
