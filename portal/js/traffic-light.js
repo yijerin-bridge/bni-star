@@ -266,7 +266,7 @@ function renderMemberDetail(name) {
               <th>준T1</th><th>준T2</th>
               <th>비지터</th><th>1:1</th>
               <th>감사장</th><th>CEU</th>
-              <th>점수</th><th></th>
+              <th></th>
             </tr>
           </thead>
           <tbody id="week-tbody"></tbody>
@@ -299,7 +299,6 @@ function renderWeekTable(name, recs) {
     const past = w <= TODAY;
     const label = r ? (r.absent?'❌ 결석': r.late?'⚠️ 지각':'✅ 출석') : '—';
     const rowCls = past ? '' : 'projected-row';
-    const weekSc = r ? calcMemberScore([r]) : null;
 
     return `
     <tr class="${rowCls}" id="wr-${i}">
@@ -315,7 +314,6 @@ function renderWeekTable(name, recs) {
       <td>${r?.one_on_one??'—'}</td>
       <td>${r ? fmtWan(r.tyfcb||0) : '—'}</td>
       <td>${r?.ceu??'—'}</td>
-      <td style="font-weight:700">${weekSc ? weekSc.total : '—'}</td>
       <td>
         <button class="btn btn-outline btn-sm" onclick="openWeekEdit('${w}','${name}')">
           ${r ? '수정' : '입력'}
