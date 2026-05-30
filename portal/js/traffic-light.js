@@ -164,8 +164,9 @@ function renderOverview() {
   const memberScores = allMembers.map(m => {
     const recs      = allWeeklyRecs.filter(r => r.member_name === m.name);
     const memWeeks  = getMemberWeeks(m.joined_date);
-    const pastWeeks = memWeeks.filter(w => w <= TODAY).length;
-    const sc        = calcMemberScore(recs, pastWeeks);
+    const elapsed   = memWeeks.filter(w => w <= TODAY).length;
+    const recorded  = new Set(recs.map(r => r.week_date)).size;
+    const sc        = calcMemberScore(recs, Math.max(elapsed, recorded));
     return { ...m, ...sc, recs };
   }).sort((a,b) => {
     const ord = { gray:0, red:1, yellow:2, green:3 };
@@ -257,8 +258,9 @@ function renderMemberDetail(name) {
   const isNew    = member?.joined_date && member.joined_date > CHAPTER_LAUNCH;
 
   const recs      = allWeeklyRecs.filter(r => r.member_name === name);
-  const pastWeeks = memWeeks.filter(w => w <= TODAY).length;
-  const sc        = calcMemberScore(recs, pastWeeks);
+  const elapsed   = memWeeks.filter(w => w <= TODAY).length;
+  const recorded  = new Set(recs.map(r => r.week_date)).size;
+  const sc        = calcMemberScore(recs, Math.max(elapsed, recorded));
   const lEmoji = {green:'🟢',yellow:'🟡',red:'🔴',gray:'⚫'}[sc.light]||'⚫';
   const lightColor = {green:'#16a34a',yellow:'#ca8a04',red:'#CC0000',gray:'#9ca3af'}[sc.light]||'#9ca3af';
 
@@ -269,10 +271,10 @@ function renderMemberDetail(name) {
         <span style="font-size:28px;font-weight:900">${sc.total}</span>
         <span style="font-size:20px">${lEmoji}</span>
         <span style="font-size:13px;color:#6b7280">
-          ${sc.stats.n||0}주 기록 기준 ·
+          분모 ${Math.max(elapsed, recorded)}주 (경과 ${elapsed} / 기록 ${recorded}) ·
           ${isNew
-            ? `가입 ${member.joined_date} · 개인 ${memWeeks.filter(w=>w<=TODAY).length}주차`
-            : `챕터 ${WEEKS_ALL.filter(w=>w<=TODAY).length}주차`}
+            ? `가입 ${member.joined_date}`
+            : `챕터 ${elapsed}주차`}
         </span>
       </div>
       <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px">
