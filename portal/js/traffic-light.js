@@ -832,19 +832,49 @@ function showPastePreview(data, date, weeks) {
 async function handleFile(file) {
   if (!file) return;
   const prev = document.getElementById('importPreview');
-  prev.innerHTML = `<div style="text-align:center;padding:24px;color:#9ca3af">분석 중...</div>`;
+  if (!prev) { console.error('importPreview element not found'); return; }
+  prev.innerHTML = `<div style="text-align:center;padding:24px;color:#9ca3af">📊 분석 중...</div>`;
   try {
     const ab = await file.arrayBuffer();
-    const wb = XLSX.read(ab, { type:'array', codepage:949 });
-    const ws = wb.Sheets[wb.SheetNames[0]];
-    const rows = XLSX.utils.sheet_to_json(ws, { header:1, defval:'' });
+
+    // .xls 구버전 + .xlsx 둘 다 처리
+    let wb;
+    try {
+      wb = XLSX.read(ab, { type:'array', codepage:949, cellDates:true });
+    } catch {
+      wb = XLSX.read(ab, { type:'array' });
+    }
+
+    if (!wb.SheetNames.length) throw new Error('시트가 없습니다');
+    const ws   = wb.Sheets[wb.SheetNames[0]];
+    const rows = XLSX.utils.sheet_to_json(ws, { header:1, defval:'', raw:false });
+
+    console.log('[PALMS] 총 행수:', rows.length, '/ 첫 5행:', rows.slice(0,5));
+
     const { periodStart, periodEnd, data } = parsePALMS(rows);
-    // 저장 날짜 = 말일자(periodEnd), 주수 자동 계산
+    console.log('[PALMS] 기간:', periodStart, '~', periodEnd, '/ 파싱 멤버수:', data.length);
+
+    if (!data.length) {
+      prev.innerHTML = `
+        <div class="alert-banner crit">
+          <strong>멤버 데이터를 찾지 못했습니다.</strong><br>
+          파일 형식을 확인하거나, 데이터를 복사해서 📋 붙여넣기 탭을 이용해주세요.
+        </div>`;
+      return;
+    }
+
     const saveDate  = periodEnd || periodStart || TODAY;
     const weeksAuto = periodStart && periodEnd ? calcWeeksInPeriod(periodStart, periodEnd) : 1;
     showFilePreview(data, saveDate, weeksAuto, periodStart, periodEnd, file.name);
+
   } catch(e) {
-    document.getElementById('importPreview').innerHTML = `<div class="alert-banner crit">파싱 실패: ${e.message}</div>`;
+    console.error('[PALMS] 파싱 오류:', e);
+    const prev2 = document.getElementById('importPreview');
+    if (prev2) prev2.innerHTML = `
+      <div class="alert-banner crit">
+        <strong>파일 오류: ${e.message}</strong><br>
+        .xls / .xlsx 파일만 지원합니다. 문제가 계속되면 📋 붙여넣기 탭을 이용해주세요.
+      </div>`;
   }
 }
 
