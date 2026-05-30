@@ -1011,7 +1011,7 @@ async function saveImportedRecords(matched, saveDate, weeksCount) {
     one_on_one:   m.one_on_one || 0,
     tyfcb:        m.tyfcb      || 0,
     ceu:          m.ceu        || 0,
-    weeks_count:  weeksCount,
+    // weeks_count: weeksCount,  // 컬럼 미존재 시 제외
     is_estimated: saveDate > TODAY,
   }));
 
