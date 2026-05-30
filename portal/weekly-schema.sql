@@ -19,6 +19,8 @@ CREATE TABLE IF NOT EXISTS weekly_records (
   -- 활동
   given_t1    INT     DEFAULT 0,
   given_t2    INT     DEFAULT 0,
+  received_t1 INT     DEFAULT 0,
+  received_t2 INT     DEFAULT 0,
   visitors    INT     DEFAULT 0,
   one_on_one  INT     DEFAULT 0,
   tyfcb       NUMERIC DEFAULT 0,      -- 받은 감사장 금액
