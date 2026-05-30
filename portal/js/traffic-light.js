@@ -460,7 +460,7 @@ function openWeekEdit(weekDate, memberName) {
       </div>
       <div class="form-group">
         <label class="form-label">감사장 금액 (원)</label>
-        <input type="number" id="ed-tyf" class="form-input" value="${rec?.tyfcb||0}" min="0" step="10000">
+        <input type="number" id="ed-tyf" class="form-input" value="${rec?.tyfcb||0}" min="0" step="1000">
       </div>
       <div class="form-group">
         <label class="form-label">CEU 점수</label>
@@ -599,7 +599,7 @@ async function loadWeekInput(weekDate, weekNum) {
           <thead><tr>
             <th style="text-align:left">이름</th>
             <th>출결</th><th>준T1</th><th>준T2</th>
-            <th>비지터</th><th>1:1</th><th>감사장(만원)</th><th>CEU</th>
+            <th>비지터</th><th>1:1</th><th>감사장(원)</th><th>CEU</th>
           </tr></thead>
           <tbody>
             ${allMembers.map(m => {
@@ -618,7 +618,7 @@ async function loadWeekInput(weekDate, weekNum) {
                 <td><input type="number" class="edit-input bulk-t2"  data-name="${m.name}" value="${r?.given_t2||0}" min="0"></td>
                 <td><input type="number" class="edit-input bulk-vis" data-name="${m.name}" value="${r?.visitors||0}"  min="0"></td>
                 <td><input type="number" class="edit-input bulk-ono" data-name="${m.name}" value="${r?.one_on_one||0}" min="0"></td>
-                <td><input type="number" class="edit-input bulk-tyf" data-name="${m.name}" value="${Math.round((r?.tyfcb||0)/10000)}" min="0" step="1"></td>
+                <td><input type="number" class="edit-input bulk-tyf" data-name="${m.name}" value="${r?.tyfcb||0}" min="0" step="1000"></td>
                 <td><input type="number" class="edit-input bulk-ceu" data-name="${m.name}" value="${r?.ceu||0}" min="0"></td>
               </tr>`;
             }).join('')}
@@ -631,7 +631,7 @@ async function loadWeekInput(weekDate, weekNum) {
   document.getElementById('bulk-save')?.addEventListener('click', async () => {
     const rows = allMembers.map(m => {
       const av  = el.querySelector(`.bulk-attend[data-name="${m.name}"]`)?.value || 'present';
-      const tyf = Number(el.querySelector(`.bulk-tyf[data-name="${m.name}"]`)?.value||0);
+      const tyf = Number(el.querySelector(`.bulk-tyf[data-name="${m.name}"]`)?.value||0);  // 원 단위
       return {
         member_id:   m.id,
         member_name: m.name,
@@ -643,7 +643,7 @@ async function loadWeekInput(weekDate, weekNum) {
         given_t2:    Number(el.querySelector(`.bulk-t2[data-name="${m.name}"]`)?.value||0),
         visitors:    Number(el.querySelector(`.bulk-vis[data-name="${m.name}"]`)?.value||0),
         one_on_one:  Number(el.querySelector(`.bulk-ono[data-name="${m.name}"]`)?.value||0),
-        tyfcb:       tyf * 10000,
+        tyfcb:       tyf,
         ceu:         Number(el.querySelector(`.bulk-ceu[data-name="${m.name}"]`)?.value||0),
         is_estimated: weekDate > TODAY,
       };
