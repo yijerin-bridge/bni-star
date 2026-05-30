@@ -395,9 +395,9 @@ function cmpArrow(curr, prev, invert = false) {
 }
 
 function fmtAmt(v) {
-  if (v >= 100000000) return (v/100000000).toFixed(1) + '억';
-  if (v >= 10000)     return Math.round(v/10000) + '만';
-  return v.toLocaleString() + '원';
+  const n = Number(v) || 0;
+  if (n >= 100000000) return (n/100000000).toFixed(1) + '억원';
+  return n.toLocaleString('ko-KR') + '원';
 }
 
 /* ── AI 챕터 디렉터 ── */

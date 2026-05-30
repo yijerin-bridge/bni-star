@@ -1625,7 +1625,7 @@ function genAIMember(name, recs, sc) {
     tips.push({type:'action',icon:'👉',text:`주평균 리퍼럴 ${sc.stats.avgRef}건 (목표 ${needed}건) — 1:1 미팅에서 적극적인 소개를 요청해 보세요.`});
   }
   if (sc.breakdown.tyfcb < 15) {
-    const needed = sc.stats.totTyf < 25000000 ? '2,500만' : sc.stats.totTyf < 50000000 ? '5,000만' : '1억';
+    const needed = sc.stats.totTyf < 25000000 ? '25,000,000' : sc.stats.totTyf < 50000000 ? '50,000,000' : '100,000,000';
     tips.push({type:'action',icon:'👉',text:`감사장 누적 ${fmtComma(sc.stats.totTyf)}원 (다음 목표: ${needed}원) — 받은 리퍼럴이 성사되면 반드시 감사장을 기록하세요.`});
   }
   if (sc.breakdown.visitor < 20) tips.push({type:'action',icon:'👉',text:`주평균 비지터 ${sc.stats.avgVis}명 (목표 0.6명) — 주변 비즈니스 파트너를 방문객으로 초대해 보세요.`});
@@ -1657,12 +1657,7 @@ function fmtComma(v) {
   return (Number(v)||0).toLocaleString('ko-KR');
 }
 
-function fmtWan(v) {
-  const n = Number(v)||0;
-  if (n >= 100000000) return (n/100000000).toFixed(1)+'억';
-  if (n >= 10000)     return Math.round(n/10000)+'만';
-  return n.toLocaleString();
-}
+function fmtWan(v) { return fmtComma(v); } // 하위호환 유지
 
 function showToast(msg) {
   const t = document.createElement('div');
