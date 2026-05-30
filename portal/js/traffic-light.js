@@ -224,25 +224,18 @@ function renderOverview() {
           </div>
           <div style="font-size:9px;color:#9ca3af;margin-bottom:3px">월별 점수 추세 ${months.length ? `(${months[0].slice(0,7)} ~ ${months[months.length-1].slice(0,7)})` : ''}</div>
           <div class="ms-sparkline" style="align-items:flex-end">${wBars.length ? wBars.join('') : '<span style="font-size:10px;color:#d1d5db">데이터 없음</span>'}</div>
-          ${m.recs.length ? `
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-top:8px">
-            <div style="background:#f9fafb;border-radius:6px;padding:5px 7px">
-              <div style="font-size:9px;color:#9ca3af">리퍼럴(T1+T2)</div>
-              <div style="font-size:12px;font-weight:700">${m.stats.totRef||0}건</div>
-            </div>
-            <div style="background:#f9fafb;border-radius:6px;padding:5px 7px">
-              <div style="font-size:9px;color:#9ca3af">1:1</div>
-              <div style="font-size:12px;font-weight:700">${m.stats.totOno||0}회</div>
-            </div>
-            <div style="background:#f9fafb;border-radius:6px;padding:5px 7px">
-              <div style="font-size:9px;color:#9ca3af">감사장</div>
-              <div style="font-size:12px;font-weight:700">${fmtComma(m.stats.totTyf||0)}원</div>
-            </div>
-            <div style="background:#f9fafb;border-radius:6px;padding:5px 7px">
-              <div style="font-size:9px;color:#9ca3af">비지터</div>
-              <div style="font-size:12px;font-weight:700">${m.stats.totVis||0}명</div>
-            </div>
-          </div>` : `<div class="ms-sub" style="margin-top:8px">데이터 없음</div>`}
+            ${[
+              ['리퍼럴(T1+T2)', (m.stats.totRef||0)+'건'],
+              ['1:1',           (m.stats.totOno||0)+'회'],
+              ['감사장',         fmtComma(m.stats.totTyf||0)+'원'],
+              ['비지터',         (m.stats.totVis||0)+'명'],
+            ].map(([label, val]) => `
+              <div style="background:#f9fafb;border-radius:6px;padding:5px 7px">
+                <div style="font-size:9px;color:#9ca3af">${label}</div>
+                <div style="font-size:12px;font-weight:700;color:${val==='0건'||val==='0회'||val==='0원'||val==='0명'?'#d1d5db':'inherit'}">${val}</div>
+              </div>`).join('')}
+          </div>
         </div>`;
       }).join('')}
     </div>
