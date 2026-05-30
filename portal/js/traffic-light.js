@@ -693,38 +693,49 @@ function renderImport() {
 // "5월 13일" / "5/13" / "2026-05-13" / "26.5.13" 등 유연 파싱
 /* ── VP 리포트 붙여넣기 파서 ── */
 function parseVPReport(text) {
-  const lines = text.split('\n').map(l => l.split('\t').map(c => c.trim())).filter(l => l.some(c=>c));
+  const rawLines = text.split('\n').map(l => l.trim()).filter(l => l);
+  const isTabSep = rawLines.some(l => l.includes('\t'));
+
+  if (isTabSep) {
+    // 탭 구분 형식: 날짜\t출결\t준T1\t...
+    return rawLines.map(l => l.split('\t').map(c => c.trim()))
+      .filter(r => parseDateKR(r[0]))
+      .map(r => buildVPRow(r[0], r[1], i => r[i]));
+  }
+
+  // 한 줄에 값 하나씩 — 날짜 기준으로 10개씩 묶음
   const result = [];
+  let i = 0;
+  // 첫 날짜 행까지 스킵 (헤더)
+  while (i < rawLines.length && !parseDateKR(rawLines[i])) i++;
 
-  for (const r of lines) {
-    // 첫 컬럼이 날짜인 행만 처리
-    const date = parseDateKR(r[0]);
-    if (!date) continue;
-
-    // 가장 가까운 WEEKS_ALL 수요일로 스냅
-    const weekDate = snapToNearestWeek(date);
-
-    const attendStr = (r[1]||'').trim();
-    const absent  = attendStr.includes('결석') || attendStr.toUpperCase() === 'A';
-    const late    = attendStr.includes('지각') || attendStr.toUpperCase() === 'L';
-    const attended = !absent;
-
-    const n = i => Math.max(0, Number(String(r[i]||'').replace(/,/g,''))||0);
-    result.push({
-      week_date:   weekDate,
-      original_date: date,
-      attended, absent, late,
-      given_t1:    n(2),
-      given_t2:    n(3),
-      received_t1: n(4),
-      received_t2: n(5),
-      visitors:    n(6),
-      one_on_one:  n(7),
-      tyfcb:       n(8),
-      ceu:         n(9),
-    });
+  while (i < rawLines.length) {
+    const date = parseDateKR(rawLines[i]);
+    if (!date) { i++; continue; }
+    // 날짜 포함 10개 값 수집
+    const vals = rawLines.slice(i, i + 10);
+    result.push(buildVPRow(vals[0], vals[1], idx => vals[idx]));
+    i += 10;
   }
   return result;
+}
+
+function buildVPRow(dateStr, attendStr, val) {
+  const date = parseDateKR(dateStr);
+  if (!date) return null;
+  const a     = (attendStr||'').trim();
+  const absent  = a.includes('결석') || a.toUpperCase() === 'A';
+  const late    = a.includes('지각') || a.toUpperCase() === 'L';
+  const n = i => Math.max(0, Number(String(val(i)||'').replace(/,/g,''))||0);
+  return {
+    week_date:     snapToNearestWeek(date),
+    original_date: date,
+    attended: !absent, absent, late,
+    given_t1:    n(2), given_t2:    n(3),
+    received_t1: n(4), received_t2: n(5),
+    visitors:    n(6), one_on_one:  n(7),
+    tyfcb:       n(8), ceu:         n(9),
+  };
 }
 
 function snapToNearestWeek(dateStr) {
