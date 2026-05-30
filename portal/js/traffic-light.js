@@ -1,222 +1,186 @@
 /* ============================================================
-   BNI STAR — Traffic Light v2 (PALMS 기반)
+   BNI STAR — Traffic Light v3 (주간 기반 채점)
+   챕터 런칭: 2026-05-13 / 24주 / 매주 수요일
    ============================================================ */
 
-let allMembers = [], allRecords = [], scoreConfig = {};
-let currentPeriod = null; // { start: 'YYYY-MM-DD', label: 'YYYY.MM' }
-let chartInstance = null;
+/* ── 상수 ── */
+const CHAPTER_LAUNCH = '2026-05-13';
+const WEEKS_24 = (() => {
+  const arr = [];
+  for (let i = 0; i < 24; i++) {
+    const d = new Date('2026-05-13T00:00:00Z');
+    d.setUTCDate(d.getUTCDate() + i * 7);
+    arr.push(d.toISOString().slice(0, 10));
+  }
+  return arr; // W1~W24
+})();
+const TODAY = new Date().toISOString().slice(0, 10);
+
+/* ── 채점 함수 (사용자 지정 기준) ── */
+function scoreAbsence(n)      { return n > 2 ? 0 : n === 2 ? 5 : n === 1 ? 10 : 15; }
+function scoreLate(n)         { return n >= 2 ? 0 : n === 1 ? 5 : 10; }
+function scoreReferral(avg)   { return avg < 0.5 ? 0 : avg < 0.75 ? 5 : avg < 1.0 ? 10 : avg < 1.2 ? 15 : 20; }
+function scoreTyfcb(total)    { return total < 25000000 ? 0 : total < 50000000 ? 5 : total < 100000000 ? 10 : 15; }
+function scoreVisitor(avg)    { return avg < 0.1 ? 0 : avg < 0.2 ? 5 : avg < 0.4 ? 10 : avg < 0.6 ? 15 : 20; }
+function scoreOno(avg)        { return avg < 1 ? 0 : avg < 2 ? 5 : 10; }
+function scoreCeu(total)      { return total < 5 ? 0 : total < 15 ? 5 : 10; }
+
+function calcMemberScore(recs) {
+  const n = recs.length;
+  const empty = { total:0, light:'gray',
+    breakdown:{absence:0,late:0,referral:0,tyfcb:0,visitor:0,ono:0,ceu:0},
+    stats:{n:0} };
+  if (!n) return empty;
+
+  const absN  = recs.filter(r => r.absent).length;
+  const lateN = recs.filter(r => r.late).length;
+  const totRef = recs.reduce((s,r) => s + (r.given_t1||0) + (r.given_t2||0), 0);
+  const totVis = recs.reduce((s,r) => s + (r.visitors||0), 0);
+  const totOno = recs.reduce((s,r) => s + (r.one_on_one||0), 0);
+  const totTyf = recs.reduce((s,r) => s + (Number(r.tyfcb)||0), 0);
+  const totCeu = recs.reduce((s,r) => s + (r.ceu||0), 0);
+
+  const s1 = scoreAbsence(absN);
+  const s2 = scoreLate(lateN);
+  const s3 = scoreReferral(totRef / n);
+  const s4 = scoreTyfcb(totTyf);
+  const s5 = scoreVisitor(totVis / n);
+  const s6 = scoreOno(totOno / n);
+  const s7 = scoreCeu(totCeu);
+  const total = s1+s2+s3+s4+s5+s6+s7;
+  const light = total>=70?'green':total>=50?'yellow':total>=30?'red':'gray';
+
+  return { total, light,
+    breakdown:{absence:s1,late:s2,referral:s3,tyfcb:s4,visitor:s5,ono:s6,ceu:s7},
+    stats:{n,absN,lateN,totRef,totVis,totOno,totTyf,totCeu,
+           avgRef:(totRef/n).toFixed(2), avgVis:(totVis/n).toFixed(2), avgOno:(totOno/n).toFixed(2)} };
+}
+
+/* ── 전역 데이터 ── */
+let allMembers = [], allWeeklyRecs = [];
+
+async function loadAll() {
+  const [memRes, recRes] = await Promise.all([
+    getSb().from('members').select('id,legacy_id,name,company').eq('is_active', true).order('name'),
+    getSb().from('weekly_records').select('*').order('week_date'),
+  ]);
+  allMembers    = (memRes.data || []).map(m => ({ ...m, uid: m.legacy_id ?? m.id }));
+  allWeeklyRecs = recRes.data || [];
+}
 
 /* ── 초기화 ── */
 async function initTrafficLight(session, bodyEl) {
   bodyEl.innerHTML = `
     <div class="page-header">
-      <div><h1>트래픽라이트</h1><p>PALMS 기반 월별 멤버 성과 분석</p></div>
+      <div><h1>트래픽라이트</h1><p>주간 기반 · 챕터 런칭 2026-05-13 · 24주</p></div>
     </div>
     <div class="tl-tab-bar">
       <button class="tl-tab active" data-tab="overview">📊 전체 현황</button>
       <button class="tl-tab" data-tab="detail">👤 개인 상세</button>
-      <button class="tl-tab" data-tab="import">📁 파일 가져오기</button>
-      <button class="tl-tab" data-tab="config">⚙️ 점수 설정</button>
+      <button class="tl-tab" data-tab="input">✏️ 주간 입력</button>
+      <button class="tl-tab" data-tab="import">📁 PALMS 가져오기</button>
+      <button class="tl-tab" data-tab="criteria">📋 점수 기준</button>
     </div>
     <div class="tl-panel active" id="tl-overview"></div>
     <div class="tl-panel"        id="tl-detail"></div>
+    <div class="tl-panel"        id="tl-input"></div>
     <div class="tl-panel"        id="tl-import"></div>
-    <div class="tl-panel"        id="tl-config"></div>
+    <div class="tl-panel"        id="tl-criteria"></div>
   `;
-
   bodyEl.querySelectorAll('.tl-tab').forEach(btn => {
     btn.addEventListener('click', () => {
       bodyEl.querySelectorAll('.tl-tab').forEach(b => b.classList.remove('active'));
       bodyEl.querySelectorAll('.tl-panel').forEach(p => p.classList.remove('active'));
       btn.classList.add('active');
       bodyEl.querySelector('#tl-' + btn.dataset.tab).classList.add('active');
-      if (btn.dataset.tab === 'detail')   renderDetail();
-      if (btn.dataset.tab === 'import')   renderImport();
-      if (btn.dataset.tab === 'config')   renderConfig();
+      const tab = btn.dataset.tab;
+      if (tab === 'detail')   renderDetail();
+      if (tab === 'input')    renderInput();
+      if (tab === 'import')   renderImport();
+      if (tab === 'criteria') renderCriteria();
     });
   });
-
   await loadAll();
   renderOverview();
 }
 
-/* ── 데이터 로드 ── */
-async function loadAll() {
-  const [memRes, recRes, cfgRes] = await Promise.all([
-    getSb().from('members').select('id,legacy_id,name,company').eq('is_active', true).order('name'),
-    getSb().from('palms_records').select('*').order('period_start', { ascending: false }),
-    getSb().from('palms_score_config').select('*').eq('id', 1).single(),
-  ]);
-  allMembers = (memRes.data || []).map(m => ({ ...m, uid: m.legacy_id ?? m.id }));
-  allRecords = recRes.data || [];
-  scoreConfig = cfgRes.data || defaultConfig();
-
-  // 현재 기간 = 가장 최근 레코드 기간, 없으면 이번 달
-  if (allRecords.length && !currentPeriod) {
-    currentPeriod = allRecords[0].period_start;
-  } else if (!currentPeriod) {
-    const now = new Date();
-    currentPeriod = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2,'0')}-01`;
-  }
-}
-
-function defaultConfig() {
-  return { attend_weight:30, attend_target:80, referral_weight:25, referral_target:2,
-           tyfcb_weight:20, tyfcb_target:50, ono_weight:15, ono_target:2,
-           ceu_weight:10, ceu_target:3, green_min:70, yellow_min:40 };
-}
-
-/* ── 점수 계산 ── */
-function calcScore(rec, cfg = scoreConfig) {
-  const total = (rec.attendance||0) + (rec.absence||0) + (rec.late_leave||0) + (rec.sick_leave||0);
-  const attendPct   = total > 0 ? (rec.attendance||0) / total * 100 : 0;
-  const referrals   = (rec.given_t1||0) + (rec.given_t2||0);
-  const tyfcbWan    = (rec.tyfcb||0) / 10000;
-
-  const s = (actual, target, weight) => Math.min(1, actual / Math.max(target, 1)) * weight;
-  const score = Math.round(
-    s(attendPct,     cfg.attend_target,   cfg.attend_weight)  +
-    s(referrals,     cfg.referral_target, cfg.referral_weight)+
-    s(tyfcbWan,      cfg.tyfcb_target,    cfg.tyfcb_weight)   +
-    s(rec.one_on_one||0, cfg.ono_target,  cfg.ono_weight)     +
-    s(rec.ceu||0,    cfg.ceu_target,      cfg.ceu_weight)
-  );
-  const light = score >= cfg.green_min ? 'green' : score >= cfg.yellow_min ? 'yellow' : 'red';
-  return { score, light };
-}
-
-/* ── 기간 목록 (최근 6개월) ── */
-function get6Periods() {
-  const periods = [...new Set(allRecords.map(r => r.period_start))].sort().reverse().slice(0, 6);
-  return periods;
-}
-
-function periodLabel(start) {
-  const d = new Date(start); return `${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,'0')}`;
-}
-
-function prevPeriod(start) {
-  const d = new Date(start); d.setMonth(d.getMonth() - 1);
-  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-01`;
-}
-function nextPeriod(start) {
-  const d = new Date(start); d.setMonth(d.getMonth() + 1);
-  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-01`;
-}
-
-/* ════════════════════════════════════════
+/* ═══════════════════════════════════════════════
    탭 1: 전체 현황
-════════════════════════════════════════ */
+═══════════════════════════════════════════════ */
 function renderOverview() {
   const el = document.getElementById('tl-overview');
-  const periods = get6Periods();
-  const hasPrev = allRecords.some(r => r.period_start < currentPeriod);
-  const hasNext = allRecords.some(r => r.period_start > currentPeriod);
 
-  const curRecs = allRecords.filter(r => r.period_start === currentPeriod);
+  // 멤버별 점수 계산
+  const memberScores = allMembers.map(m => {
+    const recs = allWeeklyRecs.filter(r => r.member_name === m.name);
+    const sc   = calcMemberScore(recs);
+    return { ...m, ...sc, recs };
+  }).sort((a,b) => {
+    const ord = { gray:0, red:1, yellow:2, green:3 };
+    return (ord[b.light]??0) - (ord[a.light]??0) || b.total - a.total;
+  });
 
-  // 점수 계산
-  const scored = curRecs.map(r => ({ ...r, ...calcScore(r) }));
-  const green  = scored.filter(r => r.light === 'green').length;
-  const yellow = scored.filter(r => r.light === 'yellow').length;
-  const red    = scored.filter(r => r.light === 'red').length;
+  const green  = memberScores.filter(m=>m.light==='green').length;
+  const yellow = memberScores.filter(m=>m.light==='yellow').length;
+  const red    = memberScores.filter(m=>m.light==='red').length;
+  const gray   = memberScores.filter(m=>m.light==='gray').length;
+  const pastWeeks = WEEKS_24.filter(w => w <= TODAY).length;
 
-  // AI 디렉터 인사이트
-  const aiTips = genAIOverview(scored, periods);
+  const aiTips = genAIOverview(memberScores);
 
   el.innerHTML = `
-    <!-- AI 디렉터 -->
     ${aiTips.length ? `
     <div class="card" style="margin-bottom:16px">
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
         <span style="font-size:20px">🤖</span>
         <span style="font-weight:700;font-size:14px">AI 챕터 디렉터</span>
-        <span style="font-size:11px;color:#9ca3af">· ${periodLabel(currentPeriod)} 분석</span>
+        <span style="font-size:11px;color:#9ca3af">· ${pastWeeks}주차 기준</span>
       </div>
-      <div style="display:flex;flex-direction:column;gap:8px">
+      <div style="display:flex;flex-direction:column;gap:7px">
         ${aiTips.map(t=>`<div class="ai-tip ${t.type}"><span>${t.icon}</span><span>${t.text}</span></div>`).join('')}
       </div>
     </div>` : ''}
 
-    <!-- 기간 네비 + 요약 -->
-    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:16px">
-      <div class="period-nav" style="margin:0">
-        <button id="ov-prev" ${!hasPrev?'disabled':''}>&#8249;</button>
-        <span class="period-label">${periodLabel(currentPeriod)}</span>
-        <button id="ov-next" ${!hasNext?'disabled':''}>&#8250;</button>
-      </div>
-      <div style="display:flex;gap:10px">
-        <span class="score-badge green">🟢 ${green}명</span>
-        <span class="score-badge yellow">🟡 ${yellow}명</span>
-        <span class="score-badge red">🔴 ${red}명</span>
-        ${curRecs.length===0?'<span style="font-size:12px;color:#9ca3af">데이터 없음 — 파일을 가져오세요</span>':''}
-      </div>
+    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:16px">
+      <span style="font-size:13px;color:#9ca3af">챕터 런칭 후 ${pastWeeks}주차 · 24주 중</span>
+      <span class="score-badge green">🟢 ${green}명</span>
+      <span class="score-badge yellow">🟡 ${yellow}명</span>
+      <span class="score-badge red">🔴 ${red}명</span>
+      <span class="score-badge gray">⚫ ${gray}명 (미입력)</span>
     </div>
 
-    <!-- 멤버 그리드 -->
-    <div class="member-score-grid" id="ov-grid"></div>
+    <div class="member-score-grid">
+      ${memberScores.map(m => {
+        const lEmoji = {green:'🟢',yellow:'🟡',red:'🔴',gray:'⚫'}[m.light]||'⚫';
+        const wBars  = WEEKS_24.slice(0,pastWeeks).map(w => {
+          const r = m.recs.find(x=>x.week_date===w);
+          if (!r) return `<div class="ms-spark-bar" style="height:4px;background:#e5e7eb"></div>`;
+          const sc = calcMemberScore([r]);
+          const h  = Math.max(4, Math.round(sc.total/100*24));
+          const col= {green:'#16a34a',yellow:'#ca8a04',red:'#CC0000',gray:'#9ca3af'}[sc.light];
+          return `<div class="ms-spark-bar" style="height:${h}px;background:${col}" title="W${WEEKS_24.indexOf(w)+1}: ${sc.total}점"></div>`;
+        });
+        return `
+        <div class="ms-card ${m.light}" onclick="showMemberDetail('${m.name}')">
+          <div class="ms-name">${m.name}</div>
+          <div class="ms-score-row">
+            <span class="ms-score">${m.recs.length ? m.total : '—'}</span>
+            <span class="ms-light">${lEmoji}</span>
+          </div>
+          <div class="ms-sparkline">${wBars.join('')}</div>
+          <div class="ms-sub">${m.recs.length ? `${m.recs.length}주 기록 · T1:${m.stats.totRef||0} 비:${m.stats.totVis||0}` : '데이터 없음'}</div>
+        </div>`;
+      }).join('')}
+    </div>
   `;
-
-  el.querySelector('#ov-prev')?.addEventListener('click', () => {
-    currentPeriod = prevPeriod(currentPeriod); renderOverview();
-  });
-  el.querySelector('#ov-next')?.addEventListener('click', () => {
-    currentPeriod = nextPeriod(currentPeriod); renderOverview();
-  });
-
-  renderMemberGrid(scored, periods);
 }
 
-function renderMemberGrid(scored, periods) {
-  const grid = document.getElementById('ov-grid');
-  if (!grid) return;
-
-  const lightEmoji = { green:'🟢', yellow:'🟡', red:'🔴', new:'⚪' };
-
-  // 멤버 목록: 현재 기간 데이터 있는 멤버 + allMembers 병합
-  const names = new Set(scored.map(r => r.member_name));
-  const rows  = scored.length ? scored : allMembers.map(m => ({ member_name: m.name, light:'new', score:0 }));
-
-  grid.innerHTML = rows.sort((a,b) => {
-    const order = { red:0, yellow:1, green:2, new:3 };
-    return (order[a.light]??3) - (order[b.light]??3) || (b.score||0) - (a.score||0);
-  }).map(r => {
-    const sparkBars = periods.map(p => {
-      const rec = allRecords.find(x => x.period_start===p && x.member_name===r.member_name);
-      if (!rec) return `<div class="ms-spark-bar" style="height:4px;background:#e5e7eb"></div>`;
-      const { score, light } = calcScore(rec);
-      const h = Math.max(4, Math.round(score / 100 * 24));
-      const col = { green:'#16a34a', yellow:'#ca8a04', red:'#CC0000' }[light] || '#9ca3af';
-      return `<div class="ms-spark-bar" style="height:${h}px;background:${col}" title="${periodLabel(p)}: ${score}점"></div>`;
-    });
-
-    return `
-    <div class="ms-card ${r.light||'new'}" data-name="${r.member_name}" onclick="showMemberDetail('${r.member_name}')">
-      <div class="ms-name">${r.member_name}</div>
-      <div class="ms-score-row">
-        <span class="ms-score">${r.score??'—'}</span>
-        <span class="ms-light">${lightEmoji[r.light]||'⚪'}</span>
-      </div>
-      <div class="ms-sparkline">${sparkBars.join('')}</div>
-      <div class="ms-sub">${r.given_t1!=null?`준T1:${r.given_t1} 1:1:${r.one_on_one??0} CEU:${r.ceu??0}`:''}</div>
-    </div>`;
-  }).join('');
-}
-
-function showMemberDetail(name) {
-  document.querySelectorAll('.tl-tab').forEach(b => b.classList.remove('active'));
-  document.querySelectorAll('.tl-panel').forEach(p => p.classList.remove('active'));
-  document.querySelector('.tl-tab[data-tab="detail"]').classList.add('active');
-  document.getElementById('tl-detail').classList.add('active');
-  renderDetail(name);
-}
-
-/* ════════════════════════════════════════
+/* ═══════════════════════════════════════════════
    탭 2: 개인 상세
-════════════════════════════════════════ */
+═══════════════════════════════════════════════ */
 function renderDetail(preselect = null) {
   const el = document.getElementById('tl-detail');
-  const names = [...new Set(allRecords.map(r => r.member_name))].sort((a,b) => a.localeCompare(b,'ko'));
+  const names = allMembers.map(m=>m.name);
 
   el.innerHTML = `
     <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;flex-wrap:wrap">
@@ -228,7 +192,6 @@ function renderDetail(preselect = null) {
     </div>
     <div id="det-body"></div>
   `;
-
   el.querySelector('#det-member').addEventListener('change', e => renderMemberDetail(e.target.value));
   if (preselect) renderMemberDetail(preselect);
 }
@@ -237,218 +200,350 @@ function renderMemberDetail(name) {
   const el = document.getElementById('det-body');
   if (!name) { el.innerHTML = ''; return; }
 
-  const recs  = allRecords.filter(r => r.member_name === name)
-    .sort((a,b) => a.period_start.localeCompare(b.period_start));
-  const periods = get6Periods().reverse(); // 오래된 순
-
-  // 프로젝션: 데이터 없는 기간은 평균으로 추정
-  const avgRec = avgRecord(recs);
-  const rows = periods.map(p => {
-    const rec = recs.find(r => r.period_start === p);
-    const projected = !rec && avgRec;
-    const data = rec || (projected ? { ...avgRec, period_start:p, period_end:p, id:null } : null);
-    const scored = data ? calcScore(data) : null;
-    return { period:p, data, scored, projected: projected && !rec };
-  });
-
-  // 차트 데이터
-  const chartLabels  = rows.filter(r=>r.scored).map(r=>periodLabel(r.period));
-  const chartScores  = rows.filter(r=>r.scored).map(r=>r.scored.score);
-  const chartColors  = rows.filter(r=>r.scored).map(r=>
-    r.projected ? '#d1d5db' : { green:'#16a34a', yellow:'#ca8a04', red:'#CC0000' }[r.scored.light]);
-
-  // AI 개인 피드백
-  const aiFeedback = genAIMember(name, recs, avgRec);
+  const recs = allWeeklyRecs.filter(r => r.member_name === name);
+  const sc   = calcMemberScore(recs);
+  const lEmoji = {green:'🟢',yellow:'🟡',red:'🔴',gray:'⚫'}[sc.light]||'⚫';
+  const lightColor = {green:'#16a34a',yellow:'#ca8a04',red:'#CC0000',gray:'#9ca3af'}[sc.light]||'#9ca3af';
 
   el.innerHTML = `
-    <!-- AI 개인 피드백 -->
-    ${aiFeedback.length ? `
-    <div class="card" style="margin-bottom:16px">
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
-        <span style="font-size:18px">🤖</span>
-        <span style="font-weight:700;font-size:13px">${name}님 개인 피드백</span>
+    <!-- 점수 분해 카드 -->
+    <div class="card" style="margin-bottom:16px;border-left:4px solid ${lightColor}">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;flex-wrap:wrap">
+        <span style="font-size:28px;font-weight:900">${sc.total}</span>
+        <span style="font-size:20px">${lEmoji}</span>
+        <span style="font-size:13px;color:#6b7280">${sc.stats.n||0}주 기록 기준 · ${WEEKS_24.filter(w=>w<=TODAY).length}주차</span>
       </div>
-      ${aiFeedback.map(t=>`<div class="ai-tip ${t.type}" style="margin-bottom:6px"><span>${t.icon}</span><span>${t.text}</span></div>`).join('')}
-    </div>` : ''}
-
-    <!-- 점수 추이 차트 -->
-    <div class="card" style="margin-bottom:16px">
-      <div class="card-title">점수 추이 (6개월)</div>
-      <canvas id="det-chart" height="100"></canvas>
-      <div style="font-size:11px;color:#9ca3af;margin-top:6px">* 회색 = 데이터 없는 기간 추정값</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px">
+        ${[
+          ['결석',     sc.breakdown.absence,  `/15`,  `${sc.stats.absN||0}번`],
+          ['지각/조퇴', sc.breakdown.late,    `/10`,  `${sc.stats.lateN||0}번`],
+          ['리퍼럴',   sc.breakdown.referral, `/20`,  `주평균 ${sc.stats.avgRef||'0.00'}건`],
+          ['감사장',   sc.breakdown.tyfcb,    `/15`,  fmtWan(sc.stats.totTyf||0)+'원'],
+          ['비지터',   sc.breakdown.visitor,  `/20`,  `주평균 ${sc.stats.avgVis||'0.00'}명`],
+          ['1:1',     sc.breakdown.ono,      `/10`,  `주평균 ${sc.stats.avgOno||'0.00'}회`],
+          ['교육',     sc.breakdown.ceu,      `/10`,  `누적 ${sc.stats.totCeu||0}점`],
+        ].map(([label, score, max, detail]) => `
+          <div style="background:#f9fafb;border-radius:8px;padding:10px 12px">
+            <div style="font-size:10px;color:#9ca3af;margin-bottom:2px">${label}</div>
+            <div style="font-size:16px;font-weight:700">${score}<span style="font-size:11px;font-weight:400;color:#9ca3af">${max}</span></div>
+            <div style="font-size:10px;color:#6b7280;margin-top:2px">${detail}</div>
+          </div>`).join('')}
+      </div>
     </div>
 
-    <!-- 월별 상세 테이블 -->
+    <!-- AI 개인 피드백 -->
+    <div id="det-ai" class="card" style="margin-bottom:16px;display:none"></div>
+
+    <!-- 24주 테이블 -->
     <div class="card">
-      <div class="card-title" style="margin-bottom:12px">월별 상세</div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+        <div class="card-title" style="margin:0">24주 주간 기록</div>
+        <span style="font-size:11px;color:#9ca3af">미래 주차는 예상치 입력 가능</span>
+      </div>
       <div style="overflow-x:auto">
-        <table class="detail-table" id="det-table">
+        <table class="detail-table" id="week-table">
           <thead>
             <tr>
-              <th style="text-align:left">기간</th>
-              <th>출석</th><th>결석</th><th>지각</th><th>준T1</th><th>준T2</th>
-              <th>받은T1</th><th>1:1</th><th>감사장</th><th>CEU</th>
-              <th>점수</th><th>등급</th><th></th>
+              <th style="text-align:left;width:60px">주차</th>
+              <th style="text-align:left">날짜</th>
+              <th>출결</th>
+              <th>준T1</th><th>준T2</th>
+              <th>비지터</th><th>1:1</th>
+              <th>감사장</th><th>CEU</th>
+              <th>점수</th><th></th>
             </tr>
           </thead>
-          <tbody id="det-tbody"></tbody>
+          <tbody id="week-tbody"></tbody>
         </table>
       </div>
     </div>
   `;
 
-  // 차트 렌더
-  const ctx = document.getElementById('det-chart');
-  if (ctx && chartLabels.length) {
-    if (chartInstance) chartInstance.destroy();
-    chartInstance = new Chart(ctx, {
-      type: 'bar',
-      data: {
-        labels: chartLabels,
-        datasets: [{
-          data: chartScores, backgroundColor: chartColors, borderRadius: 4,
-          borderColor: chartColors, borderWidth: 1.5,
-        }]
-      },
-      options: {
-        responsive: true, plugins: { legend: { display: false } },
-        scales: { y: { beginAtZero: true, max: 100, ticks: { callback: v => v+'점' } } }
-      }
-    });
+  // AI 피드백
+  const aiFb = genAIMember(name, recs, sc);
+  const aiEl = document.getElementById('det-ai');
+  if (aiFb.length) {
+    aiEl.style.display='block';
+    aiEl.innerHTML = `<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+      <span style="font-size:18px">🤖</span><span style="font-weight:700;font-size:13px">${name}님 개선 방향</span></div>
+      ${aiFb.map(t=>`<div class="ai-tip ${t.type}" style="margin-bottom:6px"><span>${t.icon}</span><span>${t.text}</span></div>`).join('')}`;
   }
 
-  renderDetailTable(rows, name);
+  renderWeekTable(name, recs);
 }
 
-function renderDetailTable(rows, name) {
-  const tbody = document.getElementById('det-tbody');
+function renderWeekTable(name, recs) {
+  const tbody = document.getElementById('week-tbody');
   if (!tbody) return;
-  const lightEmoji = { green:'🟢', yellow:'🟡', red:'🔴', new:'⚪' };
-  const fmt = v => v >= 10000 ? Math.round(v/10000)+'만' : v?.toLocaleString() || '0';
+  const recMap = Object.fromEntries(recs.map(r=>[r.week_date, r]));
+  const attend = {true:{present:'✅ 출석',late:'⚠️ 지각',absent:'❌ 결석'},false:{absent:'❌ 결석',late:'⚠️ 지각',present:'✅ 출석'}};
 
-  tbody.innerHTML = rows.map((row, i) => {
-    const d = row.data;
-    const s = row.scored;
-    if (!d) return `<tr><td class="period-col">${periodLabel(row.period)}</td>
-      <td colspan="11" style="color:#9ca3af">데이터 없음</td><td></td></tr>`;
-    const cls = row.projected ? 'projected-row' : '';
+  tbody.innerHTML = WEEKS_24.map((w, i) => {
+    const r    = recMap[w];
+    const past = w <= TODAY;
+    const label = r ? (r.absent?'❌ 결석': r.late?'⚠️ 지각':'✅ 출석') : '—';
+    const rowCls = past ? '' : 'projected-row';
+    const weekSc = r ? calcMemberScore([r]) : null;
+
     return `
-    <tr class="${cls}" id="row-${i}">
-      <td class="period-col">
-        ${periodLabel(row.period)}
-        ${row.projected ? '<span style="font-size:10px;color:#9ca3af">(추정)</span>' : ''}
+    <tr class="${rowCls}" id="wr-${i}">
+      <td style="text-align:left;font-weight:700;color:#9ca3af">W${i+1}</td>
+      <td style="text-align:left;white-space:nowrap">
+        ${w} ${!past?'<span style="font-size:10px;color:#9ca3af">(예상)</span>':''}
+        ${r?.is_estimated?'<span style="font-size:10px;color:#9ca3af">추정</span>':''}
       </td>
-      <td class="editable" data-field="attendance">${d.attendance??0}</td>
-      <td class="editable" data-field="absence">${d.absence??0}</td>
-      <td class="editable" data-field="late_leave">${d.late_leave??0}</td>
-      <td class="editable" data-field="given_t1">${d.given_t1??0}</td>
-      <td class="editable" data-field="given_t2">${d.given_t2??0}</td>
-      <td class="editable" data-field="received_t1">${d.received_t1??0}</td>
-      <td class="editable" data-field="one_on_one">${d.one_on_one??0}</td>
-      <td class="editable" data-field="tyfcb">${fmt(d.tyfcb)}</td>
-      <td class="editable" data-field="ceu">${d.ceu??0}</td>
-      <td style="font-weight:700">${s?.score??'—'}</td>
-      <td>${lightEmoji[s?.light]||'—'}</td>
+      <td>${label}</td>
+      <td>${r?.given_t1??'—'}</td>
+      <td>${r?.given_t2??'—'}</td>
+      <td>${r?.visitors??'—'}</td>
+      <td>${r?.one_on_one??'—'}</td>
+      <td>${r ? fmtWan(r.tyfcb||0) : '—'}</td>
+      <td>${r?.ceu??'—'}</td>
+      <td style="font-weight:700">${weekSc ? weekSc.total : '—'}</td>
       <td>
-        ${!row.projected && d.id ? `<button class="btn btn-outline btn-sm" onclick="editRow(${i})">수정</button>` : ''}
+        <button class="btn btn-outline btn-sm" onclick="openWeekEdit('${w}','${name}')">
+          ${r ? '수정' : '입력'}
+        </button>
       </td>
     </tr>`;
   }).join('');
-
-  window._detailRows = rows;
-  window._detailName = name;
 }
 
-function editRow(i) {
-  const rows = window._detailRows;
-  const row  = rows[i];
-  if (!row?.data) return;
-  const d = row.data;
-  const tr = document.getElementById(`row-${i}`);
-  if (!tr) return;
+/* ── 주간 데이터 편집 모달 ── */
+function openWeekEdit(weekDate, memberName) {
+  const rec = allWeeklyRecs.find(r => r.week_date === weekDate && r.member_name === memberName);
+  const past = weekDate <= TODAY;
 
-  const fields = ['attendance','absence','late_leave','given_t1','given_t2','received_t1','one_on_one','tyfcb','ceu'];
-  tr.querySelectorAll('.editable').forEach((td, idx) => {
-    const f = fields[idx];
-    const v = f === 'tyfcb' ? (d[f]||0) : (d[f]||0);
-    td.innerHTML = `<input class="edit-input" type="number" data-field="${f}" value="${v}" min="0">`;
+  const attendVal = rec ? (rec.absent ? 'absent' : rec.late ? 'late' : 'present') : 'present';
+  const modal = createModal(`
+    <div style="font-size:16px;font-weight:700;margin-bottom:4px">${memberName}</div>
+    <div style="font-size:12px;color:#9ca3af;margin-bottom:20px">${weekDate} ${past ? '(실제)' : '(예상)'}</div>
+
+    <div class="form-group" style="margin-bottom:16px">
+      <label class="form-label">출결</label>
+      <div class="toggle-wrap" id="attend-toggle">
+        <button class="toggle-btn ${attendVal==='present'?'active':''}" data-v="present" onclick="setAttendToggle(this)">✅ 출석</button>
+        <button class="toggle-btn ${attendVal==='late'?'active':''}"    data-v="late"    onclick="setAttendToggle(this)">⚠️ 지각</button>
+        <button class="toggle-btn ${attendVal==='absent'?'active':''}"  data-v="absent"  onclick="setAttendToggle(this)">❌ 결석</button>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
+      <div class="form-group">
+        <label class="form-label">준T1 (리퍼럴)</label>
+        <input type="number" id="ed-t1" class="form-input" value="${rec?.given_t1||0}" min="0">
+      </div>
+      <div class="form-group">
+        <label class="form-label">준T2 (소개)</label>
+        <input type="number" id="ed-t2" class="form-input" value="${rec?.given_t2||0}" min="0">
+      </div>
+      <div class="form-group">
+        <label class="form-label">비지터</label>
+        <input type="number" id="ed-vis" class="form-input" value="${rec?.visitors||0}" min="0">
+      </div>
+      <div class="form-group">
+        <label class="form-label">1:1</label>
+        <input type="number" id="ed-ono" class="form-input" value="${rec?.one_on_one||0}" min="0">
+      </div>
+      <div class="form-group">
+        <label class="form-label">감사장 금액 (원)</label>
+        <input type="number" id="ed-tyf" class="form-input" value="${rec?.tyfcb||0}" min="0" step="10000">
+      </div>
+      <div class="form-group">
+        <label class="form-label">CEU 점수</label>
+        <input type="number" id="ed-ceu" class="form-input" value="${rec?.ceu||0}" min="0">
+      </div>
+    </div>
+
+    <div class="form-group" style="margin-bottom:16px">
+      <label class="form-label">메모</label>
+      <input type="text" id="ed-notes" class="form-input" value="${rec?.notes||''}" placeholder="선택 사항">
+    </div>
+
+    <div style="display:flex;gap:10px;justify-content:flex-end">
+      <button class="btn btn-outline" id="modal-cancel">취소</button>
+      ${rec ? `<button class="btn btn-outline" id="modal-delete" style="color:#CC0000;border-color:#CC0000">삭제</button>` : ''}
+      <button class="btn btn-primary" id="modal-save">저장</button>
+    </div>
+  `);
+
+  window._editAttend = attendVal;
+  modal.querySelector('#modal-cancel').addEventListener('click', () => modal.remove());
+
+  if (rec) {
+    modal.querySelector('#modal-delete')?.addEventListener('click', async () => {
+      if (!confirm('이 주차 데이터를 삭제하시겠습니까?')) return;
+      await getSb().from('weekly_records').delete().eq('id', rec.id);
+      modal.remove();
+      await reloadAndRefreshDetail(memberName);
+    });
+  }
+
+  modal.querySelector('#modal-save').addEventListener('click', async () => {
+    const av = window._editAttend || 'present';
+    const data = {
+      member_name: memberName,
+      week_date:   weekDate,
+      attended:    av !== 'absent',
+      absent:      av === 'absent',
+      late:        av === 'late',
+      given_t1:    Number(document.getElementById('ed-t1').value)||0,
+      given_t2:    Number(document.getElementById('ed-t2').value)||0,
+      visitors:    Number(document.getElementById('ed-vis').value)||0,
+      one_on_one:  Number(document.getElementById('ed-ono').value)||0,
+      tyfcb:       Number(document.getElementById('ed-tyf').value)||0,
+      ceu:         Number(document.getElementById('ed-ceu').value)||0,
+      is_estimated: weekDate > TODAY,
+      notes:       document.getElementById('ed-notes').value||null,
+    };
+    // member_id 매핑
+    const mem = allMembers.find(m=>m.name===memberName);
+    if (mem) data.member_id = mem.id;
+
+    const { error } = await getSb().from('weekly_records').upsert(data, { onConflict: 'member_name,week_date' });
+    if (error) { alert('저장 실패: '+error.message); return; }
+    modal.remove();
+    showToast('저장되었습니다');
+    await reloadAndRefreshDetail(memberName);
   });
+}
+window.openWeekEdit = openWeekEdit;
 
-  // 수정 → 저장 버튼으로 교체
-  const actionTd = tr.querySelector('td:last-child');
-  actionTd.innerHTML = `
-    <button class="btn btn-primary btn-sm" id="save-row-${i}">저장</button>
-    <button class="btn btn-outline btn-sm" onclick="renderDetailTable(window._detailRows, window._detailName)" style="margin-top:4px">취소</button>
+function setAttendToggle(btn) {
+  btn.closest('#attend-toggle').querySelectorAll('.toggle-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  window._editAttend = btn.dataset.v;
+}
+window.setAttendToggle = setAttendToggle;
+
+async function reloadAndRefreshDetail(name) {
+  await loadAll();
+  // 현재 탭이 detail이면 갱신
+  if (document.getElementById('tl-detail')?.classList.contains('active')) renderMemberDetail(name);
+  // overview도 갱신
+  renderOverview();
+}
+
+/* ═══════════════════════════════════════════════
+   탭 3: 주간 입력 (멤버 전체 일괄)
+═══════════════════════════════════════════════ */
+function renderInput() {
+  const el = document.getElementById('tl-input');
+  const pastWeeks = WEEKS_24.filter(w => w <= TODAY);
+
+  el.innerHTML = `
+    <div class="card" style="margin-bottom:12px">
+      <div class="card-title">주차 선택</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        ${WEEKS_24.map((w, i) => `
+          <button class="btn btn-outline btn-sm ${w > TODAY ? 'projected-row' : ''}"
+            style="${w===pastWeeks[pastWeeks.length-1]?'border-color:var(--red);color:var(--red);font-weight:700':''}"
+            onclick="loadWeekInput('${w}', ${i+1})">
+            W${i+1}<br><span style="font-size:10px">${w.slice(5)}</span>
+          </button>`).join('')}
+      </div>
+    </div>
+    <div id="week-input-body"></div>
+  `;
+}
+
+async function loadWeekInput(weekDate, weekNum) {
+  const el = document.getElementById('week-input-body');
+  el.innerHTML = `<div style="text-align:center;padding:24px;color:#9ca3af">불러오는 중...</div>`;
+
+  const recs = allWeeklyRecs.filter(r => r.week_date === weekDate);
+  const recMap = Object.fromEntries(recs.map(r => [r.member_name, r]));
+  const isPast = weekDate <= TODAY;
+
+  el.innerHTML = `
+    <div class="card">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+        <div class="card-title" style="margin:0">W${weekNum} · ${weekDate} ${!isPast?'<span style="font-size:12px;color:#9ca3af">(예상치)</span>':''}</div>
+        <button class="btn btn-primary btn-sm" id="bulk-save">전체 저장</button>
+      </div>
+      <div style="overflow-x:auto">
+        <table class="detail-table">
+          <thead><tr>
+            <th style="text-align:left">이름</th>
+            <th>출결</th><th>준T1</th><th>준T2</th>
+            <th>비지터</th><th>1:1</th><th>감사장(만원)</th><th>CEU</th>
+          </tr></thead>
+          <tbody>
+            ${allMembers.map(m => {
+              const r = recMap[m.name];
+              const av = r ? (r.absent?'absent':r.late?'late':'present') : 'present';
+              return `<tr>
+                <td style="text-align:left;font-weight:600">${m.name}</td>
+                <td>
+                  <select class="form-input bulk-attend" data-name="${m.name}" style="padding:4px;font-size:12px">
+                    <option value="present" ${av==='present'?'selected':''}>✅ 출석</option>
+                    <option value="late"    ${av==='late'?'selected':''}>⚠️ 지각</option>
+                    <option value="absent"  ${av==='absent'?'selected':''}>❌ 결석</option>
+                  </select>
+                </td>
+                <td><input type="number" class="edit-input bulk-t1"  data-name="${m.name}" value="${r?.given_t1||0}" min="0"></td>
+                <td><input type="number" class="edit-input bulk-t2"  data-name="${m.name}" value="${r?.given_t2||0}" min="0"></td>
+                <td><input type="number" class="edit-input bulk-vis" data-name="${m.name}" value="${r?.visitors||0}"  min="0"></td>
+                <td><input type="number" class="edit-input bulk-ono" data-name="${m.name}" value="${r?.one_on_one||0}" min="0"></td>
+                <td><input type="number" class="edit-input bulk-tyf" data-name="${m.name}" value="${Math.round((r?.tyfcb||0)/10000)}" min="0" step="1"></td>
+                <td><input type="number" class="edit-input bulk-ceu" data-name="${m.name}" value="${r?.ceu||0}" min="0"></td>
+              </tr>`;
+            }).join('')}
+          </tbody>
+        </table>
+      </div>
+    </div>
   `;
 
-  // 실시간 점수 미리보기
-  const updatePreview = () => {
-    const draft = { ...d };
-    tr.querySelectorAll('.edit-input').forEach(inp => {
-      draft[inp.dataset.field] = Number(inp.value) || 0;
+  document.getElementById('bulk-save')?.addEventListener('click', async () => {
+    const rows = allMembers.map(m => {
+      const av  = el.querySelector(`.bulk-attend[data-name="${m.name}"]`)?.value || 'present';
+      const tyf = Number(el.querySelector(`.bulk-tyf[data-name="${m.name}"]`)?.value||0);
+      return {
+        member_id:   m.id,
+        member_name: m.name,
+        week_date:   weekDate,
+        attended:    av !== 'absent',
+        absent:      av === 'absent',
+        late:        av === 'late',
+        given_t1:    Number(el.querySelector(`.bulk-t1[data-name="${m.name}"]`)?.value||0),
+        given_t2:    Number(el.querySelector(`.bulk-t2[data-name="${m.name}"]`)?.value||0),
+        visitors:    Number(el.querySelector(`.bulk-vis[data-name="${m.name}"]`)?.value||0),
+        one_on_one:  Number(el.querySelector(`.bulk-ono[data-name="${m.name}"]`)?.value||0),
+        tyfcb:       tyf * 10000,
+        ceu:         Number(el.querySelector(`.bulk-ceu[data-name="${m.name}"]`)?.value||0),
+        is_estimated: weekDate > TODAY,
+      };
     });
-    const { score, light } = calcScore(draft);
-    const lightEmoji = { green:'🟢', yellow:'🟡', red:'🔴' };
-    tr.querySelectorAll('td')[10].textContent = score;
-    tr.querySelectorAll('td')[11].textContent = lightEmoji[light] || '—';
-  };
-  tr.querySelectorAll('.edit-input').forEach(inp => inp.addEventListener('input', updatePreview));
-
-  document.getElementById(`save-row-${i}`)?.addEventListener('click', async () => {
-    const patch = {};
-    tr.querySelectorAll('.edit-input').forEach(inp => {
-      patch[inp.dataset.field] = Number(inp.value) || 0;
-    });
-    const { score, light } = calcScore({ ...d, ...patch });
-    patch.score = score; patch.light = light; patch.is_manual = true;
-
-    const { error } = await getSb().from('palms_records').update(patch).eq('id', d.id);
-    if (error) { alert('저장 실패: ' + error.message); return; }
-    showToast('저장되었습니다');
+    const { error } = await getSb().from('weekly_records').upsert(rows, { onConflict:'member_name,week_date' });
+    if (error) { alert('저장 실패: '+error.message); return; }
+    showToast(`W${weekNum} 전체 저장 완료`);
     await loadAll();
-    renderDetailTable(
-      get6Periods().reverse().map(p => {
-        const rec = allRecords.find(r => r.period_start===p && r.member_name===window._detailName);
-        const projected = !rec && avgRecord(allRecords.filter(r=>r.member_name===window._detailName));
-        const data = rec || (projected ? { ...projected, period_start:p } : null);
-        return { period:p, data, scored: data ? calcScore(data) : null, projected: !rec && !!projected };
-      }),
-      window._detailName
-    );
+    renderOverview();
   });
 }
-window.editRow = editRow;
+window.loadWeekInput = loadWeekInput;
 
-/* 평균 레코드 계산 (프로젝션용) */
-function avgRecord(recs) {
-  if (!recs.length) return null;
-  const fields = ['attendance','absence','late_leave','given_t1','given_t2','received_t1','one_on_one','tyfcb','ceu'];
-  const avg = {};
-  fields.forEach(f => { avg[f] = Math.round(recs.reduce((s,r)=>s+(r[f]||0),0)/recs.length); });
-  return avg;
-}
-
-/* ════════════════════════════════════════
-   탭 3: 파일 가져오기
-════════════════════════════════════════ */
+/* ═══════════════════════════════════════════════
+   탭 4: PALMS 파일 가져오기 (monthly → weekly 분배)
+═══════════════════════════════════════════════ */
 function renderImport() {
   const el = document.getElementById('tl-import');
   el.innerHTML = `
     <div class="card" style="margin-bottom:16px">
-      <div class="card-title">PALMS 리포트 가져오기</div>
-      <p style="font-size:13px;color:#6b7280;margin-bottom:16px">
-        BNI PALMS에서 내보낸 .xls / .xlsx 파일을 업로드하면 자동으로 파싱합니다.
+      <div class="card-title">PALMS 월별 리포트 → 주간 데이터로 변환</div>
+      <p style="font-size:12px;color:#6b7280;margin-bottom:16px">
+        BNI PALMS .xls/.xlsx 파일을 올리면 해당 월의 주차들에 균등 분배합니다.
       </p>
       <div class="upload-zone" id="uploadZone">
         <div style="font-size:36px;margin-bottom:8px">📊</div>
-        <div style="font-weight:700;font-size:14px;margin-bottom:4px">파일을 여기에 드래그하거나 클릭해서 선택</div>
-        <div style="font-size:12px;color:#9ca3af">.xls, .xlsx 지원</div>
+        <div style="font-weight:700;font-size:14px;margin-bottom:4px">파일 드래그 또는 클릭</div>
+        <div style="font-size:12px;color:#9ca3af">.xls, .xlsx</div>
         <input type="file" id="palmsFile" accept=".xls,.xlsx" style="display:none">
       </div>
     </div>
     <div id="importPreview"></div>
   `;
-
   const zone = el.querySelector('#uploadZone');
   const inp  = el.querySelector('#palmsFile');
   zone.addEventListener('click', () => inp.click());
@@ -460,156 +555,74 @@ function renderImport() {
 
 async function handleFile(file) {
   if (!file) return;
-  const prev = document.getElementById('importPreview');
-  prev.innerHTML = `<div style="text-align:center;padding:24px;color:#9ca3af">파일 분석 중...</div>`;
-
+  document.getElementById('importPreview').innerHTML = `<div style="text-align:center;padding:24px;color:#9ca3af">분석 중...</div>`;
   try {
     const ab = await file.arrayBuffer();
-    const wb = XLSX.read(ab, { type: 'array', codepage: 949 });
+    const wb = XLSX.read(ab, { type:'array', codepage:949 });
     const ws = wb.Sheets[wb.SheetNames[0]];
-    const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
-
-    const parsed = parsePALMS(rows);
-    showImportPreview(parsed);
+    const rows = XLSX.utils.sheet_to_json(ws, { header:1, defval:'' });
+    showImportPreview(parsePALMS(rows));
   } catch(e) {
-    prev.innerHTML = `<div class="alert-banner crit">파일 파싱 실패: ${e.message}</div>`;
+    document.getElementById('importPreview').innerHTML = `<div class="alert-banner crit">파싱 실패: ${e.message}</div>`;
   }
 }
 
 function parsePALMS(rows) {
-  // 기간 찾기 — 여러 형식 대응
-  let periodStart = '', periodEnd = '';
-
-  for (let i = 0; i < Math.min(20, rows.length); i++) {
+  let periodStart='', periodEnd='';
+  for (let i=0; i<Math.min(20,rows.length); i++) {
     const r = rows[i];
-    for (let j = 0; j < r.length; j++) {
-      const cell = String(r[j] ?? '').trim();
-
-      const tryStart = (val) => {
-        if (!periodStart && val) { const d = parseDateKR(val); if (d) periodStart = d; }
-      };
-      const tryEnd = (val) => {
-        if (!periodEnd && val) { const d = parseDateKR(val); if (d) periodEnd = d; }
-      };
-
-      if (cell.includes('시작')) {
-        // 같은 셀에 날짜 포함: "시작: 26. 5. 1."
-        tryStart(cell.replace(/시작[：:\s]*/,''));
-        // 인접 셀들 탐색
-        for (let k = j+1; k < Math.min(j+5, r.length); k++) tryStart(String(r[k]??'').trim());
-      }
-      if (cell.includes('종료')) {
-        tryEnd(cell.replace(/종료[：:\s]*/,''));
-        for (let k = j+1; k < Math.min(j+5, r.length); k++) tryEnd(String(r[k]??'').trim());
-      }
+    for (let j=0; j<r.length; j++) {
+      const cell = String(r[j]??'').trim();
+      const tryS = v => { if (!periodStart && v) { const d=parseDateKR(v); if(d) periodStart=d; }};
+      const tryE = v => { if (!periodEnd   && v) { const d=parseDateKR(v); if(d) periodEnd=d;   }};
+      if (cell.includes('시작')) { tryS(cell.replace(/시작[：:\s]*/,'')); for(let k=j+1;k<Math.min(j+5,r.length);k++) tryS(String(r[k]??'').trim()); }
+      if (cell.includes('종료')) { tryE(cell.replace(/종료[：:\s]*/,'')); for(let k=j+1;k<Math.min(j+5,r.length);k++) tryE(String(r[k]??'').trim()); }
     }
     if (periodStart && periodEnd) break;
   }
 
-  // 못 찾으면 리포트 파일명/메타에서 연도-월 추출 시도
-  if (!periodStart) {
-    for (let i = 0; i < Math.min(5, rows.length); i++) {
-      const flat = rows[i].map(c=>String(c??'')).join(' ');
-      const m = flat.match(/20(\d{2})[\.\-\/\s]+(\d{1,2})[\.\-\/\s]+(\d{1,2})/);
-      if (m) { periodStart = `20${m[1]}-${m[2].padStart(2,'0')}-${m[3].padStart(2,'0')}`; break; }
-    }
-  }
-
-  // 헤더 행 찾기 (첫 컬럼이 "이름" 포함)
   let headerIdx = rows.findIndex(r => String(r[0]||'').includes('이름'));
-  if (headerIdx < 0) headerIdx = rows.findIndex(r => String(r[0]||'') === '한관우' || String(r[0]||'').length >= 2);
-
-  // 컬럼 매핑: 헤더 기준
-  const hRow = rows[headerIdx] || [];
-  const colMap = {};
-  const colNames = ['이름','출석','결석','지각','병가','대리인','준T1','준T2','받은T1','받은T2','비지터','1-2-1','감사장','CEU'];
-  hRow.forEach((h, i) => {
-    const s = String(h||'').replace(/\s/g,'').replace(/[()（）]/g,'');
-    if (s.includes('한글') || s==='이름') colMap.name   = i;
-    if (s==='출석') colMap.attendance = i;
-    if (s==='결석') colMap.absence    = i;
-    if (s.includes('지각')) colMap.late_leave = i;
-    if (s.includes('병가')) colMap.sick_leave = i;
-    if (s.includes('대리')) colMap.substitute = i;
-    if (s==='준T1')  colMap.given_t1   = i;
-    if (s==='준T2')  colMap.given_t2   = i;
-    if (s==='받은T1') colMap.received_t1 = i;
-    if (s==='받은T2') colMap.received_t2 = i;
-    if (s.includes('비지터')) colMap.visitors = i;
-    if (s.includes('1-2-1') || s.includes('121')) colMap.one_on_one = i;
-    if (s.includes('감사장')) colMap.tyfcb = i;
-    if (s==='CEU')   colMap.ceu = i;
+  if (headerIdx < 0) headerIdx = rows.findIndex(r => /^[가-힣]{2,4}$/.test(String(r[0]||'').trim()));
+  const hRow = rows[headerIdx]||[];
+  const colMap = { name:0, attendance:2, absence:3, late_leave:4, sick_leave:5, substitute:6,
+    given_t1:7, received_t1:8, received_t2:9, visitors:10, one_on_one:11, tyfcb:12, ceu:13 };
+  hRow.forEach((h,i) => {
+    const s=String(h||'').replace(/\s/g,'');
+    if(s.includes('한글')||s==='이름') colMap.name=i;
+    if(s==='출석') colMap.attendance=i; if(s==='결석') colMap.absence=i;
+    if(s.includes('지각')) colMap.late_leave=i; if(s.includes('병가')) colMap.sick_leave=i;
+    if(s==='준T1') colMap.given_t1=i; if(s==='준T2') colMap.given_t2=i;
+    if(s==='받은T1') colMap.received_t1=i; if(s==='받은T2') colMap.received_t2=i;
+    if(s.includes('비지터')) colMap.visitors=i;
+    if(s.includes('1-2-1')||s.includes('121')) colMap.one_on_one=i;
+    if(s.includes('감사장')) colMap.tyfcb=i; if(s==='CEU') colMap.ceu=i;
   });
 
-  // 폴백 컬럼 인덱스 (PDF 기준 순서)
-  if (colMap.name    == null) colMap.name       = 0;
-  if (colMap.attendance == null) colMap.attendance = 2;
-  if (colMap.absence == null) colMap.absence    = 3;
-  if (colMap.late_leave == null) colMap.late_leave = 4;
-  if (colMap.sick_leave == null) colMap.sick_leave = 5;
-  if (colMap.substitute == null) colMap.substitute = 6;
-  if (colMap.given_t1 == null) colMap.given_t1  = 7;
-  if (colMap.received_t1 == null) colMap.received_t1 = 8;
-  if (colMap.received_t2 == null) colMap.received_t2 = 9;
-  if (colMap.visitors == null) colMap.visitors  = 10;
-  if (colMap.one_on_one == null) colMap.one_on_one = 11;
-  if (colMap.tyfcb == null) colMap.tyfcb       = 12;
-  if (colMap.ceu == null) colMap.ceu           = 13;
-
-  // 데이터 파싱
-  const skipNames = new Set(['합','비지터','bni','합계','total','']);
+  const skip = new Set(['합','비지터','bni','합계','total','']);
   const data = [];
-  for (let i = headerIdx + 1; i < rows.length; i++) {
-    const row = rows[i];
-    const name = String(row[colMap.name]||'').trim();
-    if (!name || skipNames.has(name.toLowerCase())) continue;
-    if (/^[A-Za-z]/.test(name)) continue; // 영문 이름 행 스킵
-    if (name === '합') break;
-
-    const n = f => Math.max(0, Number(row[colMap[f]])||0);
-    const rec = {
-      member_name: name,
-      attendance:  n('attendance'),
-      absence:     n('absence'),
-      late_leave:  n('late_leave'),
-      sick_leave:  n('sick_leave'),
-      substitute:  n('substitute'),
-      given_t1:    n('given_t1'),
-      given_t2:    n('given_t2'),
-      received_t1: n('received_t1'),
-      received_t2: n('received_t2'),
-      visitors:    n('visitors'),
-      one_on_one:  n('one_on_one'),
-      tyfcb:       n('tyfcb'),
-      ceu:         n('ceu'),
-    };
-    data.push(rec);
+  for (let i=headerIdx+1; i<rows.length; i++) {
+    const row=rows[i];
+    const name=String(row[colMap.name]||'').trim();
+    if (!name || skip.has(name.toLowerCase()) || /^[A-Za-z]/.test(name)) continue;
+    const n=f=>Math.max(0,Number(row[colMap[f]])||0);
+    data.push({ member_name:name, attendance:n('attendance'), absence:n('absence'), late_leave:n('late_leave'),
+      sick_leave:n('sick_leave'), substitute:n('substitute'), given_t1:n('given_t1'), given_t2:n('given_t2')||0,
+      received_t1:n('received_t1'), received_t2:n('received_t2'), visitors:n('visitors'),
+      one_on_one:n('one_on_one'), tyfcb:n('tyfcb'), ceu:n('ceu') });
   }
-
   return { periodStart, periodEnd, data };
 }
 
 function parseDateKR(str) {
-  const s = String(str ?? '').trim();
-  if (!s || s === '0') return '';
-
-  // ISO "2026-05-01"
-  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
-
-  // Excel 시리얼 숫자 (40000~60000 범위)
-  const num = Number(s);
-  if (!isNaN(num) && num > 40000 && num < 60000) {
-    const d = new Date(Date.UTC(1899, 11, 30) + num * 86400000);
-    return d.toISOString().slice(0, 10);
-  }
-
-  // "26. 5. 1." / "2026. 5. 1." / "26.5.1" / "2026/05/01"
-  const m = s.match(/(\d{2,4})[.\-\/\s]+(\d{1,2})[.\-\/\s]+(\d{1,2})/);
-  if (!m) return '';
-  let y = Number(m[1]);
-  if (y < 100) y += 2000;
-  const mo = Number(m[2]), da = Number(m[3]);
-  if (mo < 1 || mo > 12 || da < 1 || da > 31) return '';
+  const s=String(str??'').trim(); if(!s||s==='0') return '';
+  if(/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+  const num=Number(s);
+  if(!isNaN(num)&&num>40000&&num<60000) { const d=new Date(Date.UTC(1899,11,30)+num*86400000); return d.toISOString().slice(0,10); }
+  const m=s.match(/(\d{2,4})[.\-\/\s]+(\d{1,2})[.\-\/\s]+(\d{1,2})/);
+  if(!m) return '';
+  let y=Number(m[1]); if(y<100) y+=2000;
+  const mo=Number(m[2]),da=Number(m[3]);
+  if(mo<1||mo>12||da<1||da>31) return '';
   return `${y}-${String(mo).padStart(2,'0')}-${String(da).padStart(2,'0')}`;
 }
 
@@ -617,60 +630,49 @@ function showImportPreview(parsed) {
   const prev = document.getElementById('importPreview');
   let { periodStart, periodEnd, data } = parsed;
 
-  // 멤버 매칭
+  // 이 기간에 속하는 24주 기준 주차 찾기
+  const weeksInPeriod = WEEKS_24.filter(w => w >= (periodStart||'') && w <= (periodEnd||periodStart||''));
+
   const matched = data.map(d => {
-    const mem = allMembers.find(m =>
-      m.name === d.member_name ||
-      m.name.replace(/\s/g,'') === d.member_name.replace(/\s/g,'')
-    );
-    return { ...d, matched: !!mem, member_id: mem?.id || null };
+    const mem = allMembers.find(m => m.name===d.member_name||m.name.replace(/\s/g,'')===d.member_name.replace(/\s/g,''));
+    return { ...d, matched:!!mem, member_id:mem?.id||null };
   });
 
-  const matchedCnt   = matched.filter(m=>m.matched).length;
-  const unmatchedCnt = matched.filter(m=>!m.matched).length;
-
   prev.innerHTML = `
-    <div class="card" style="margin-bottom:12px">
-      <div style="margin-bottom:16px">
-        <div class="card-title" style="margin-bottom:12px">파싱 결과 · 기간 확인</div>
-        <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:12px">
-          <div style="display:flex;align-items:center;gap:8px">
-            <label style="font-size:12px;font-weight:600;white-space:nowrap">시작일</label>
-            <input type="date" id="imp-start" class="form-input" value="${periodStart||''}" style="width:150px">
-          </div>
-          <div style="display:flex;align-items:center;gap:8px">
-            <label style="font-size:12px;font-weight:600;white-space:nowrap">종료일</label>
-            <input type="date" id="imp-end" class="form-input" value="${periodEnd||''}" style="width:150px">
-          </div>
-          ${!periodStart ? `<span style="font-size:12px;color:#CC0000">⚠️ 기간 자동 인식 실패 — 직접 입력해주세요</span>` : `<span style="font-size:12px;color:#16a34a">✓ 기간 자동 인식됨</span>`}
+    <div class="card">
+      <div class="card-title" style="margin-bottom:12px">파싱 결과</div>
+      <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:12px">
+        <div style="display:flex;gap:8px;align-items:center">
+          <label style="font-size:12px;font-weight:600">시작일</label>
+          <input type="date" id="imp-start" class="form-input" value="${periodStart}" style="width:150px">
         </div>
-        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
-          <div style="font-size:12px;color:#9ca3af">
-            <span class="match-ok">매칭 ${matchedCnt}명</span>
-            ${unmatchedCnt ? ` &nbsp;·&nbsp; <span class="match-no">미매칭 ${unmatchedCnt}명</span>` : ''}
-          </div>
-          <button class="btn btn-primary" id="confirmImport">데이터 가져오기</button>
+        <div style="display:flex;gap:8px;align-items:center">
+          <label style="font-size:12px;font-weight:600">종료일</label>
+          <input type="date" id="imp-end" class="form-input" value="${periodEnd}" style="width:150px">
         </div>
+        ${!periodStart?'<span style="font-size:12px;color:#CC0000">⚠️ 기간 직접 입력 필요</span>':'<span style="font-size:12px;color:#16a34a">✓ 자동 인식</span>'}
+      </div>
+      <div style="font-size:12px;color:#9ca3af;margin-bottom:12px">
+        해당 기간 주차: ${weeksInPeriod.length ? weeksInPeriod.map((w,i)=>`W${WEEKS_24.indexOf(w)+1}(${w.slice(5)})`).join(', ') : '기간을 입력하면 자동 계산'}
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:12px">
+        <span style="font-size:12px">
+          <span class="match-ok">매칭 ${matched.filter(m=>m.matched).length}명</span>
+          ${matched.filter(m=>!m.matched).length?`&nbsp;·&nbsp;<span class="match-no">미매칭 ${matched.filter(m=>!m.matched).length}명</span>`:''}
+        </span>
+        <button class="btn btn-primary" id="confirmImport">주간 데이터로 가져오기</button>
       </div>
       <div class="preview-table-wrap">
         <table class="preview-table">
-          <thead><tr>
-            <th>이름</th><th>매칭</th><th>출석</th><th>결석</th><th>준T1</th><th>준T2</th>
-            <th>받은T1</th><th>1:1</th><th>감사장</th><th>CEU</th><th>점수(예상)</th>
-          </tr></thead>
+          <thead><tr><th>이름</th><th>매칭</th><th>출석</th><th>결석</th><th>준T1</th><th>준T2</th><th>비지터</th><th>1:1</th><th>감사장</th><th>CEU</th></tr></thead>
           <tbody>
-            ${matched.map(m => {
-              const { score, light } = calcScore(m);
-              const li = { green:'🟢', yellow:'🟡', red:'🔴' }[light];
-              return `<tr class="${m.matched?'':'unmatched'}">
-                <td><strong>${m.member_name}</strong></td>
-                <td class="${m.matched?'match-ok':'match-no'}">${m.matched?'✓ 매칭':'✗ 없음'}</td>
-                <td>${m.attendance}</td><td>${m.absence}</td>
-                <td>${m.given_t1}</td><td>${m.given_t2}</td><td>${m.received_t1}</td>
-                <td>${m.one_on_one}</td><td>${m.tyfcb?.toLocaleString()}</td><td>${m.ceu}</td>
-                <td>${li} ${score}점</td>
-              </tr>`;
-            }).join('')}
+            ${matched.map(m=>`<tr class="${m.matched?'':'unmatched'}">
+              <td><strong>${m.member_name}</strong></td>
+              <td class="${m.matched?'match-ok':'match-no'}">${m.matched?'✓':'✗'}</td>
+              <td>${m.attendance}</td><td>${m.absence}</td><td>${m.given_t1}</td>
+              <td>${m.given_t2||0}</td><td>${m.visitors}</td><td>${m.one_on_one}</td>
+              <td>${fmtWan(m.tyfcb)}</td><td>${m.ceu}</td>
+            </tr>`).join('')}
           </tbody>
         </table>
       </div>
@@ -679,194 +681,158 @@ function showImportPreview(parsed) {
 
   document.getElementById('confirmImport')?.addEventListener('click', async () => {
     const ps = document.getElementById('imp-start')?.value;
-    const pe = document.getElementById('imp-end')?.value;
+    const pe = document.getElementById('imp-end')?.value || ps;
     if (!ps) { alert('시작일을 입력해주세요'); return; }
-    await importRecords(matched, ps, pe || ps);
+    const weeks = WEEKS_24.filter(w => w >= ps && w <= pe);
+    if (!weeks.length) { alert('해당 기간에 속하는 주차가 없습니다'); return; }
+    await importWeeklyFromPALMS(matched, weeks);
   });
 }
 
-async function importRecords(matched, periodStart, periodEnd) {
-  const btn = document.getElementById('confirmImport');
-  if (btn) { btn.disabled = true; btn.textContent = '가져오는 중...'; }
-
-  const rows = matched.map(m => {
-    const { score, light } = calcScore(m);
-    return {
-      member_id: m.member_id,
-      member_name: m.member_name,
-      period_start: periodStart,
-      period_end: periodEnd || periodStart,
-      attendance: m.attendance, absence: m.absence, late_leave: m.late_leave,
-      sick_leave: m.sick_leave, substitute: m.substitute,
-      given_t1: m.given_t1, given_t2: m.given_t2,
-      received_t1: m.received_t1, received_t2: m.received_t2,
-      visitors: m.visitors, one_on_one: m.one_on_one,
-      tyfcb: m.tyfcb, ceu: m.ceu,
-      score, light, is_manual: false,
-    };
-  });
-
-  const { error } = await getSb().from('palms_records').upsert(rows, { onConflict: 'member_name,period_start' });
-  if (error) { alert('가져오기 실패: ' + error.message); if (btn) { btn.disabled=false; btn.textContent='다시 시도'; } return; }
-
-  showToast(`${rows.length}명 데이터 가져오기 완료`);
-  currentPeriod = periodStart;
+async function importWeeklyFromPALMS(matched, weeks) {
+  const n = weeks.length;
+  const rows = [];
+  for (const m of matched) {
+    for (const w of weeks) {
+      rows.push({
+        member_id: m.member_id, member_name: m.member_name,
+        week_date: w,
+        attended: m.absence === 0,
+        absent: false, late: false,
+        given_t1:   Math.round(m.given_t1 / n),
+        given_t2:   Math.round((m.given_t2||0) / n),
+        visitors:   Math.round(m.visitors / n),
+        one_on_one: Math.round(m.one_on_one / n),
+        tyfcb:      Math.round(m.tyfcb / n),
+        ceu:        Math.round(m.ceu / n),
+        is_estimated: false,
+      });
+    }
+  }
+  const { error } = await getSb().from('weekly_records').upsert(rows, { onConflict:'member_name,week_date' });
+  if (error) { alert('가져오기 실패: '+error.message); return; }
+  showToast(`${rows.length}개 주간 레코드 저장 완료`);
   await loadAll();
   renderOverview();
-
-  // 전체현황 탭으로 이동
-  document.querySelectorAll('.tl-tab').forEach(b => b.classList.remove('active'));
-  document.querySelectorAll('.tl-panel').forEach(p => p.classList.remove('active'));
-  document.querySelector('.tl-tab[data-tab="overview"]').classList.add('active');
-  document.getElementById('tl-overview').classList.add('active');
+  document.querySelector('.tl-tab[data-tab="overview"]')?.click();
 }
 
-/* ════════════════════════════════════════
-   탭 4: 점수 설정
-════════════════════════════════════════ */
-function renderConfig() {
-  const el = document.getElementById('tl-config');
-  const c  = scoreConfig;
-  el.innerHTML = `
+/* ═══════════════════════════════════════════════
+   탭 5: 점수 기준 (표시 전용)
+═══════════════════════════════════════════════ */
+function renderCriteria() {
+  document.getElementById('tl-criteria').innerHTML = `
     <div class="card">
-      <div class="card-title">점수 기준 설정</div>
-      <p style="font-size:12px;color:#9ca3af;margin-bottom:16px">각 항목의 가중치 합계는 100이 되어야 합니다. 목표치 미달 시 비례 감점.</p>
-
-      <div class="config-row" style="font-size:11px;font-weight:700;color:#9ca3af;border-bottom:2px solid var(--border)">
-        <span>항목</span><span style="text-align:center">목표치</span><span style="text-align:center">가중치(%)</span>
-      </div>
-      ${[
-        { label:'출석률',      sub:'출석/(출석+결석+지각) %',    fTarget:'attend_target',   unit:'%',  fWeight:'attend_weight'   },
-        { label:'리퍼럴(준)',  sub:'준T1+T2 건수/월',            fTarget:'referral_target', unit:'건', fWeight:'referral_weight' },
-        { label:'감사장 금액', sub:'만원/월',                    fTarget:'tyfcb_target',    unit:'만', fWeight:'tyfcb_weight'    },
-        { label:'1:1 횟수',   sub:'회/월',                      fTarget:'ono_target',      unit:'회', fWeight:'ono_weight'      },
-        { label:'CEU',         sub:'점/월',                      fTarget:'ceu_target',      unit:'점', fWeight:'ceu_weight'      },
-      ].map(row => `
-        <div class="config-row">
-          <div><div class="config-label">${row.label}</div><div class="config-sub">${row.sub}</div></div>
-          <div style="text-align:center">
-            <input class="config-input" type="number" id="cfg-${row.fTarget}" value="${c[row.fTarget]}" min="0" style="width:80px">
-            <span style="font-size:11px;color:#9ca3af"> ${row.unit}</span>
-          </div>
-          <div style="text-align:center">
-            <input class="config-input" type="number" id="cfg-${row.fWeight}" value="${c[row.fWeight]}" min="0" max="100" style="width:60px">
-            <span style="font-size:11px;color:#9ca3af"> %</span>
-          </div>
-        </div>`).join('')}
-
-      <div class="config-row">
-        <div><div class="config-label">🟢 Green 기준</div><div class="config-sub">이상 점수</div></div>
-        <div style="text-align:center">
-          <input class="config-input" type="number" id="cfg-green_min" value="${c.green_min}" min="0" max="100" style="width:80px"> 점
+      <div class="card-title" style="margin-bottom:16px">트래픽라이트 점수 기준</div>
+      <table class="detail-table">
+        <thead><tr><th style="text-align:left">항목</th><th>만점</th><th style="text-align:left">기준</th></tr></thead>
+        <tbody>
+          <tr><td style="text-align:left;font-weight:600">결석</td><td>15</td><td style="text-align:left;font-size:12px">결석 0회=15점 / 1회=10점 / 2회=5점 / 3회 이상=0점</td></tr>
+          <tr><td style="text-align:left;font-weight:600">지각/조퇴</td><td>10</td><td style="text-align:left;font-size:12px">0회=10점 / 1회=5점 / 2회 이상=0점</td></tr>
+          <tr><td style="text-align:left;font-weight:600">리퍼럴(준)</td><td>20</td><td style="text-align:left;font-size:12px">주평균 1.2 이상=20 / 1.2미만=15 / 1.0미만=10 / 0.75미만=5 / 0.5미만=0</td></tr>
+          <tr><td style="text-align:left;font-weight:600">감사장 금액</td><td>15</td><td style="text-align:left;font-size:12px">누적 1억 이상=15 / 5천만 이상=10 / 2천5백만 이상=5 / 미만=0</td></tr>
+          <tr><td style="text-align:left;font-weight:600">비지터</td><td>20</td><td style="text-align:left;font-size:12px">주평균 0.6 이상=20 / 0.4 이상=15 / 0.2 이상=10 / 0.1 이상=5 / 미만=0</td></tr>
+          <tr><td style="text-align:left;font-weight:600">1:1</td><td>10</td><td style="text-align:left;font-size:12px">주평균 2 이상=10 / 1 이상=5 / 미만=0</td></tr>
+          <tr><td style="text-align:left;font-weight:600">교육(CEU)</td><td>10</td><td style="text-align:left;font-size:12px">누적 15 이상=10 / 5 이상=5 / 미만=0</td></tr>
+        </tbody>
+      </table>
+      <div style="margin-top:20px;padding:16px;background:#f9fafb;border-radius:10px">
+        <div style="font-weight:700;margin-bottom:8px">트래픽라이트 기준 (합계 100점)</div>
+        <div style="display:flex;gap:12px;flex-wrap:wrap;font-size:13px">
+          <span class="score-badge green">🟢 70점 이상</span>
+          <span class="score-badge yellow">🟡 50~69점</span>
+          <span class="score-badge red">🔴 30~49점</span>
+          <span class="score-badge gray">⚫ 30점 미만</span>
         </div>
-        <div></div>
-      </div>
-      <div class="config-row">
-        <div><div class="config-label">🟡 Yellow 기준</div><div class="config-sub">이상 점수</div></div>
-        <div style="text-align:center">
-          <input class="config-input" type="number" id="cfg-yellow_min" value="${c.yellow_min}" min="0" max="100" style="width:80px"> 점
-        </div>
-        <div></div>
-      </div>
-
-      <div style="margin-top:16px;display:flex;gap:10px">
-        <button class="btn btn-primary" id="saveConfig">설정 저장</button>
-        <div id="configMsg" style="font-size:12px;color:#16a34a;line-height:36px"></div>
       </div>
     </div>
   `;
-
-  document.getElementById('saveConfig').addEventListener('click', async () => {
-    const patch = {};
-    ['attend_target','attend_weight','referral_target','referral_weight',
-     'tyfcb_target','tyfcb_weight','ono_target','ono_weight',
-     'ceu_target','ceu_weight','green_min','yellow_min'].forEach(k => {
-      const el2 = document.getElementById('cfg-'+k);
-      if (el2) patch[k] = Number(el2.value) || 0;
-    });
-    const total = patch.attend_weight + patch.referral_weight + patch.tyfcb_weight + patch.ono_weight + patch.ceu_weight;
-    if (total !== 100) { document.getElementById('configMsg').textContent = `⚠️ 가중치 합계 ${total}% (100이어야 함)`; document.getElementById('configMsg').style.color='#CC0000'; return; }
-
-    const { error } = await getSb().from('palms_score_config').upsert({ id:1, ...patch });
-    if (error) { alert('저장 실패: '+error.message); return; }
-    Object.assign(scoreConfig, patch);
-    document.getElementById('configMsg').textContent = '✓ 저장되었습니다';
-    document.getElementById('configMsg').style.color = '#16a34a';
-  });
 }
 
-/* ════════════════════════════════════════
+/* ═══════════════════════════════════════════════
    AI 디렉터
-════════════════════════════════════════ */
-function genAIOverview(scored, periods) {
-  if (!scored.length) return [];
-  const total  = scored.length;
-  const green  = scored.filter(r=>r.light==='green').length;
-  const yellow = scored.filter(r=>r.light==='yellow').length;
-  const red    = scored.filter(r=>r.light==='red').length;
-  const health = Math.round((green*100+yellow*50)/total);
+═══════════════════════════════════════════════ */
+function genAIOverview(memberScores) {
+  if (!memberScores.length) return [];
+  const total = memberScores.length;
+  const green  = memberScores.filter(m=>m.light==='green').length;
+  const yellow = memberScores.filter(m=>m.light==='yellow').length;
+  const red    = memberScores.filter(m=>m.light==='red').length;
+  const gray   = memberScores.filter(m=>m.light==='gray').length;
+  const health = Math.round((green*100+yellow*60+red*30)/total);
   const tips   = [];
 
-  if (health >= 80) tips.push({ type:'positive', icon:'✅', text:`챕터 건강 점수 ${health}점 — Green 멤버 ${green}명(${Math.round(green/total*100)}%)이 기준을 충족하고 있습니다.` });
-  else if (health >= 60) tips.push({ type:'warning', icon:'⚠️', text:`챕터 건강 점수 ${health}점 — Yellow/Red 멤버 집중 면담이 필요합니다.` });
-  else tips.push({ type:'critical', icon:'🚨', text:`챕터 건강 점수 ${health}점으로 위험 수준입니다. 멤버십위원회의 즉각 개입이 필요합니다.` });
+  if (health >= 80)      tips.push({type:'positive',icon:'✅',text:`챕터 건강 점수 ${health}점 — Green 멤버 ${green}명(${Math.round(green/total*100)}%)이 기준을 충족하고 있습니다.`});
+  else if (health >= 60) tips.push({type:'warning', icon:'⚠️',text:`챕터 건강 점수 ${health}점 — 개선이 필요한 멤버가 많습니다. Yellow/Red 멤버 집중 면담을 권장합니다.`});
+  else                   tips.push({type:'critical',icon:'🚨',text:`챕터 건강 점수 ${health}점으로 위험 수준입니다. 멤버십위원회의 즉각 개입이 필요합니다.`});
 
   if (red > 0) {
-    const redNames = scored.filter(r=>r.light==='red').sort((a,b)=>a.score-b.score).slice(0,3).map(r=>r.member_name);
-    tips.push({ type:'action', icon:'👉', text:`🔴 Red 멤버 ${red}명 — 즉시 면담 권장: ${redNames.join(', ')}${red>3?' 외':''}.` });
+    const redNames = memberScores.filter(m=>m.light==='red').sort((a,b)=>a.total-b.total).slice(0,3).map(m=>m.name);
+    tips.push({type:'action',icon:'👉',text:`🔴 Red 멤버 ${red}명 — 즉시 면담 권장: ${redNames.join(', ')}${red>3?' 외':''}`});
   }
+  if (gray > 0) tips.push({type:'warning',icon:'⚠️',text:`⚫ 미입력 멤버 ${gray}명 — 데이터 입력을 독려해 주세요.`});
 
-  const avgScore = Math.round(scored.reduce((s,r)=>s+r.score,0)/total);
-  const weakRef  = scored.filter(r=>(r.given_t1||0)+(r.given_t2||0)===0);
-  if (weakRef.length > total*0.3)
-    tips.push({ type:'warning', icon:'⚠️', text:`리퍼럴 0건 멤버 ${weakRef.length}명(${Math.round(weakRef.length/total*100)}%) — 리퍼럴 교육 및 1:1 코칭을 권장합니다.` });
-
-  const topMem = [...scored].sort((a,b)=>b.score-a.score)[0];
-  if (topMem) tips.push({ type:'positive', icon:'🏆', text:`이달 MVP: ${topMem.member_name}님 (${topMem.score}점) — 미팅에서 공개 표창으로 챕터 문화를 강화하세요.` });
+  const topM = memberScores.find(m=>m.light==='green'&&m.recs.length>0);
+  if (topM) tips.push({type:'positive',icon:'🏆',text:`최고 점수: ${topM.name}님 ${topM.total}점 — 멤버십 모범 사례로 공유해 챕터 문화를 강화하세요.`});
 
   return tips;
 }
 
-function genAIMember(name, recs, avg) {
-  if (!recs.length) return [{ type:'warning', icon:'⚠️', text:'아직 데이터가 없습니다. PALMS 파일을 가져오면 자동 분석됩니다.' }];
-  const latest = recs[recs.length - 1];
-  const { score, light } = calcScore(latest);
+function genAIMember(name, recs, sc) {
   const tips = [];
+  if (!recs.length) return [{type:'warning',icon:'⚠️',text:'주간 데이터를 입력하거나 PALMS 파일을 가져오면 분석됩니다.'}];
 
-  const lightMsg = { green:`Green — 모든 기준을 충족하고 있습니다.`, yellow:`Yellow — 일부 항목 개선이 필요합니다.`, red:`Red — 여러 항목이 기준 미달입니다. 면담이 필요합니다.` };
-  tips.push({ type: light==='green'?'positive':light==='yellow'?'warning':'critical', icon: {green:'✅',yellow:'⚠️',red:'🚨'}[light], text: `현재 점수 ${score}점 · ${lightMsg[light]}` });
+  const lMsg = {green:'모든 기준 충족 — 훌륭합니다!',yellow:'일부 기준 미달 — 아래 항목을 개선하면 Green 달성 가능합니다.',red:'여러 기준 미달 — 담당자 면담이 필요합니다.',gray:'데이터 부족 — 더 많은 주차 입력이 필요합니다.'};
+  tips.push({type:{green:'positive',yellow:'warning',red:'critical',gray:'warning'}[sc.light]||'warning',
+    icon:{green:'✅',yellow:'⚠️',red:'🚨',gray:'⚫'}[sc.light],text:`현재 ${sc.total}점 · ${lMsg[sc.light]}`});
 
-  // 약점 분석
-  const cfg = scoreConfig;
-  const totalMtg = (latest.attendance||0)+(latest.absence||0)+(latest.late_leave||0);
-  const attendPct = totalMtg > 0 ? Math.round(latest.attendance/totalMtg*100) : 0;
-  if (attendPct < cfg.attend_target) tips.push({ type:'action', icon:'👉', text:`출석률 ${attendPct}% (목표 ${cfg.attend_target}%) — 미달입니다. 병가/대리인 제도를 적극 활용하세요.` });
-
-  const refs = (latest.given_t1||0)+(latest.given_t2||0);
-  if (refs < cfg.referral_target) tips.push({ type:'action', icon:'👉', text:`리퍼럴 ${refs}건 (목표 ${cfg.referral_target}건) — 1:1 미팅에서 구체적인 도움 요청을 늘려보세요.` });
-
-  const tyfcbWan = Math.round((latest.tyfcb||0)/10000);
-  if (tyfcbWan < cfg.tyfcb_target) tips.push({ type:'action', icon:'👉', text:`감사장 금액 ${tyfcbWan}만원 (목표 ${cfg.tyfcb_target}만원) — 받은 리퍼럴 성사 후 감사장 입력을 잊지 마세요.` });
-
-  if ((latest.one_on_one||0) < cfg.ono_target) tips.push({ type:'action', icon:'👉', text:`1:1 ${latest.one_on_one||0}회 (목표 ${cfg.ono_target}회) — 매주 1회 1:1 미팅을 목표로 하세요.` });
-
-  // 추세
-  if (recs.length >= 2) {
-    const prev = calcScore(recs[recs.length-2]).score;
-    const diff = score - prev;
-    if (diff > 5)  tips.push({ type:'positive', icon:'📈', text:`지난달 대비 ${diff}점 향상! 좋은 흐름을 유지하세요.` });
-    if (diff < -5) tips.push({ type:'warning',  icon:'📉', text:`지난달 대비 ${Math.abs(diff)}점 하락. 어떤 항목이 줄었는지 확인하세요.` });
+  if (sc.breakdown.absence < 15) tips.push({type:'action',icon:'👉',text:`결석 ${sc.stats.absN}회로 ${15-sc.breakdown.absence}점 감점 중 — 출석 관리가 필요합니다.`});
+  if (sc.breakdown.late < 10)    tips.push({type:'action',icon:'👉',text:`지각/조퇴 ${sc.stats.lateN}회 — 시간 엄수로 ${10-sc.breakdown.late}점 회복 가능합니다.`});
+  if (sc.breakdown.referral < 20) {
+    const needed = sc.stats.avgRef < 0.5 ? 0.5 : sc.stats.avgRef < 0.75 ? 0.75 : sc.stats.avgRef < 1.0 ? 1.0 : 1.2;
+    tips.push({type:'action',icon:'👉',text:`주평균 리퍼럴 ${sc.stats.avgRef}건 (목표 ${needed}건) — 1:1 미팅에서 적극적인 소개를 요청해 보세요.`});
   }
+  if (sc.breakdown.tyfcb < 15) {
+    const needed = sc.stats.totTyf < 25000000 ? '2,500만' : sc.stats.totTyf < 50000000 ? '5,000만' : '1억';
+    tips.push({type:'action',icon:'👉',text:`감사장 누적 ${fmtWan(sc.stats.totTyf)}원 (다음 목표: ${needed}원) — 받은 리퍼럴이 성사되면 반드시 감사장을 기록하세요.`});
+  }
+  if (sc.breakdown.visitor < 20) tips.push({type:'action',icon:'👉',text:`주평균 비지터 ${sc.stats.avgVis}명 (목표 0.6명) — 주변 비즈니스 파트너를 방문객으로 초대해 보세요.`});
+  if (sc.breakdown.ono < 10)     tips.push({type:'action',icon:'👉',text:`주평균 1:1 ${sc.stats.avgOno}회 (목표 2회) — 매주 2번의 1:1 미팅이 리퍼럴 활성화의 핵심입니다.`});
+  if (sc.breakdown.ceu < 10)     tips.push({type:'action',icon:'👉',text:`CEU 누적 ${sc.stats.totCeu}점 (목표 15점) — 교육 세션에 빠짐없이 참여하세요.`});
 
   return tips;
 }
 
-/* ── Helpers ── */
+/* ── 공통 헬퍼 ── */
+function showMemberDetail(name) {
+  document.querySelectorAll('.tl-tab').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('.tl-panel').forEach(p=>p.classList.remove('active'));
+  document.querySelector('.tl-tab[data-tab="detail"]').classList.add('active');
+  document.getElementById('tl-detail').classList.add('active');
+  renderDetail(name);
+}
+
+function createModal(innerHtml) {
+  const modal = document.createElement('div');
+  modal.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;display:flex;align-items:center;justify-content:center;padding:24px';
+  modal.innerHTML=`<div style="background:#fff;border-radius:14px;padding:28px;width:100%;max-width:500px;max-height:90vh;overflow-y:auto">${innerHtml}</div>`;
+  document.body.appendChild(modal);
+  modal.addEventListener('click', e => { if(e.target===modal) modal.remove(); });
+  return modal;
+}
+
+function fmtWan(v) {
+  const n = Number(v)||0;
+  if (n >= 100000000) return (n/100000000).toFixed(1)+'억';
+  if (n >= 10000)     return Math.round(n/10000)+'만';
+  return n.toLocaleString();
+}
+
 function showToast(msg) {
   const t = document.createElement('div');
-  t.style.cssText = 'position:fixed;bottom:24px;right:24px;background:#1a1f2e;color:#fff;padding:10px 20px;border-radius:8px;font-size:13px;z-index:999;opacity:0;transition:opacity .3s';
-  t.textContent = msg;
-  document.body.appendChild(t);
+  t.style.cssText='position:fixed;bottom:24px;right:24px;background:#1a1f2e;color:#fff;padding:10px 20px;border-radius:8px;font-size:13px;z-index:999;opacity:0;transition:opacity .3s';
+  t.textContent=msg; document.body.appendChild(t);
   requestAnimationFrame(()=>{ t.style.opacity='1'; setTimeout(()=>{ t.style.opacity='0'; setTimeout(()=>t.remove(),300); },2000); });
 }
+
 window.showMemberDetail = showMemberDetail;
