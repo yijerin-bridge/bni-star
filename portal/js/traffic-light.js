@@ -1062,15 +1062,25 @@ function showPALMSAnalysis(data, periodStart, periodEnd, fileName) {
   const totCeu     = data.reduce((s,m) => s + (m.ceu||0), 0);
   const attendRate = Math.round(totAttend / n * 100);
 
-  // 랭킹
+  // 랭킹 (TOP3)
   const topRef = [...data].filter(m=>(m.given_t1||0)+(m.given_t2||0)>0)
-    .sort((a,b) => ((b.given_t1||0)+(b.given_t2||0)) - ((a.given_t1||0)+(a.given_t2||0))).slice(0,3);
+    .sort((a,b) => ((b.given_t1||0)+(b.given_t2||0)) - ((a.given_t1||0)+(a.given_t2||0)));
   const topTyf = [...data].filter(m=>(m.tyfcb||0)>0)
-    .sort((a,b) => (b.tyfcb||0)-(a.tyfcb||0)).slice(0,3);
+    .sort((a,b) => (b.tyfcb||0)-(a.tyfcb||0));
   const topOno = [...data].filter(m=>(m.one_on_one||0)>0)
-    .sort((a,b) => (b.one_on_one||0)-(a.one_on_one||0)).slice(0,3);
-  const zeroRef = data.filter(m => (m.given_t1||0)+(m.given_t2||0) === 0);
+    .sort((a,b) => (b.one_on_one||0)-(a.one_on_one||0));
+  const topVis = [...data].filter(m=>(m.visitors||0)>0)
+    .sort((a,b) => (b.visitors||0)-(a.visitors||0));
+  const zeroRef   = data.filter(m => (m.given_t1||0)+(m.given_t2||0) === 0);
   const absentees = data.filter(m => (m.absence||0) > 0);
+
+  // 네트워킹 리더 (각 부문 1위)
+  const leaders = [
+    { cat:'리퍼럴 리더',  icon:'🤝', top:topRef, val:m=>((m.given_t1||0)+(m.given_t2||0))+'건',   color:'#2563eb' },
+    { cat:'원투원 리더',  icon:'☕', top:topOno, val:m=>(m.one_on_one||0)+'회',                   color:'#0891b2' },
+    { cat:'비지터 리더',  icon:'🙋', top:topVis, val:m=>(m.visitors||0)+'명',                     color:'#7c3aed' },
+    { cat:'감사장 리더',  icon:'💰', top:topTyf, val:m=>fmtComma(m.tyfcb||0)+'원',               color:'#16a34a' },
+  ];
 
   // AI 피드백
   const tips = [];
@@ -1128,20 +1138,46 @@ function showPALMSAnalysis(data, periodStart, periodEnd, fileName) {
       </div>
     </div>
 
-    <!-- 랭킹 -->
-    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;margin-bottom:12px">
-      ${topRef.length ? `<div class="card" style="margin-bottom:0">
-        <div class="card-title" style="margin-bottom:10px">🏆 리퍼럴 TOP</div>
-        ${topRef.map((m,i)=>`<div class="rank-item"><span class="rank-num ${i===0?'top1':i===1?'top2':'top3'}">${i+1}</span><span class="rank-name">${m.member_name}</span><span class="rank-val">${(m.given_t1||0)+(m.given_t2||0)}건</span></div>`).join('')}
-      </div>` : ''}
-      ${topTyf.length ? `<div class="card" style="margin-bottom:0">
-        <div class="card-title" style="margin-bottom:10px">💰 감사장 TOP</div>
-        ${topTyf.map((m,i)=>`<div class="rank-item"><span class="rank-num ${i===0?'top1':i===1?'top2':'top3'}">${i+1}</span><span class="rank-name">${m.member_name}</span><span class="rank-val">${fmtComma(m.tyfcb)}원</span></div>`).join('')}
-      </div>` : ''}
-      ${topOno.length ? `<div class="card" style="margin-bottom:0">
-        <div class="card-title" style="margin-bottom:10px">🤝 1:1 TOP</div>
-        ${topOno.map((m,i)=>`<div class="rank-item"><span class="rank-num ${i===0?'top1':i===1?'top2':'top3'}">${i+1}</span><span class="rank-name">${m.member_name}</span><span class="rank-val">${m.one_on_one}회</span></div>`).join('')}
-      </div>` : ''}
+    <!-- 월간 네트워킹 리더 -->
+    <div class="card" style="margin-bottom:12px">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px">
+        <span style="font-size:20px">🏆</span>
+        <span style="font-weight:700;font-size:15px">월간 네트워킹 리더</span>
+        <span style="font-size:11px;color:#9ca3af">${periodStart||''} ~ ${periodEnd||''}</span>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px">
+        ${leaders.map(l => {
+          const winner = l.top[0];
+          const runner = l.top.slice(1,3);
+          return winner ? `
+          <div style="border:2px solid ${l.color}20;border-radius:12px;padding:16px;background:${l.color}08">
+            <div style="font-size:11px;font-weight:700;color:${l.color};text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">${l.icon} ${l.cat}</div>
+            <div style="font-size:18px;font-weight:900;margin-bottom:2px">${winner.member_name}</div>
+            <div style="font-size:14px;font-weight:700;color:${l.color};margin-bottom:8px">${l.val(winner)}</div>
+            ${runner.length ? `<div style="border-top:1px solid ${l.color}20;padding-top:8px;display:flex;flex-direction:column;gap:4px">
+              ${runner.map((m,i)=>`<div style="font-size:11px;color:#6b7280">${i===0?'🥈':'🥉'} ${m.member_name} <span style="color:${l.color}">${l.val(m)}</span></div>`).join('')}
+            </div>` : ''}
+          </div>` : `
+          <div style="border:2px dashed #e5e7eb;border-radius:12px;padding:16px;text-align:center;color:#9ca3af">
+            <div style="font-size:11px;margin-bottom:4px">${l.icon} ${l.cat}</div>
+            <div style="font-size:12px">데이터 없음</div>
+          </div>`;
+        }).join('')}
+      </div>
+    </div>
+
+    <!-- 부문별 TOP3 상세 -->
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;margin-bottom:12px">
+      ${leaders.map(l => l.top.length ? `
+      <div class="card" style="margin-bottom:0">
+        <div class="card-title" style="margin-bottom:10px">${l.icon} ${l.cat} TOP3</div>
+        ${l.top.slice(0,3).map((m,i)=>`
+          <div class="rank-item">
+            <span class="rank-num ${i===0?'top1':i===1?'top2':'top3'}">${i+1}</span>
+            <span class="rank-name">${m.member_name}</span>
+            <span class="rank-val">${l.val(m)}</span>
+          </div>`).join('')}
+      </div>` : '').join('')}
     </div>
 
     <!-- 전체 멤버 테이블 -->
