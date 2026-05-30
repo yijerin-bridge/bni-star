@@ -33,9 +33,11 @@ CREATE TABLE IF NOT EXISTS weekly_records (
 );
 
 ALTER TABLE weekly_records ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "anon_all_weekly_records" ON weekly_records;
 CREATE POLICY "anon_all_weekly_records" ON weekly_records
   FOR ALL TO anon USING (true) WITH CHECK (true);
 
+DROP TRIGGER IF EXISTS trg_weekly_records_updated ON weekly_records;
 CREATE TRIGGER trg_weekly_records_updated
   BEFORE UPDATE ON weekly_records
   FOR EACH ROW EXECUTE FUNCTION update_updated_at();

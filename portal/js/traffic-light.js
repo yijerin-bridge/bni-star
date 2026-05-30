@@ -55,21 +55,23 @@ function calcMemberScore(recs) {
   const totOno = recs.reduce((s,r) => s + (r.one_on_one||0), 0);
   const totTyf = recs.reduce((s,r) => s + (Number(r.tyfcb)||0), 0);
   const totCeu = recs.reduce((s,r) => s + (r.ceu||0), 0);
+  // weeks_count: 월 데이터면 해당 월의 주수, 주 데이터면 1 (기본값)
+  const totalWeeks = recs.reduce((s,r) => s + (r.weeks_count||1), 0);
 
   const s1 = scoreAbsence(absN);
   const s2 = scoreLate(lateN);
-  const s3 = scoreReferral(totRef / n);
+  const s3 = scoreReferral(totRef / totalWeeks);
   const s4 = scoreTyfcb(totTyf);
-  const s5 = scoreVisitor(totVis / n);
-  const s6 = scoreOno(totOno / n);
+  const s5 = scoreVisitor(totVis / totalWeeks);
+  const s6 = scoreOno(totOno / totalWeeks);
   const s7 = scoreCeu(totCeu);
   const total = s1+s2+s3+s4+s5+s6+s7;
   const light = total>=70?'green':total>=50?'yellow':total>=30?'red':'gray';
 
   return { total, light,
     breakdown:{absence:s1,late:s2,referral:s3,tyfcb:s4,visitor:s5,ono:s6,ceu:s7},
-    stats:{n,absN,lateN,totRef,totVis,totOno,totTyf,totCeu,
-           avgRef:(totRef/n).toFixed(2), avgVis:(totVis/n).toFixed(2), avgOno:(totOno/n).toFixed(2)} };
+    stats:{n,totalWeeks,absN,lateN,totRef,totVis,totOno,totTyf,totCeu,
+           avgRef:(totRef/totalWeeks).toFixed(2), avgVis:(totVis/totalWeeks).toFixed(2), avgOno:(totOno/totalWeeks).toFixed(2)} };
 }
 
 /* ── 전역 데이터 ── */
@@ -543,46 +545,228 @@ window.loadWeekInput = loadWeekInput;
 ═══════════════════════════════════════════════ */
 function renderImport() {
   const el = document.getElementById('tl-import');
+
   el.innerHTML = `
-    <div class="card" style="margin-bottom:16px">
-      <div class="card-title">PALMS 주간 리포트 가져오기</div>
-      <p style="font-size:12px;color:#6b7280;margin-bottom:16px">
-        주단위 PALMS 파일을 여러 개 한 번에 올리면 각 주차에 자동 매핑합니다.
-      </p>
-      <div class="upload-zone" id="uploadZone">
-        <div style="font-size:36px;margin-bottom:8px">📊</div>
-        <div style="font-weight:700;font-size:14px;margin-bottom:4px">파일 드래그 또는 클릭 (복수 선택 가능)</div>
-        <div style="font-size:12px;color:#9ca3af">.xls, .xlsx · 여러 주차 동시 업로드 가능</div>
-        <input type="file" id="palmsFile" accept=".xls,.xlsx" multiple style="display:none">
-      </div>
+    <!-- 방법 선택 탭 -->
+    <div style="display:flex;gap:0;border-bottom:2px solid var(--border);margin-bottom:20px">
+      <button class="import-mode-btn active" data-mode="paste" style="padding:9px 20px;font-size:13px;font-weight:600;border:none;background:none;cursor:pointer;border-bottom:2px solid var(--red);color:var(--red);margin-bottom:-2px">📋 붙여넣기</button>
+      <button class="import-mode-btn" data-mode="file"  style="padding:9px 20px;font-size:13px;font-weight:500;border:none;background:none;cursor:pointer;color:#9ca3af">📁 파일 업로드</button>
     </div>
-    <div id="importPreview"></div>
+
+    <!-- 붙여넣기 모드 -->
+    <div id="mode-paste">
+      <div class="card" style="margin-bottom:12px">
+        <div class="card-title" style="margin-bottom:8px">PALMS 데이터 붙여넣기</div>
+        <p style="font-size:12px;color:#6b7280;margin-bottom:12px">
+          PALMS 또는 엑셀에서 헤더 포함 전체 셀을 복사(Ctrl+C)한 후 붙여넣으세요.<br>
+          컬럼 순서: <code style="background:#f3f4f6;padding:2px 6px;border-radius:4px">이름 출석 결석 지각 병가 대리 준T1 준T2 받은T1 받은T2 비지터 1:1 감사장 CEU</code>
+        </p>
+        <div style="display:flex;gap:12px;align-items:center;margin-bottom:10px;flex-wrap:wrap">
+          <div style="display:flex;gap:8px;align-items:center">
+            <label style="font-size:12px;font-weight:600;white-space:nowrap">저장 날짜</label>
+            <input type="date" id="paste-date" class="form-input" value="${TODAY}" style="width:160px">
+          </div>
+          <div style="display:flex;gap:8px;align-items:center">
+            <label style="font-size:12px;font-weight:600;white-space:nowrap">주수</label>
+            <input type="number" id="paste-weeks" class="form-input" value="1" min="1" max="6" style="width:70px">
+            <span style="font-size:11px;color:#9ca3af">주 (월 전체=4~5)</span>
+          </div>
+        </div>
+        <textarea id="pasteArea" class="form-input" rows="8"
+          placeholder="여기에 PALMS 데이터를 붙여넣으세요 (탭 구분)..." style="font-size:12px;font-family:monospace"></textarea>
+        <div style="display:flex;gap:8px;margin-top:10px">
+          <button class="btn btn-secondary btn-sm" id="parseBtn">미리보기</button>
+        </div>
+      </div>
+      <div id="pastePreview"></div>
+    </div>
+
+    <!-- 파일 업로드 모드 -->
+    <div id="mode-file" style="display:none">
+      <div class="card" style="margin-bottom:12px">
+        <div class="card-title" style="margin-bottom:8px">PALMS 파일 업로드</div>
+        <p style="font-size:12px;color:#6b7280;margin-bottom:12px">
+          주간 또는 월간 PALMS .xls/.xlsx 파일을 업로드합니다.<br>
+          월간 파일의 경우 <strong>말일자</strong>로 저장되며, 몇 주 데이터인지 지정하세요.
+        </p>
+        <div class="upload-zone" id="uploadZone">
+          <div style="font-size:36px;margin-bottom:8px">📊</div>
+          <div style="font-weight:700;font-size:14px;margin-bottom:4px">파일 드래그 또는 클릭</div>
+          <div style="font-size:12px;color:#9ca3af">.xls, .xlsx</div>
+          <input type="file" id="palmsFile" accept=".xls,.xlsx" style="display:none">
+        </div>
+      </div>
+      <div id="importPreview"></div>
+    </div>
   `;
+
+  // 모드 탭 전환
+  el.querySelectorAll('.import-mode-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      el.querySelectorAll('.import-mode-btn').forEach(b => {
+        b.style.borderBottom = 'none'; b.style.color = '#9ca3af'; b.style.fontWeight = '500';
+      });
+      btn.style.borderBottom = '2px solid var(--red)'; btn.style.color = 'var(--red)'; btn.style.fontWeight = '600';
+      document.getElementById('mode-paste').style.display = btn.dataset.mode === 'paste' ? '' : 'none';
+      document.getElementById('mode-file').style.display  = btn.dataset.mode === 'file'  ? '' : 'none';
+    });
+  });
+
+  // 붙여넣기 파싱
+  el.querySelector('#parseBtn').addEventListener('click', () => {
+    const text  = el.querySelector('#pasteArea').value.trim();
+    const date  = el.querySelector('#paste-date').value;
+    const weeks = Number(el.querySelector('#paste-weeks').value) || 1;
+    if (!text) return;
+    const parsed = parsePasteText(text);
+    showPastePreview(parsed, date, weeks);
+  });
+
+  // 파일 업로드
   const zone = el.querySelector('#uploadZone');
   const inp  = el.querySelector('#palmsFile');
-  zone.addEventListener('click', () => inp.click());
-  inp.addEventListener('change', () => handleFiles([...inp.files]));
-  zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('drag'); });
-  zone.addEventListener('dragleave', () => zone.classList.remove('drag'));
-  zone.addEventListener('drop', e => { e.preventDefault(); zone.classList.remove('drag'); handleFiles([...e.dataTransfer.files]); });
+  zone?.addEventListener('click', () => inp.click());
+  inp?.addEventListener('change', () => handleFile(inp.files[0]));
+  zone?.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('drag'); });
+  zone?.addEventListener('dragleave', () => zone.classList.remove('drag'));
+  zone?.addEventListener('drop', e => { e.preventDefault(); zone.classList.remove('drag'); handleFile(e.dataTransfer.files[0]); });
 }
 
-async function handleFiles(files) {
-  if (!files.length) return;
+/* ── 붙여넣기 파싱 ── */
+function parsePasteText(text) {
+  const lines = text.split('\n').map(l => l.split('\t').map(c => c.trim()));
+  // 헤더 행 찾기
+  const headerIdx = lines.findIndex(r => /이름|name/i.test(r[0]||''));
+  const dataLines = headerIdx >= 0 ? lines.slice(headerIdx + 1) : lines;
+  const skip = new Set(['합','비지터','bni','합계','total','']);
+  return dataLines
+    .filter(r => r[0] && !skip.has(r[0].toLowerCase()) && !/^[A-Za-z]/.test(r[0]))
+    .map(r => {
+      const n = (i) => Math.max(0, Number(r[i])||0);
+      return { member_name:r[0], attendance:n(1), absence:n(2), late_leave:n(3),
+               sick_leave:n(4), substitute:n(5), given_t1:n(6), given_t2:n(7),
+               received_t1:n(8), received_t2:n(9), visitors:n(10),
+               one_on_one:n(11), tyfcb:n(12), ceu:n(13) };
+    }).filter(r => r.member_name);
+}
+
+function showPastePreview(data, date, weeks) {
+  const prev = document.getElementById('pastePreview');
+  const matched = data.map(d => {
+    const mem = allMembers.find(m => m.name===d.member_name||m.name.replace(/\s/g,'')===d.member_name.replace(/\s/g,''));
+    return { ...d, matched:!!mem, member_id:mem?.id||null };
+  });
+  if (!matched.length) { prev.innerHTML = '<div class="alert-banner crit">파싱된 데이터가 없습니다. 형식을 확인하세요.</div>'; return; }
+
+  prev.innerHTML = `
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px">
+        <div style="font-size:13px">
+          <strong>${date}</strong> 저장 · ${weeks}주 데이터 &nbsp;·&nbsp;
+          <span class="match-ok">매칭 ${matched.filter(m=>m.matched).length}명</span>
+          ${matched.filter(m=>!m.matched).length?`&nbsp;·&nbsp;<span class="match-no">미매칭 ${matched.filter(m=>!m.matched).length}명</span>`:''}
+        </div>
+        <button class="btn btn-primary" id="confirmPaste">저장</button>
+      </div>
+      <div class="preview-table-wrap">
+        <table class="preview-table">
+          <thead><tr><th>이름</th><th>매칭</th><th>출석</th><th>결석</th><th>지각</th><th>준T1</th><th>준T2</th><th>비지터</th><th>1:1</th><th>감사장</th><th>CEU</th></tr></thead>
+          <tbody>
+            ${matched.map(m=>`<tr class="${m.matched?'':'unmatched'}">
+              <td><strong>${m.member_name}</strong></td>
+              <td class="${m.matched?'match-ok':'match-no'}">${m.matched?'✓':'✗'}</td>
+              <td>${m.attendance}</td><td>${m.absence}</td><td>${m.late_leave||0}</td>
+              <td>${m.given_t1}</td><td>${m.given_t2||0}</td><td>${m.visitors}</td>
+              <td>${m.one_on_one}</td><td>${fmtWan(m.tyfcb)}</td><td>${m.ceu}</td>
+            </tr>`).join('')}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  `;
+
+  document.getElementById('confirmPaste')?.addEventListener('click', async () => {
+    await saveImportedRecords(matched, date, weeks);
+  });
+}
+
+/* ── 파일 업로드 (단일, 말일자 저장) ── */
+async function handleFile(file) {
+  if (!file) return;
   const prev = document.getElementById('importPreview');
-  prev.innerHTML = `<div style="text-align:center;padding:24px;color:#9ca3af">${files.length}개 파일 분석 중...</div>`;
+  prev.innerHTML = `<div style="text-align:center;padding:24px;color:#9ca3af">분석 중...</div>`;
   try {
-    const parsed = await Promise.all(files.map(async file => {
-      const ab = await file.arrayBuffer();
-      const wb = XLSX.read(ab, { type:'array', codepage:949 });
-      const ws = wb.Sheets[wb.SheetNames[0]];
-      const rows = XLSX.utils.sheet_to_json(ws, { header:1, defval:'' });
-      return { fileName: file.name, ...parsePALMS(rows) };
-    }));
-    showMultiImportPreview(parsed);
+    const ab = await file.arrayBuffer();
+    const wb = XLSX.read(ab, { type:'array', codepage:949 });
+    const ws = wb.Sheets[wb.SheetNames[0]];
+    const rows = XLSX.utils.sheet_to_json(ws, { header:1, defval:'' });
+    const { periodStart, periodEnd, data } = parsePALMS(rows);
+    // 저장 날짜 = 말일자(periodEnd), 주수 자동 계산
+    const saveDate  = periodEnd || periodStart || TODAY;
+    const weeksAuto = periodStart && periodEnd ? calcWeeksInPeriod(periodStart, periodEnd) : 1;
+    showFilePreview(data, saveDate, weeksAuto, periodStart, periodEnd, file.name);
   } catch(e) {
     document.getElementById('importPreview').innerHTML = `<div class="alert-banner crit">파싱 실패: ${e.message}</div>`;
   }
+}
+
+function calcWeeksInPeriod(start, end) {
+  const ms = new Date(end) - new Date(start);
+  return Math.max(1, Math.round(ms / (7 * 24 * 3600 * 1000)));
+}
+
+function showFilePreview(data, saveDate, weeksAuto, periodStart, periodEnd, fileName) {
+  const prev = document.getElementById('importPreview');
+  const matched = data.map(d => {
+    const mem = allMembers.find(m => m.name===d.member_name||m.name.replace(/\s/g,'')===d.member_name.replace(/\s/g,''));
+    return { ...d, matched:!!mem, member_id:mem?.id||null };
+  });
+
+  prev.innerHTML = `
+    <div class="card">
+      <div style="margin-bottom:14px">
+        <div style="font-size:13px;font-weight:600;margin-bottom:8px">${fileName}</div>
+        <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+          <div style="display:flex;gap:8px;align-items:center">
+            <label style="font-size:12px;font-weight:600">저장 날짜</label>
+            <input type="date" id="file-date" class="form-input" value="${saveDate}" style="width:160px">
+            <span style="font-size:11px;color:#9ca3af">기간: ${periodStart||'?'} ~ ${periodEnd||'?'}</span>
+          </div>
+          <div style="display:flex;gap:8px;align-items:center">
+            <label style="font-size:12px;font-weight:600">주수</label>
+            <input type="number" id="file-weeks" class="form-input" value="${weeksAuto}" min="1" max="6" style="width:70px">
+          </div>
+        </div>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px">
+        <span style="font-size:12px">
+          <span class="match-ok">매칭 ${matched.filter(m=>m.matched).length}명</span>
+          ${matched.filter(m=>!m.matched).length?`&nbsp;·&nbsp;<span class="match-no">미매칭 ${matched.filter(m=>!m.matched).length}명</span>`:''}
+        </span>
+        <button class="btn btn-primary" id="confirmFile">저장</button>
+      </div>
+      <div class="preview-table-wrap">
+        <table class="preview-table">
+          <thead><tr><th>이름</th><th>매칭</th><th>출석</th><th>결석</th><th>지각</th><th>준T1</th><th>준T2</th><th>비지터</th><th>1:1</th><th>감사장</th><th>CEU</th></tr></thead>
+          <tbody>
+            ${matched.map(m=>`<tr class="${m.matched?'':'unmatched'}">
+              <td><strong>${m.member_name}</strong></td>
+              <td class="${m.matched?'match-ok':'match-no'}">${m.matched?'✓':'✗'}</td>
+              <td>${m.attendance}</td><td>${m.absence}</td><td>${m.late_leave||0}</td>
+              <td>${m.given_t1}</td><td>${m.given_t2||0}</td><td>${m.visitors}</td>
+              <td>${m.one_on_one}</td><td>${fmtWan(m.tyfcb)}</td><td>${m.ceu}</td>
+            </tr>`).join('')}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  `;
+
+  document.getElementById('confirmFile')?.addEventListener('click', async () => {
+    const date  = document.getElementById('file-date').value;
+    const weeks = Number(document.getElementById('file-weeks').value) || 1;
+    await saveImportedRecords(matched, date, weeks);
+  });
 }
 
 function parsePALMS(rows) {
@@ -644,7 +828,49 @@ function parseDateKR(str) {
   return `${y}-${String(mo).padStart(2,'0')}-${String(da).padStart(2,'0')}`;
 }
 
-/* ── 복수 파일 미리보기 ── */
+/* ── 공통 저장 ── */
+async function saveImportedRecords(matched, saveDate, weeksCount) {
+  const rows = matched.map(m => ({
+    member_id:    m.member_id,
+    member_name:  m.member_name,
+    week_date:    saveDate,
+    attended:     m.absence === 0 && (m.late_leave||0) === 0,
+    absent:       (m.absence||0) > 0,
+    late:         (m.late_leave||0) > 0,
+    given_t1:     m.given_t1   || 0,
+    given_t2:     m.given_t2   || 0,
+    visitors:     m.visitors   || 0,
+    one_on_one:   m.one_on_one || 0,
+    tyfcb:        m.tyfcb      || 0,
+    ceu:          m.ceu        || 0,
+    weeks_count:  weeksCount,
+    is_estimated: saveDate > TODAY,
+  }));
+
+  const { error } = await getSb().from('weekly_records').upsert(rows, { onConflict:'member_name,week_date' });
+  if (error) { alert('저장 실패: ' + error.message); return; }
+
+  await loadAll();
+  renderOverview();
+  document.querySelector('.tl-tab[data-tab="overview"]')?.click();
+
+  const banner = document.createElement('div');
+  banner.style.cssText = 'position:fixed;top:0;left:0;right:0;background:#1a1f2e;color:#fff;padding:14px 24px;z-index:500;display:flex;align-items:center;justify-content:space-between;gap:12px;font-size:13px;box-shadow:0 4px 12px rgba(0,0,0,.3)';
+  banner.innerHTML = `
+    <div style="display:flex;align-items:center;gap:10px">
+      <span style="font-size:18px">🚦</span>
+      <div>
+        <div style="font-weight:700;margin-bottom:2px">${rows.length}명 데이터 저장 완료 (${saveDate} · ${weeksCount}주)</div>
+        <div style="color:#9ca3af;font-size:12px">⚠️ [멤버십] 트래픽라이트 담당자가 검수 후 확정해주세요.</div>
+      </div>
+    </div>
+    <button style="background:rgba(255,255,255,.15);border:none;color:#fff;padding:6px 14px;border-radius:8px;cursor:pointer;font-size:12px" onclick="this.parentElement.remove()">확인</button>
+  `;
+  document.body.appendChild(banner);
+  setTimeout(() => banner?.remove(), 8000);
+}
+
+/* ── 사용되지 않는 구 함수 (하위호환) ── */
 function showMultiImportPreview(parsedList) {
   const prev = document.getElementById('importPreview');
 
