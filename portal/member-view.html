@@ -5,57 +5,33 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>BNI STAR — 멤버 현황</title>
   <meta name="robots" content="noindex, nofollow">
-  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&display=swap" rel="stylesheet">
   <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    :root {
-      --red: #CC0000; --green: #16a34a; --yellow: #ca8a04;
-      --border: #e5e7eb; --bg: #f0f2f5; --card: #fff; --text: #111827; --muted: #6b7280;
-    }
-    body { font-family: 'Noto Sans KR', sans-serif; font-size: 14px; background: var(--bg); color: var(--text); padding: 24px 16px; }
-    .wrap { max-width: 720px; margin: 0 auto; }
-
-    /* header */
-    .hdr { display:flex; align-items:center; gap:12px; margin-bottom:24px; }
-    .hdr-logo { font-size:17px; font-weight:900; color:var(--red); }
-    .hdr-name  { font-size:22px; font-weight:900; }
-    .hdr-badge { font-size:11px; background:#fee2e2; color:#7f1d1d; padding:2px 10px; border-radius:20px; font-weight:600; }
-    .readonly-tag { margin-left:auto; font-size:11px; color:var(--muted); background:#f3f4f6; padding:3px 10px; border-radius:20px; }
-
-    /* card */
-    .card { background:var(--card); border-radius:12px; border:1px solid var(--border); padding:20px; margin-bottom:16px; }
-    .card-title { font-size:11px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.5px; margin-bottom:14px; }
-
-    /* score breakdown */
-    .score-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(120px,1fr)); gap:10px; }
-    .score-item { background:#f9fafb; border-radius:8px; padding:10px 12px; }
-    .score-label { font-size:10px; color:var(--muted); margin-bottom:2px; }
-    .score-val   { font-size:16px; font-weight:700; }
-    .score-max   { font-size:11px; font-weight:400; color:var(--muted); }
-    .score-detail{ font-size:10px; color:var(--muted); margin-top:2px; }
-
-    /* light badge */
-    .light-green  { color:var(--green); }
-    .light-yellow { color:var(--yellow); }
-    .light-red    { color:var(--red); }
-    .light-gray   { color:#9ca3af; }
-
-    /* week table */
-    .tbl { width:100%; border-collapse:collapse; font-size:12px; }
-    .tbl th { background:#f9fafb; padding:8px 10px; text-align:center; font-size:10px; font-weight:700; color:var(--muted); border-bottom:2px solid var(--border); white-space:nowrap; }
-    .tbl td { padding:8px 10px; text-align:center; border-bottom:1px solid #f3f4f6; }
-    .tbl td:first-child, .tbl th:first-child { text-align:left; }
-    .tbl tr.future td { color:#9ca3af; font-style:italic; }
-
-    /* AI tips */
-    .ai-tip { padding:10px 14px; border-radius:8px; font-size:13px; line-height:1.6; display:flex; gap:10px; margin-bottom:7px; }
-    .ai-tip.positive { background:#f0fdf4; }
-    .ai-tip.warning  { background:#fefce8; }
-    .ai-tip.action   { background:#eff6ff; }
-    .ai-tip.critical { background:#fff1f2; }
-
-    /* footer */
-    .footer { text-align:center; font-size:11px; color:#d1d5db; margin-top:32px; }
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:'Noto Sans KR',sans-serif;font-size:14px;background:#f0f2f5;color:#111827;padding:20px 16px}
+    .wrap{max-width:720px;margin:0 auto}
+    .hdr{display:flex;align-items:center;gap:10px;margin-bottom:20px;flex-wrap:wrap}
+    .hdr-logo{font-size:15px;font-weight:900;color:#CC0000}
+    .hdr-name{font-size:20px;font-weight:900}
+    .hdr-co{font-size:12px;color:#9ca3af}
+    .ro-tag{margin-left:auto;font-size:11px;color:#9ca3af;background:#f3f4f6;padding:3px 10px;border-radius:20px}
+    .card{background:#fff;border-radius:12px;border:1px solid #e5e7eb;padding:18px;margin-bottom:14px}
+    .card-title{font-size:11px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px}
+    .score-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:8px}
+    .si{background:#f9fafb;border-radius:8px;padding:9px 11px}
+    .si-label{font-size:10px;color:#9ca3af;margin-bottom:1px}
+    .si-val{font-size:15px;font-weight:700}
+    .si-max{font-size:11px;font-weight:400;color:#9ca3af}
+    .si-detail{font-size:10px;color:#9ca3af;margin-top:2px}
+    .tbl{width:100%;border-collapse:collapse;font-size:12px}
+    .tbl th{background:#f9fafb;padding:7px 8px;text-align:center;font-size:10px;font-weight:700;color:#6b7280;border-bottom:2px solid #e5e7eb;white-space:nowrap}
+    .tbl td{padding:7px 8px;text-align:center;border-bottom:1px solid #f3f4f6}
+    .tbl td:first-child,.tbl th:first-child{text-align:left}
+    .tbl tr.fut td{color:#9ca3af;font-style:italic}
+    .ai-tip{padding:9px 13px;border-radius:8px;font-size:12px;line-height:1.6;display:flex;gap:9px;margin-bottom:6px}
+    .ai-tip.positive{background:#f0fdf4}.ai-tip.warning{background:#fefce8}
+    .ai-tip.action{background:#eff6ff}.ai-tip.critical{background:#fff1f2}
+    .footer{text-align:center;font-size:11px;color:#d1d5db;margin-top:24px}
   </style>
 </head>
 <body>
@@ -63,143 +39,183 @@
   <div class="hdr">
     <span class="hdr-logo">BNI ★ STAR</span>
     <span class="hdr-name" id="hdrName">—</span>
-    <span class="hdr-badge" id="hdrBadge"></span>
-    <span class="readonly-tag">🔒 읽기 전용</span>
+    <span class="hdr-co" id="hdrCo"></span>
+    <span class="ro-tag">🔒 읽기 전용</span>
   </div>
-
-  <div id="mainContent">
-    <div style="text-align:center;padding:60px 0;color:#9ca3af">불러오는 중...</div>
-  </div>
-
+  <div id="root"><div style="text-align:center;padding:60px;color:#9ca3af">불러오는 중...</div></div>
   <div class="footer">BNI STAR Portal · 읽기 전용 공유 링크</div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="/js/supabase-config.js"></script>
-<script src="/portal/js/traffic-light.js"></script>
 <script>
+/* ── 최소 유틸 (traffic-light.js 의존 제거) ── */
 const CHAPTER_LAUNCH = '2026-05-13';
 const TODAY = new Date().toISOString().slice(0,10);
 
-(async () => {
-  const params = new URLSearchParams(location.search);
-  const name   = params.get('name') || params.get('n') || '';
-  if (!name) { showError('이름 파라미터가 없습니다. ?name=홍길동 형식으로 접근하세요.'); return; }
+function getAllWeeks() {
+  const start = new Date(CHAPTER_LAUNCH + 'T00:00:00Z');
+  const minEnd = new Date(start); minEnd.setUTCDate(minEnd.getUTCDate() + 23*7);
+  const target = new Date(TODAY + 'T00:00:00Z');
+  const end = target > minEnd ? target : minEnd;
+  const weeks = []; let d = new Date(start);
+  while (d <= end) { weeks.push(d.toISOString().slice(0,10)); d.setUTCDate(d.getUTCDate()+7); }
+  return weeks;
+}
+const WEEKS_ALL = getAllWeeks();
 
-  document.getElementById('hdrName').textContent = name;
-  document.title = `${name} — BNI STAR`;
+function getMemberWeeks(joinedDate) {
+  const joinStr = joinedDate || CHAPTER_LAUNCH;
+  const firstWeek = WEEKS_ALL.find(w => w >= joinStr) || WEEKS_ALL[0];
+  const startIdx  = WEEKS_ALL.indexOf(firstWeek);
+  const minEnd = new Date(firstWeek+'T00:00:00Z'); minEnd.setUTCDate(minEnd.getUTCDate()+23*7);
+  const ext = [...WEEKS_ALL]; let last = new Date(ext[ext.length-1]+'T00:00:00Z');
+  while (last < minEnd) { last.setUTCDate(last.getUTCDate()+7); ext.push(last.toISOString().slice(0,10)); }
+  return ext.slice(startIdx);
+}
+
+function scoreAbsence(n) { return n>2?0:n===2?5:n===1?10:15; }
+function scoreLate(n)    { return n>=2?0:n===1?5:10; }
+function scoreReferral(a){ return a<0.5?0:a<0.75?5:a<1.0?10:a<1.2?15:20; }
+function scoreTyfcb(t)   { return t<25000000?0:t<50000000?5:t<100000000?10:15; }
+function scoreVisitor(a) { return a<0.1?0:a<0.2?5:a<0.4?10:a<0.6?15:20; }
+function scoreOno(a)     { return a<1?0:a<2?5:10; }
+function scoreCeu(t)     { return t<5?0:t<15?5:10; }
+function fmtComma(v)     { return (Number(v)||0).toLocaleString('ko-KR'); }
+
+function calcMemberScore(recs, pastWeeks) {
+  const n = recs.length;
+  if (!n) return {total:0,light:'gray',breakdown:{absence:0,late:0,referral:0,tyfcb:0,visitor:0,ono:0,ceu:0},stats:{n:0,absN:0,lateN:0,totRef:0,totVis:0,totOno:0,totTyf:0,totCeu:0,avgRef:'0.00',avgVis:'0.00',avgOno:'0.00'}};
+  const absN=recs.filter(r=>r.absent).length, lateN=recs.filter(r=>r.late).length;
+  const totRef=recs.reduce((s,r)=>s+(r.given_t1||0)+(r.given_t2||0),0);
+  const totVis=recs.reduce((s,r)=>s+(r.visitors||0),0);
+  const totOno=recs.reduce((s,r)=>s+(r.one_on_one||0),0);
+  const totTyf=recs.reduce((s,r)=>s+(Number(r.tyfcb)||0),0);
+  const totCeu=recs.reduce((s,r)=>s+(r.ceu||0),0);
+  const W=Math.max(pastWeeks!=null?pastWeeks:n,1);
+  const s1=scoreAbsence(absN),s2=scoreLate(lateN),s3=scoreReferral(totRef/W);
+  const s4=scoreTyfcb(totTyf),s5=scoreVisitor(totVis/W),s6=scoreOno(totOno/W),s7=scoreCeu(totCeu);
+  const total=s1+s2+s3+s4+s5+s6+s7;
+  return {total,light:total>=70?'green':total>=50?'yellow':total>=30?'red':'gray',
+    breakdown:{absence:s1,late:s2,referral:s3,tyfcb:s4,visitor:s5,ono:s6,ceu:s7},
+    stats:{n,absN,lateN,totRef,totVis,totOno,totTyf,totCeu,
+      avgRef:(totRef/W).toFixed(2),avgVis:(totVis/W).toFixed(2),avgOno:(totOno/W).toFixed(2)}};
+}
+
+function genAITips(name, sc) {
+  const tips = [];
+  const lMsg = {
+    green:'모든 항목 기준 충족 — 챕터의 모범입니다!',
+    yellow:'Green까지 한 걸음! 아래 항목을 집중하면 달성 가능합니다.',
+    red:'활동 강화가 필요합니다. 트래픽라이트위원·원투원코디·멘토링코디와 면담을 통해 실천 계획을 세워보세요.',
+    gray:`${name}님의 BNI 활동이 저조합니다. 지금 바로 리퍼럴·1:1·비지터 활동을 시작해 보세요!`,
+  };
+  const lType={green:'positive',yellow:'warning',red:'critical',gray:'critical'};
+  const lIcon={green:'✅',yellow:'⚠️',red:'🚨',gray:'🔔'};
+  tips.push({type:lType[sc.light],icon:lIcon[sc.light],text:`현재 ${sc.total}점 · ${lMsg[sc.light]}`});
+  if(sc.breakdown.absence<15) tips.push({type:'action',icon:'📅',text:`결석 ${sc.stats.absN}회 (${15-sc.breakdown.absence}점 손실) — 매주 참석 최우선. 불가피하면 대리인을 보내세요.`});
+  if(sc.breakdown.late<10)    tips.push({type:'action',icon:'⏰',text:`지각/조퇴 ${sc.stats.lateN}회 — 10분 전 도착 습관화로 ${10-sc.breakdown.late}점 회복 가능합니다.`});
+  if(sc.breakdown.referral<20){
+    const avg=parseFloat(sc.stats.avgRef)||0;
+    const next=avg<0.5?'주 1건':avg<1.0?'주 1건 이상':'주 1.2건';
+    tips.push({type:'action',icon:'🤝',text:`리퍼럴 주평균 ${sc.stats.avgRef}건 → 목표 ${next}. 1:1 미팅에서 "소개해 줄 분 있으세요?"라고 물어보세요. 어렵다면 원투원코디에게 도움 요청하세요.`});
+  }
+  if(sc.breakdown.visitor<20){
+    const avg=parseFloat(sc.stats.avgVis)||0;
+    tips.push({type:'action',icon:'🙋',text:`비지터 주평균 ${sc.stats.avgVis}명 — ${avg===0?'아직 비지터 초대가 없습니다. 지금 바로 주변 1명에게 연락해 보세요!':'목표는 주 0.6명. 꾸준히 초대해 보세요.'}`});
+  }
+  if(sc.breakdown.ono<10){
+    const avg=parseFloat(sc.stats.avgOno)||0;
+    tips.push({type:'action',icon:'☕',text:`1:1 주평균 ${sc.stats.avgOno}회 — ${avg===0?'아직 1:1 기록이 없습니다. 이번 주 첫 1:1을 잡아보세요!':'목표는 주 2회. 미팅 후 바로 다음 약속을 잡는 습관을 만들어보세요.'}`});
+  }
+  if(sc.breakdown.tyfcb<15)  tips.push({type:'action',icon:'💰',text:`감사장 누적 ${fmtComma(sc.stats.totTyf)}원 — 리퍼럴 성사 시 즉시 기록하세요. 빠진 건이 있는지 확인해 보세요.`});
+  if(sc.breakdown.ceu<10)    tips.push({type:'action',icon:'📚',text:`CEU 누적 ${sc.stats.totCeu}점 — 교육 세션 참여 시 빠짐없이 기록. 목표까지 ${Math.max(0,15-sc.stats.totCeu)}점 남았습니다.`});
+  return tips;
+}
+
+/* ── 메인 ── */
+(async () => {
+  const name = new URLSearchParams(location.search).get('name') || '';
+  if (!name) { showErr('?name=홍길동 형식으로 접근하세요.'); return; }
+  document.getElementById('hdrName').textContent = decodeURIComponent(name);
+  document.title = `${decodeURIComponent(name)} — BNI STAR`;
 
   const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
-
   const [{ data: members }, { data: recs }] = await Promise.all([
-    sb.from('members').select('*').eq('name', name).limit(1),
-    sb.from('weekly_records').select('*').eq('member_name', name).order('week_date'),
+    sb.from('members').select('name,company,joined_date').eq('name', decodeURIComponent(name)).limit(1),
+    sb.from('weekly_records').select('*').eq('member_name', decodeURIComponent(name)).order('week_date'),
   ]);
 
-  const member = members?.[0];
-  if (!member && !recs?.length) { showError(`"${name}" 멤버를 찾을 수 없습니다.`); return; }
+  const nm      = decodeURIComponent(name);
+  const member  = members?.[0];
+  document.getElementById('hdrCo').textContent = member?.company || '';
 
-  document.getElementById('hdrBadge').textContent = member?.company || '';
-
-  // 주차 계산
-  const memWeeks  = getMemberWeeks(member?.joined_date);
-  const elapsed   = memWeeks.filter(w => w <= TODAY).length;
-  const recorded  = new Set((recs||[]).map(r => r.week_date)).size;
-  const sc        = calcMemberScore(recs||[], Math.max(elapsed, recorded));
-  const isNew     = member?.joined_date && member.joined_date > CHAPTER_LAUNCH;
-
-  const lEmoji  = {green:'🟢',yellow:'🟡',red:'🔴',gray:'⚫'}[sc.light]||'⚫';
-  const lColor  = {green:'#16a34a',yellow:'#ca8a04',red:'#CC0000',gray:'#9ca3af'}[sc.light]||'#9ca3af';
-
-  const criteria = {
-    '결석':      '0번=15 / 1번=10 / 2번=5 / 3번+=0',
-    '지각/조퇴': '0번=10 / 1번=5 / 2번+=0',
-    '리퍼럴':    '주평균 1.2+건=20 / 1.0+건=15 / 0.75+건=10 / 0.5+건=5 / 미만=0',
-    '감사장':    '1억+=15 / 5천만+=10 / 2500만+=5 / 미만=0',
-    '비지터':    '주평균 0.6+명=20 / 0.4+명=15 / 0.2+명=10 / 0.1+명=5 / 미만=0',
-    '1:1':       '주평균 2+회=10 / 1+회=5 / 미만=0',
-    '교육':      '누적 15+점=10 / 5+점=5 / 미만=0',
-  };
+  const memWeeks = getMemberWeeks(member?.joined_date);
+  const elapsed  = memWeeks.filter(w => w <= TODAY).length;
+  const recorded = new Set((recs||[]).map(r=>r.week_date)).size;
+  const sc       = calcMemberScore(recs||[], Math.max(elapsed, recorded));
+  const lEmoji   = {green:'🟢',yellow:'🟡',red:'🔴',gray:'⚫'}[sc.light]||'⚫';
+  const lColor   = {green:'#16a34a',yellow:'#ca8a04',red:'#CC0000',gray:'#9ca3af'}[sc.light];
+  const isNew    = member?.joined_date && member.joined_date > CHAPTER_LAUNCH;
 
   const scoreItems = [
-    ['결석',     sc.breakdown.absence,  15,  `${sc.stats.absN||0}번`],
-    ['지각/조퇴',sc.breakdown.late,     10,  `${sc.stats.lateN||0}번`],
-    ['리퍼럴',   sc.breakdown.referral, 20,  `주평균 ${sc.stats.avgRef||'0.00'}건`],
-    ['감사장',   sc.breakdown.tyfcb,    15,  fmtComma(sc.stats.totTyf||0)+'원'],
-    ['비지터',   sc.breakdown.visitor,  20,  `주평균 ${sc.stats.avgVis||'0.00'}명`],
-    ['1:1',      sc.breakdown.ono,      10,  `주평균 ${sc.stats.avgOno||'0.00'}회`],
-    ['교육',     sc.breakdown.ceu,      10,  `누적 ${sc.stats.totCeu||0}점`],
+    ['결석',     sc.breakdown.absence,  15, `${sc.stats.absN||0}번`,               '0번=15 / 1번=10 / 2번=5 / 3번+=0'],
+    ['지각/조퇴',sc.breakdown.late,     10, `${sc.stats.lateN||0}번`,              '0번=10 / 1번=5 / 2번+=0'],
+    ['리퍼럴',   sc.breakdown.referral, 20, `주평균 ${sc.stats.avgRef||'0.00'}건`,  '주평균 1.2+건=20 / 1.0+=15 / 0.75+=10 / 0.5+=5'],
+    ['감사장',   sc.breakdown.tyfcb,    15, fmtComma(sc.stats.totTyf||0)+'원',     '1억+=15 / 5천만+=10 / 2500만+=5'],
+    ['비지터',   sc.breakdown.visitor,  20, `주평균 ${sc.stats.avgVis||'0.00'}명`,  '주평균 0.6+명=20 / 0.4+=15 / 0.2+=10 / 0.1+=5'],
+    ['1:1',      sc.breakdown.ono,      10, `주평균 ${sc.stats.avgOno||'0.00'}회`,  '주평균 2+회=10 / 1+=5'],
+    ['교육',     sc.breakdown.ceu,      10, `누적 ${sc.stats.totCeu||0}점`,         '누적 15+점=10 / 5+=5'],
   ];
 
-  // AI 피드백
-  const tips = genAIMember(name, recs||[], sc);
-
-  // 주간 테이블
+  const tips = genAITips(nm, sc);
   const recMap = Object.fromEntries((recs||[]).map(r=>[r.week_date,r]));
-  const hiddenCount = Math.max(0, memWeeks.length - 24);
-  const tableRows = memWeeks.map((w, i) => {
-    const r = recMap[w];
-    const wNum = `W${i+1}`;
-    const isFuture = w > TODAY;
-    const attendLabel = !r ? '—' : r.absent?'❌결석':r.late?'⚠️지각/조퇴':r.substitute?'🔄대리인':r.sick?'🏥병가':'✅출석';
-    return `<tr class="${isFuture?'future':''}">
-      <td style="font-weight:600">${wNum}</td>
-      <td>${w}</td>
-      <td>${attendLabel}</td>
-      <td>${r?.given_t1??'—'}</td><td>${r?.given_t2??'—'}</td>
-      <td>${r?.received_t1??'—'}</td><td>${r?.received_t2??'—'}</td>
-      <td>${r?.visitors??'—'}</td><td>${r?.one_on_one??'—'}</td>
-      <td>${r ? fmtComma(r.tyfcb||0) : '—'}</td><td>${r?.ceu??'—'}</td>
-    </tr>`;
-  }).join('');
+  const attendLbl = r => !r?'—':r.absent?'❌결석':r.late?'⚠️지각/조퇴':r.substitute?'🔄대리인':r.sick?'🏥병가':'✅출석';
 
-  document.getElementById('mainContent').innerHTML = `
-    <!-- 점수 카드 -->
+  document.getElementById('root').innerHTML = `
     <div class="card" style="border-left:4px solid ${lColor}">
-      <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap">
-        <span style="font-size:36px;font-weight:900">${sc.total}</span>
-        <span style="font-size:24px">${lEmoji}</span>
-        <span style="font-size:12px;color:var(--muted)">
-          분모 ${Math.max(elapsed,recorded)}주 (경과 ${elapsed} / 기록 ${recorded})
-          ${isNew ? ` · 가입 ${member.joined_date}` : ''}
-        </span>
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;flex-wrap:wrap">
+        <span style="font-size:34px;font-weight:900">${sc.total}</span>
+        <span style="font-size:22px">${lEmoji}</span>
+        <span style="font-size:12px;color:#6b7280">분모 ${Math.max(elapsed,recorded)}주${isNew?` · 가입 ${member.joined_date}`:''}</span>
       </div>
       <div class="score-grid">
-        ${scoreItems.map(([label,score,max,detail])=>`
-          <div class="score-item">
-            <div class="score-label" title="${criteria[label]||''}">${label} <span style="color:#d1d5db;cursor:help">?</span></div>
-            <div class="score-val">${score}<span class="score-max">/${max}</span></div>
-            <div class="score-detail">${detail}</div>
+        ${scoreItems.map(([label,score,max,detail,crit])=>`
+          <div class="si">
+            <div class="si-label" title="${crit}">${label} <span style="color:#d1d5db">?</span></div>
+            <div class="si-val">${score}<span class="si-max">/${max}</span></div>
+            <div class="si-detail">${detail}</div>
           </div>`).join('')}
       </div>
     </div>
 
-    <!-- AI 개선방향 -->
-    ${tips.length ? `<div class="card">
+    ${tips.length?`<div class="card">
       <div class="card-title">🤖 개선방향</div>
       ${tips.map(t=>`<div class="ai-tip ${t.type}"><span>${t.icon}</span><span>${t.text}</span></div>`).join('')}
-    </div>` : ''}
+    </div>`:''}
 
-    <!-- 주간 기록 -->
     <div class="card">
       <div class="card-title">24주 주간 기록</div>
       <div style="overflow-x:auto">
         <table class="tbl">
-          <thead><tr>
-            <th>주차</th><th>날짜</th><th>출결</th>
-            <th>준T1</th><th>준T2</th><th>받은T1</th><th>받은T2</th>
-            <th>비지터</th><th>1:1</th><th>감사장</th><th>CEU</th>
-          </tr></thead>
-          <tbody>${tableRows}</tbody>
+          <thead><tr><th>주차</th><th>날짜</th><th>출결</th><th>준T1</th><th>준T2</th><th>받은T1</th><th>받은T2</th><th>비지터</th><th>1:1</th><th>감사장</th><th>CEU</th></tr></thead>
+          <tbody>${memWeeks.map((w,i)=>{
+            const r=recMap[w];
+            return `<tr class="${w>TODAY?'fut':''}">
+              <td style="font-weight:600">W${i+1}</td><td>${w}</td><td>${attendLbl(r)}</td>
+              <td>${r?.given_t1??'—'}</td><td>${r?.given_t2??'—'}</td>
+              <td>${r?.received_t1??'—'}</td><td>${r?.received_t2??'—'}</td>
+              <td>${r?.visitors??'—'}</td><td>${r?.one_on_one??'—'}</td>
+              <td>${r?fmtComma(r.tyfcb||0):'—'}</td><td>${r?.ceu??'—'}</td>
+            </tr>`;
+          }).join('')}</tbody>
         </table>
       </div>
     </div>
   `;
 })();
 
-function showError(msg) {
-  document.getElementById('mainContent').innerHTML = `<div style="background:#fee2e2;border:1px solid #fca5a5;color:#7f1d1d;padding:16px;border-radius:10px">${msg}</div>`;
-}
+function showErr(msg){document.getElementById('root').innerHTML=`<div style="background:#fee2e2;border:1px solid #fca5a5;color:#7f1d1d;padding:16px;border-radius:10px">${msg}</div>`;}
 </script>
 </body>
 </html>
