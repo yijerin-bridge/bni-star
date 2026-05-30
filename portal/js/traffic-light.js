@@ -88,7 +88,7 @@ function calcMemberScore(recs, pastWeeks) {
   const totCeu = recs.reduce((s,r) => s + (r.ceu||0), 0);
 
   // 분모 = 실제 경과 주수 (레코드 수 아님) → 월별·주별 데이터 모두 정확
-  const totalWeeks = Math.max(pastWeeks || n, 1);
+  const totalWeeks = Math.max(pastWeeks != null ? pastWeeks : n, 1);
 
   const s1 = scoreAbsence(absN);
   const s2 = scoreLate(lateN);
