@@ -636,8 +636,8 @@ function renderImport() {
       <div class="card" style="margin-bottom:12px">
         <div class="card-title" style="margin-bottom:8px">PALMS 데이터 붙여넣기</div>
         <p style="font-size:12px;color:#6b7280;margin-bottom:12px">
-          PALMS 또는 엑셀에서 헤더 포함 전체 셀을 복사(Ctrl+C)한 후 붙여넣으세요.<br>
-          컬럼 순서: <code style="background:#f3f4f6;padding:2px 6px;border-radius:4px">이름 출석 결석 지각 병가 대리 준T1 준T2 받은T1 받은T2 비지터 1:1 감사장 CEU</code>
+          PALMS 또는 엑셀에서 셀을 복사(Ctrl+C)한 후 붙여넣으세요.<br>
+          헤더 행이 있으면 <strong>컬럼 순서 자동 인식</strong>, 없으면 한글 이름 기준으로 파싱합니다.
         </p>
         <div style="display:flex;gap:12px;align-items:center;margin-bottom:10px;flex-wrap:wrap">
           <div style="display:flex;gap:8px;align-items:center">
@@ -712,16 +712,76 @@ function renderImport() {
 
 /* ── 붙여넣기 파싱 ── */
 function parsePasteText(text) {
-  const lines = text.split('\n').map(l => l.split('\t').map(c => c.trim()));
-  // 헤더 행 찾기
-  const headerIdx = lines.findIndex(r => /이름|name/i.test(r[0]||''));
-  const dataLines = headerIdx >= 0 ? lines.slice(headerIdx + 1) : lines;
+  // 탭 구분 또는 2개 이상 공백 구분 모두 처리
+  const lines = text.split('\n')
+    .map(l => l.includes('\t') ? l.split('\t') : l.split(/\s{2,}/))
+    .map(cols => cols.map(c => c.trim()))
+    .filter(l => l.some(c => c));
+
+  // 헤더 행 찾기: 이름/name 포함 행
+  const headerIdx = lines.findIndex(r =>
+    r.some(c => /^(이름|name|member)/i.test(c.replace(/\s/g,'')))
+  );
+  if (headerIdx < 0) return parsePasteNoHeader(lines); // 헤더 없으면 위치 추론
+
+  const hRow = lines[headerIdx];
+
+  // 헤더 → 컬럼 인덱스 매핑 (한국어/영어 모두)
+  const col = {};
+  hRow.forEach((h, i) => {
+    const s = h.replace(/\s|\(.*?\)/g, '').toLowerCase();
+    if (/이름|name|member/.test(s))    col.name       = i;
+    if (/^출석$|^attend/.test(s))       col.attendance = i;
+    if (/^결석$|^absent/.test(s))       col.absence    = i;
+    if (/지각|조퇴|late/.test(s))       col.late_leave = i;
+    if (/병가|sick/.test(s))            col.sick_leave = i;
+    if (/대리|subst/.test(s))           col.substitute = i;
+    if (/준t1|givent1|t1$/.test(s))     col.given_t1   = i;
+    if (/준t2|givent2|t2$/.test(s))     col.given_t2   = i;
+    if (/받은t1|rect1/.test(s))         col.received_t1= i;
+    if (/받은t2|rect2/.test(s))         col.received_t2= i;
+    if (/비지터|visit/.test(s))         col.visitors   = i;
+    if (/1.?2.?1|ono|one.on/.test(s))  col.one_on_one = i;
+    if (/감사장|tyfcb|amount/.test(s))  col.tyfcb      = i;
+    if (/^ceu$/.test(s))               col.ceu        = i;
+  });
+
   const skip = new Set(['합','비지터','bni','합계','total','']);
-  return dataLines
-    .filter(r => r[0] && !skip.has(r[0].toLowerCase()) && !/^[A-Za-z]/.test(r[0]))
+  const n = (r, k) => k != null ? Math.max(0, Number(String(r[k]||'').replace(/,/g,''))||0) : 0;
+
+  return lines.slice(headerIdx + 1)
+    .filter(r => {
+      const name = String(r[col.name ?? 0]||'').trim();
+      return name && !skip.has(name.toLowerCase()) && !/^[A-Za-z\d]/.test(name) === false
+        || (name && !skip.has(name.toLowerCase()) && /[가-힣]/.test(name));
+    })
+    .map(r => ({
+      member_name: String(r[col.name ?? 0]||'').trim(),
+      attendance:  n(r, col.attendance),
+      absence:     n(r, col.absence),
+      late_leave:  n(r, col.late_leave),
+      sick_leave:  n(r, col.sick_leave),
+      substitute:  n(r, col.substitute),
+      given_t1:    n(r, col.given_t1),
+      given_t2:    n(r, col.given_t2),
+      received_t1: n(r, col.received_t1),
+      received_t2: n(r, col.received_t2),
+      visitors:    n(r, col.visitors),
+      one_on_one:  n(r, col.one_on_one),
+      tyfcb:       n(r, col.tyfcb),
+      ceu:         n(r, col.ceu),
+    }))
+    .filter(r => r.member_name);
+}
+
+// 헤더 없이 붙여넣은 경우 — 이름 컬럼을 한글 이름으로 추론
+function parsePasteNoHeader(lines) {
+  const skip = new Set(['합','비지터','bni','합계','total','']);
+  return lines
+    .filter(r => /[가-힣]{2,}/.test(r[0]||'') && !skip.has(r[0].toLowerCase()))
     .map(r => {
-      const n = (i) => Math.max(0, Number(r[i])||0);
-      return { member_name:r[0], attendance:n(1), absence:n(2), late_leave:n(3),
+      const n = i => Math.max(0, Number(String(r[i]||'').replace(/,/g,''))||0);
+      return { member_name:r[0].trim(), attendance:n(1), absence:n(2), late_leave:n(3),
                sick_leave:n(4), substitute:n(5), given_t1:n(6), given_t2:n(7),
                received_t1:n(8), received_t2:n(9), visitors:n(10),
                one_on_one:n(11), tyfcb:n(12), ceu:n(13) };
