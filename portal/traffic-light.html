@@ -7,223 +7,111 @@
   <meta name="robots" content="noindex, nofollow">
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/portal/css/portal.css">
-  <link rel="stylesheet" href="/portal/css/traffic.css">
   <style>
-    /* portal 레이아웃에서 traffic CSS 충돌 방지 */
-    .traffic-body .card { background: var(--card-bg, #fff); }
-    .traffic-body .tab-nav { border-radius: 0; margin: 0; }
-    .traffic-body .main { padding: 16px; }
+    /* ── 탭 바 ── */
+    .tl-tab-bar { display:flex;border-bottom:2px solid var(--border);margin-bottom:20px; }
+    .tl-tab { padding:10px 20px;font-size:13px;font-weight:500;color:var(--text-muted);cursor:pointer;
+      border-bottom:2px solid transparent;margin-bottom:-2px;background:none;
+      border-top:none;border-left:none;border-right:none;transition:all .15s; }
+    .tl-tab.active { color:var(--red);border-bottom-color:var(--red);font-weight:700; }
+    .tl-panel { display:none; }
+    .tl-panel.active { display:block; }
+
+    /* ── 월 네비 ── */
+    .period-nav { display:flex;align-items:center;gap:12px;margin-bottom:20px;flex-wrap:wrap; }
+    .period-nav button { padding:6px 14px;border-radius:8px;border:1.5px solid var(--border);
+      background:#fff;cursor:pointer;font-size:13px;transition:all .12s; }
+    .period-nav button:hover { border-color:#d1d5db; }
+    .period-nav button:disabled { opacity:.35;cursor:not-allowed; }
+    .period-label { font-size:15px;font-weight:700;min-width:120px;text-align:center; }
+
+    /* ── 멤버 그리드 ── */
+    .member-score-grid { display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px; }
+    .ms-card { background:#fff;border:1.5px solid var(--border);border-radius:12px;
+      padding:16px;cursor:pointer;transition:box-shadow .15s,border-color .15s; }
+    .ms-card:hover { box-shadow:0 4px 14px rgba(0,0,0,.08);border-color:#d1d5db; }
+    .ms-card.green { border-left:4px solid #16a34a; }
+    .ms-card.yellow { border-left:4px solid #ca8a04; }
+    .ms-card.red { border-left:4px solid #CC0000; }
+    .ms-card.new { border-left:4px solid #9ca3af; }
+    .ms-name { font-size:14px;font-weight:700;margin-bottom:6px; }
+    .ms-score-row { display:flex;align-items:center;justify-content:space-between;margin-bottom:8px; }
+    .ms-score { font-size:22px;font-weight:900;line-height:1; }
+    .ms-light { font-size:18px; }
+    .ms-sparkline { display:flex;gap:3px;align-items:flex-end;height:24px; }
+    .ms-spark-bar { flex:1;border-radius:2px 2px 0 0;min-width:6px;transition:height .3s; }
+    .ms-sub { font-size:10px;color:#9ca3af;margin-top:6px; }
+
+    /* ── 점수 뱃지 ── */
+    .score-badge { display:inline-flex;align-items:center;gap:5px;padding:3px 10px;
+      border-radius:20px;font-size:12px;font-weight:700; }
+    .score-badge.green  { background:#dcfce7;color:#166534; }
+    .score-badge.yellow { background:#fef9c3;color:#713f12; }
+    .score-badge.red    { background:#fee2e2;color:#991b1b; }
+    .score-badge.new    { background:#f3f4f6;color:#9ca3af; }
+
+    /* ── 개인 상세 ── */
+    .detail-table { width:100%;border-collapse:collapse;font-size:13px; }
+    .detail-table th { background:#f9fafb;padding:10px 12px;text-align:center;
+      font-size:11px;font-weight:700;color:#6b7280;border-bottom:2px solid var(--border); }
+    .detail-table td { padding:10px 12px;text-align:center;border-bottom:1px solid #f3f4f6;vertical-align:middle; }
+    .detail-table tr:hover td { background:#fafafa; }
+    .detail-table td.period-col { text-align:left;font-weight:600; }
+    .projected-row td { color:#9ca3af;font-style:italic; }
+    .edit-input { width:60px;padding:4px 6px;border:1.5px solid #d1d5db;border-radius:6px;
+      text-align:center;font-size:12px;font-family:inherit; }
+    .edit-input:focus { outline:none;border-color:#2563eb; }
+
+    /* ── 파일 업로드 ── */
+    .upload-zone { border:2px dashed var(--border);border-radius:14px;padding:48px;
+      text-align:center;cursor:pointer;transition:all .15s; }
+    .upload-zone:hover,.upload-zone.drag { border-color:#CC0000;background:#fff5f5; }
+    .preview-table-wrap { overflow-x:auto;max-height:400px;overflow-y:auto; }
+    .preview-table { width:100%;border-collapse:collapse;font-size:12px; }
+    .preview-table th { background:#1a1f2e;color:#fff;padding:8px 10px;position:sticky;top:0;white-space:nowrap; }
+    .preview-table td { padding:6px 10px;border-bottom:1px solid #f3f4f6;white-space:nowrap; }
+    .preview-table tr.unmatched td { background:#fff5f5; }
+    .match-ok  { color:#16a34a;font-weight:600; }
+    .match-no  { color:#CC0000;font-weight:600; }
+
+    /* ── 점수 설정 ── */
+    .config-row { display:grid;grid-template-columns:1fr 120px 120px;gap:12px;align-items:center;
+      padding:12px 0;border-bottom:1px solid #f3f4f6; }
+    .config-label { font-size:13px;font-weight:500; }
+    .config-sub { font-size:11px;color:#9ca3af;margin-top:2px; }
+    .config-input { padding:6px 10px;border:1.5px solid var(--border);border-radius:8px;
+      font-size:13px;text-align:center;font-family:inherit; }
+
+    /* ── AI 피드백 ── */
+    .ai-tip { padding:10px 14px;border-radius:8px;font-size:13px;line-height:1.6;display:flex;gap:10px; }
+    .ai-tip.positive { background:#f0fdf4; }
+    .ai-tip.warning  { background:#fefce8; }
+    .ai-tip.action   { background:#eff6ff; }
+    .ai-tip.critical { background:#fff1f2; }
   </style>
 </head>
 <body>
-
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script src="/js/supabase-config.js"></script>
 <script src="/js/members-data.js"></script>
 <script src="/portal/js/portal-auth.js"></script>
 <script src="/portal/js/portal-nav.js"></script>
 <script src="/portal/js/traffic-light.js"></script>
-
 <script>
 document.addEventListener('DOMContentLoaded', () => {
   const layout = renderPortalLayout({ title: '트래픽라이트' });
   if (!layout) return;
   const { session, bodyEl } = layout;
 
-  // 접근 제한 — 부의장 / [멤버십] 트래픽라이트 담당만
   if (!canAccessTraffic(session)) {
-    bodyEl.innerHTML = `<div class="alert-banner crit" style="margin-top:24px">접근 권한이 없습니다. 부의장 또는 멤버십위원회 트래픽라이트 담당만 이용할 수 있습니다.</div>`;
+    bodyEl.innerHTML = `<div class="alert-banner crit" style="margin-top:24px">
+      접근 권한이 없습니다. 부의장 또는 멤버십위원회 트래픽라이트 담당만 이용할 수 있습니다.</div>`;
     return;
   }
 
-  const canEdit = canEditTraffic(session);
-
-  bodyEl.classList.add('traffic-body');
-  bodyEl.insertAdjacentHTML('beforeend', `
-    <!-- 탭 네비게이션 -->
-    <nav class="tab-nav" style="margin-bottom:0;border-radius:10px 10px 0 0;overflow:hidden">
-      <button class="tab-btn active" data-tab="members">개인 성과</button>
-      <button class="tab-btn" data-tab="network">리퍼럴 지도</button>
-      <button class="tab-btn" data-tab="portfolio">직군 현황</button>
-      <button class="tab-btn" data-tab="alerts">경고</button>
-      ${canEdit ? `<button class="tab-btn" data-tab="input">데이터 입력</button>` : ''}
-    </nav>
-
-    <main class="main" style="padding-top:0">
-
-      <!-- ① 개인 성과 -->
-      <div class="tab-panel active" id="panel-members">
-        <div class="ai-director-card" id="ai-director-members" style="display:none"></div>
-        <div class="month-nav">
-          <button class="month-btn" id="monthPrev">&#8249;</button>
-          <span class="month-label" id="monthLabel"></span>
-          <button class="month-btn" id="monthNext">&#8250;</button>
-        </div>
-        <div class="toolbar">
-          <input type="text" id="memberSearch" class="search-input" placeholder="이름 검색...">
-          <select id="lightFilter" class="filter-select">
-            <option value="">전체</option>
-            <option value="green">🟢 Green</option>
-            <option value="yellow">🟡 Yellow</option>
-            <option value="red">🔴 Red</option>
-            <option value="new">⚪ 미입력</option>
-          </select>
-        </div>
-        <div class="member-grid" id="memberGrid"></div>
-      </div>
-
-      <!-- ③ 리퍼럴 흐름 지도 -->
-      <div class="tab-panel" id="panel-network">
-        <div class="ai-director-card" id="ai-director-network" style="display:none"></div>
-        <div class="card" style="padding:16px 16px 8px">
-          <div class="card-title">리퍼럴 흐름 네트워크 · 허브/고립 멤버</div>
-          <div class="network-legend">
-            <span class="legend-item"><span class="dot big"></span> 허브 (리퍼럴 多)</span>
-            <span class="legend-item"><span class="dot small"></span> 고립 (리퍼럴 0)</span>
-            <span class="legend-item"><span class="line thick"></span> 금액 큰 리퍼럴</span>
-          </div>
-        </div>
-        <div id="networkContainer"></div>
-      </div>
-
-      <!-- ④ 직군 현황 -->
-      <div class="tab-panel" id="panel-portfolio">
-        <div class="ai-director-card" id="ai-director-portfolio" style="display:none"></div>
-        <div class="section-row">
-          <div class="card half"><div class="card-title">직군별 인원</div><canvas id="chartCategory" height="260"></canvas></div>
-          <div class="card half"><div class="card-title">직군별 리퍼럴 기여도</div><canvas id="chartCatReferral" height="260"></canvas></div>
-        </div>
-        <div class="card" style="margin-top:0">
-          <div class="card-title">직군별 트래픽라이트 현황</div>
-          <div class="cat-table-wrap"><table class="cat-table" id="catTable"></table></div>
-        </div>
-      </div>
-
-      <!-- ⑤ 경고 -->
-      <div class="tab-panel" id="panel-alerts">
-        <div class="ai-director-card" id="ai-director-alerts" style="display:none"></div>
-        <div class="alert-info">멤버십위원회 액션 대상 — 자동 감지</div>
-        <div id="alertList"></div>
-      </div>
-
-      <!-- ⑥ 데이터 입력 (멤버십위원회 · 의장단만) -->
-      ${canEdit ? `
-      <div class="tab-panel" id="panel-input">
-        <div class="ai-director-card" id="ai-director-input" style="display:none"></div>
-        <div class="input-tabs">
-          <button class="input-tab active" data-itab="weekly">주간 활동 입력</button>
-          <button class="input-tab" data-itab="referral">리퍼럴 흐름 입력</button>
-        </div>
-
-        <!-- 주간 활동 입력 -->
-        <div class="input-panel active" id="ipanel-weekly">
-          <div class="card">
-            <div class="card-title" id="weeklyFormTitle">주간 활동 기록</div>
-            <div class="form-row">
-              <label class="form-label">주차 (수요일 기준)</label>
-              <input type="date" id="fWeekStart" class="form-input">
-            </div>
-            <div class="form-row">
-              <label class="form-label">멤버 선택</label>
-              <select id="fMember" class="form-input"></select>
-            </div>
-            <div class="form-grid">
-              <div class="form-row">
-                <label class="form-label">출석</label>
-                <div class="toggle-wrap">
-                  <button class="toggle-btn active" id="toggleYes" onclick="setAttend(true)">출석</button>
-                  <button class="toggle-btn" id="toggleNo" onclick="setAttend(false)">결석</button>
-                </div>
-              </div>
-              <div class="form-row">
-                <label class="form-label">1:1 횟수</label>
-                <input type="number" id="fOno" class="form-input" min="0" value="0">
-              </div>
-              <div class="form-row">
-                <label class="form-label">교육</label>
-                <div class="toggle-wrap">
-                  <button class="toggle-btn active" id="toggleEduY" onclick="setEdu(true)">참여</button>
-                  <button class="toggle-btn" id="toggleEduN" onclick="setEdu(false)">미참여</button>
-                </div>
-              </div>
-              <div class="form-row">
-                <label class="form-label">비지터 초대 수</label>
-                <input type="number" id="fVisitors" class="form-input" min="0" value="0">
-              </div>
-            </div>
-            <div class="form-row">
-              <label class="form-label">메모</label>
-              <textarea id="fNotes" class="form-input" rows="2" placeholder="선택 입력"></textarea>
-            </div>
-            <div class="form-btns">
-              <button class="submit-btn" id="submitWeekly">저장</button>
-              <button class="cancel-btn" id="cancelWeekly" style="display:none">취소</button>
-            </div>
-            <div class="form-msg" id="weeklyMsg"></div>
-          </div>
-          <div class="card" style="margin-top:12px">
-            <div class="card-title">최근 입력 내역</div>
-            <div id="recentWeekly" class="recent-list"></div>
-          </div>
-        </div>
-
-        <!-- 리퍼럴 흐름 입력 -->
-        <div class="input-panel" id="ipanel-referral">
-          <div class="card">
-            <div class="card-title" id="referralFormTitle">리퍼럴 기록 (누가 → 누구에게)</div>
-            <div class="form-row">
-              <label class="form-label">리퍼럴 준 멤버</label>
-              <select id="fFrom" class="form-input"></select>
-            </div>
-            <div class="form-row">
-              <label class="form-label">리퍼럴 받은 멤버</label>
-              <select id="fTo" class="form-input"></select>
-            </div>
-            <div class="form-grid">
-              <div class="form-row">
-                <label class="form-label">날짜</label>
-                <input type="date" id="fRefDate" class="form-input">
-              </div>
-              <div class="form-row">
-                <label class="form-label">리퍼럴 유형</label>
-                <div class="toggle-wrap">
-                  <button class="toggle-btn active" id="toggleT1" onclick="setRefType('T1')">T1 직접소비</button>
-                  <button class="toggle-btn" id="toggleT2" onclick="setRefType('T2')">T2 소개</button>
-                </div>
-              </div>
-            </div>
-            <div class="form-row" id="rowIntroduced" style="display:none">
-              <label class="form-label">소개받은 사람 이름 (T2)</label>
-              <input type="text" id="fIntroduced" class="form-input" placeholder="소개받은 분 성함">
-            </div>
-            <div class="form-row">
-              <label class="form-label">감사장 금액 (원)</label>
-              <input type="number" id="fRefAmount" class="form-input" min="0" value="0" step="10000">
-            </div>
-            <div class="form-row">
-              <label class="form-label">내용</label>
-              <textarea id="fRefDesc" class="form-input" rows="2" placeholder="리퍼럴 내용 간략히"></textarea>
-            </div>
-            <div class="form-btns">
-              <button class="submit-btn" id="submitReferral">저장</button>
-              <button class="cancel-btn" id="cancelReferral" style="display:none">취소</button>
-            </div>
-            <div class="form-msg" id="referralMsg"></div>
-          </div>
-          <div class="card" style="margin-top:12px">
-            <div class="card-title">리퍼럴 내역</div>
-            <div id="recentReferral" class="recent-list"></div>
-          </div>
-        </div>
-      </div>
-      ` : ''}
-
-    </main>
-  `);
-
-  // 트래픽라이트 초기화
-  initTrafficLight(canEdit);
+  initTrafficLight(session, bodyEl);
 });
 </script>
 </body>

@@ -1,811 +1,825 @@
 /* ============================================================
-   BNI STAR Portal — Traffic Light (포털 통합 버전)
-   portal-auth.js의 getSb() / requireAuth() 사용
+   BNI STAR — Traffic Light v2 (PALMS 기반)
    ============================================================ */
 
-const CRITERIA = {
-  attendanceRate: 1.0,
-  onoPerWeek: 1,
-  referralPerWeek: 1,
-};
+let allMembers = [], allRecords = [], scoreConfig = {};
+let currentPeriod = null; // { start: 'YYYY-MM-DD', label: 'YYYY.MM' }
+let chartInstance = null;
 
-let members          = [];
-let weeklyRecords    = [];
-let referralFlows    = [];
-let attendVal        = true;
-let eduVal           = true;
-let refTypeVal       = 'T1';
-let selectedMonth    = { year: new Date().getFullYear(), month: new Date().getMonth() };
-let memberStats      = [];
-let chartInstances   = {};
-let editingWeeklyId  = null;
-let editingReferralId = null;
-let recentWeeklyData  = [];
-let recentReferralData = [];
+/* ── 초기화 ── */
+async function initTrafficLight(session, bodyEl) {
+  bodyEl.innerHTML = `
+    <div class="page-header">
+      <div><h1>트래픽라이트</h1><p>PALMS 기반 월별 멤버 성과 분석</p></div>
+    </div>
+    <div class="tl-tab-bar">
+      <button class="tl-tab active" data-tab="overview">📊 전체 현황</button>
+      <button class="tl-tab" data-tab="detail">👤 개인 상세</button>
+      <button class="tl-tab" data-tab="import">📁 파일 가져오기</button>
+      <button class="tl-tab" data-tab="config">⚙️ 점수 설정</button>
+    </div>
+    <div class="tl-panel active" id="tl-overview"></div>
+    <div class="tl-panel"        id="tl-detail"></div>
+    <div class="tl-panel"        id="tl-import"></div>
+    <div class="tl-panel"        id="tl-config"></div>
+  `;
 
-/* ─── 유틸 ─── */
-function toLocalDateStr(d) {
-  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-}
-
-function getMondayOf(dateStr) {
-  const d = dateStr ? new Date(dateStr + 'T12:00:00') : new Date();
-  const day = d.getDay();
-  const diff = (day >= 3) ? 3 - day : 3 - day - 7;
-  d.setDate(d.getDate() + diff);
-  return toLocalDateStr(d);
-}
-
-function fmt(n) {
-  if (n >= 100000000) return (n/100000000).toFixed(1)+'억';
-  if (n >= 10000)     return (n/10000).toFixed(0)+'만';
-  return n.toLocaleString();
-}
-
-function getRecentWeeks(n=4) {
-  const weeks = [];
-  const today = new Date();
-  for (let i = n-1; i >= 0; i--) {
-    const d = new Date(today); d.setDate(d.getDate() - i*7);
-    weeks.push(getMondayOf(d.toISOString().slice(0,10)));
-  }
-  return weeks;
-}
-
-function tlClass(s) { return s==='green'?'green':s==='yellow'?'yellow':s==='new'?'new':'red'; }
-function tlLabel(s) { return s==='green'?'🟢 Green':s==='yellow'?'🟡 Yellow':s==='new'?'⚪ 미입력':'🔴 Red'; }
-
-/* ─── 데이터 로드 ─── */
-async function loadData() {
-  // Supabase members 테이블 우선, 없으면 MEMBERS_DEFAULT fallback
-  try {
-    const { data: dbMembers } = await getSb().from('members').select('*').eq('is_active', true).order('name');
-    if (dbMembers && dbMembers.length > 0) {
-      members = dbMembers.map(m => ({
-        ...m,
-        id:       m.legacy_id ?? m.id,   // traffic 테이블의 member_id(INT)와 조인
-        photoUrl: m.photo_url || '',
-        category: m.category || '기타',
-        company:  m.company  || '',
-      }));
-    } else {
-      members = typeof MEMBERS_DEFAULT !== 'undefined' ? [...MEMBERS_DEFAULT] : [];
-    }
-  } catch {
-    members = typeof MEMBERS_DEFAULT !== 'undefined' ? [...MEMBERS_DEFAULT] : [];
-  }
-
-  try {
-    const [{ data: wr, error: e1 }, { data: rf, error: e2 }] = await Promise.all([
-      getSb().from('traffic_weekly_records').select('*').order('week_start', { ascending: false }),
-      getSb().from('traffic_referral_flows').select('*').order('referral_date', { ascending: false }),
-    ]);
-    if (e1 || e2) showSchemaWarning();
-    weeklyRecords = wr || [];
-    referralFlows = rf || [];
-  } catch (e) {
-    console.error(e);
-    showSchemaWarning();
-  }
-  calcMemberStats();
-}
-
-function showSchemaWarning() {
-  const el = document.createElement('div');
-  el.style.cssText = 'position:fixed;bottom:16px;left:50%;transform:translateX(-50%);background:#1A1A2E;color:white;padding:12px 20px;border-radius:12px;font-size:.85rem;z-index:999;text-align:center';
-  el.innerHTML = '⚠️ Supabase 테이블 미생성 — SQL Editor에서 supabase-schema.sql 실행 필요';
-  document.body.appendChild(el);
-  setTimeout(() => el.remove(), 8000);
-}
-
-/* ─── 통계 계산 ─── */
-function calcMemberStats() {
-  const recentWeeks = getRecentWeeks(4);
-  const cutoff = new Date(); cutoff.setDate(cutoff.getDate()-28);
-
-  memberStats = members.map(m => {
-    const recs = weeklyRecords.filter(r => r.member_id === m.id && recentWeeks.includes(r.week_start));
-    const attendance = recs.filter(r => r.attended).length;
-    const ono        = recs.reduce((s,r) => s+(r.one_on_one||0), 0);
-    const education  = recs.filter(r => r.education).length;
-    const visitors   = recs.reduce((s,r) => s+(r.visitors_invited||0), 0);
-    const referrals  = referralFlows.filter(f => f.from_member_id===m.id && new Date(f.referral_date)>=cutoff).length;
-
-    const weeks = recentWeeks.length;
-    const critAttend   = attendance >= Math.ceil(weeks * CRITERIA.attendanceRate);
-    const critOno      = ono        >= weeks * CRITERIA.onoPerWeek;
-    const critReferral = referrals  >= weeks * CRITERIA.referralPerWeek;
-    const failCount    = [critAttend, critOno, critReferral].filter(v => !v).length;
-
-    let status = 'green';
-    if (failCount === 1) status = 'yellow';
-    if (failCount >= 2)  status = 'red';
-    if (recs.length === 0) status = 'new';
-
-    const allWeeks = getRecentWeeks(8);
-    const trend = allWeeks.map(w => {
-      const wDate = new Date(w), wEnd = new Date(w); wEnd.setDate(wEnd.getDate()+7);
-      return referralFlows.filter(f => f.from_member_id===m.id && new Date(f.referral_date)>=wDate && new Date(f.referral_date)<wEnd).length;
-    });
-
-    const refAmountReceived = referralFlows.filter(f => f.to_member_id===m.id).reduce((s,f) => s+(f.amount||0), 0);
-    const refAmountGiven    = referralFlows.filter(f => f.from_member_id===m.id).reduce((s,f) => s+(f.amount||0), 0);
-
-    return { ...m, attendance, ono, education, visitors, referrals, refAmountReceived, refAmountGiven, status, critAttend, critOno, critReferral, trend, recs };
-  });
-}
-
-function calcPrevPeriodStats() {
-  const allWeeks8 = getRecentWeeks(8);
-  const prevWeeks = allWeeks8.slice(0,4);
-  const cutoffNew = new Date(); cutoffNew.setDate(cutoffNew.getDate()-28);
-  const cutoffOld = new Date(); cutoffOld.setDate(cutoffOld.getDate()-56);
-
-  return members.map(m => {
-    const recs = weeklyRecords.filter(r => r.member_id===m.id && prevWeeks.includes(r.week_start));
-    const attendance = recs.filter(r => r.attended).length;
-    const ono        = recs.reduce((s,r) => s+(r.one_on_one||0), 0);
-    const visitors   = recs.reduce((s,r) => s+(r.visitors_invited||0), 0);
-    const referrals  = referralFlows.filter(f => f.from_member_id===m.id && new Date(f.referral_date)>=cutoffOld && new Date(f.referral_date)<cutoffNew).length;
-    const refAmountReceived = referralFlows.filter(f => f.to_member_id===m.id && new Date(f.referral_date)>=cutoffOld && new Date(f.referral_date)<cutoffNew).reduce((s,f) => s+(f.amount||0), 0);
-    const weeks = prevWeeks.length;
-    const critAttend = attendance >= Math.ceil(weeks*CRITERIA.attendanceRate);
-    const critOno    = ono >= weeks*CRITERIA.onoPerWeek;
-    const critReferral = referrals >= weeks*CRITERIA.referralPerWeek;
-    const failCount  = [critAttend, critOno, critReferral].filter(v => !v).length;
-    const status     = recs.length===0 ? 'new' : failCount>=2 ? 'red' : failCount===1 ? 'yellow' : 'green';
-    return { ...m, attendance, ono, visitors, referrals, refAmountReceived, status };
-  });
-}
-
-function kpiDelta(curr, prev) {
-  if (prev===0 && curr===0) return '';
-  if (prev===0) return `<span class="kpi-delta up">신규</span>`;
-  const diff = curr-prev, pct = Math.round(Math.abs(diff)/prev*100);
-  if (diff===0) return `<span class="kpi-delta neutral">→ 동일</span>`;
-  const up = diff>0;
-  return `<span class="kpi-delta ${up?'up':'down'}">${up?'▲':'▼'} ${up?'+':''}${pct}% vs 이전 4주</span>`;
-}
-
-/* ─── 탭 ─── */
-function initTabs() {
-  document.querySelectorAll('.tab-btn').forEach(btn => {
+  bodyEl.querySelectorAll('.tl-tab').forEach(btn => {
     btn.addEventListener('click', () => {
-      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-      document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+      bodyEl.querySelectorAll('.tl-tab').forEach(b => b.classList.remove('active'));
+      bodyEl.querySelectorAll('.tl-panel').forEach(p => p.classList.remove('active'));
       btn.classList.add('active');
-      document.getElementById('panel-'+btn.dataset.tab).classList.add('active');
-      if (btn.dataset.tab==='network') renderNetwork();
-      renderAIDirector(btn.dataset.tab);
+      bodyEl.querySelector('#tl-' + btn.dataset.tab).classList.add('active');
+      if (btn.dataset.tab === 'detail')   renderDetail();
+      if (btn.dataset.tab === 'import')   renderImport();
+      if (btn.dataset.tab === 'config')   renderConfig();
     });
   });
-  document.querySelectorAll('.input-tab').forEach(btn => {
-    btn.addEventListener('click', () => {
-      document.querySelectorAll('.input-tab').forEach(b => b.classList.remove('active'));
-      document.querySelectorAll('.input-panel').forEach(p => p.classList.remove('active'));
-      btn.classList.add('active');
-      document.getElementById('ipanel-'+btn.dataset.itab).classList.add('active');
+
+  await loadAll();
+  renderOverview();
+}
+
+/* ── 데이터 로드 ── */
+async function loadAll() {
+  const [memRes, recRes, cfgRes] = await Promise.all([
+    getSb().from('members').select('id,legacy_id,name,company').eq('is_active', true).order('name'),
+    getSb().from('palms_records').select('*').order('period_start', { ascending: false }),
+    getSb().from('palms_score_config').select('*').eq('id', 1).single(),
+  ]);
+  allMembers = (memRes.data || []).map(m => ({ ...m, uid: m.legacy_id ?? m.id }));
+  allRecords = recRes.data || [];
+  scoreConfig = cfgRes.data || defaultConfig();
+
+  // 현재 기간 = 가장 최근 레코드 기간, 없으면 이번 달
+  if (allRecords.length && !currentPeriod) {
+    currentPeriod = allRecords[0].period_start;
+  } else if (!currentPeriod) {
+    const now = new Date();
+    currentPeriod = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2,'0')}-01`;
+  }
+}
+
+function defaultConfig() {
+  return { attend_weight:30, attend_target:80, referral_weight:25, referral_target:2,
+           tyfcb_weight:20, tyfcb_target:50, ono_weight:15, ono_target:2,
+           ceu_weight:10, ceu_target:3, green_min:70, yellow_min:40 };
+}
+
+/* ── 점수 계산 ── */
+function calcScore(rec, cfg = scoreConfig) {
+  const total = (rec.attendance||0) + (rec.absence||0) + (rec.late_leave||0) + (rec.sick_leave||0);
+  const attendPct   = total > 0 ? (rec.attendance||0) / total * 100 : 0;
+  const referrals   = (rec.given_t1||0) + (rec.given_t2||0);
+  const tyfcbWan    = (rec.tyfcb||0) / 10000;
+
+  const s = (actual, target, weight) => Math.min(1, actual / Math.max(target, 1)) * weight;
+  const score = Math.round(
+    s(attendPct,     cfg.attend_target,   cfg.attend_weight)  +
+    s(referrals,     cfg.referral_target, cfg.referral_weight)+
+    s(tyfcbWan,      cfg.tyfcb_target,    cfg.tyfcb_weight)   +
+    s(rec.one_on_one||0, cfg.ono_target,  cfg.ono_weight)     +
+    s(rec.ceu||0,    cfg.ceu_target,      cfg.ceu_weight)
+  );
+  const light = score >= cfg.green_min ? 'green' : score >= cfg.yellow_min ? 'yellow' : 'red';
+  return { score, light };
+}
+
+/* ── 기간 목록 (최근 6개월) ── */
+function get6Periods() {
+  const periods = [...new Set(allRecords.map(r => r.period_start))].sort().reverse().slice(0, 6);
+  return periods;
+}
+
+function periodLabel(start) {
+  const d = new Date(start); return `${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,'0')}`;
+}
+
+function prevPeriod(start) {
+  const d = new Date(start); d.setMonth(d.getMonth() - 1);
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-01`;
+}
+function nextPeriod(start) {
+  const d = new Date(start); d.setMonth(d.getMonth() + 1);
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-01`;
+}
+
+/* ════════════════════════════════════════
+   탭 1: 전체 현황
+════════════════════════════════════════ */
+function renderOverview() {
+  const el = document.getElementById('tl-overview');
+  const periods = get6Periods();
+  const hasPrev = allRecords.some(r => r.period_start < currentPeriod);
+  const hasNext = allRecords.some(r => r.period_start > currentPeriod);
+
+  const curRecs = allRecords.filter(r => r.period_start === currentPeriod);
+
+  // 점수 계산
+  const scored = curRecs.map(r => ({ ...r, ...calcScore(r) }));
+  const green  = scored.filter(r => r.light === 'green').length;
+  const yellow = scored.filter(r => r.light === 'yellow').length;
+  const red    = scored.filter(r => r.light === 'red').length;
+
+  // AI 디렉터 인사이트
+  const aiTips = genAIOverview(scored, periods);
+
+  el.innerHTML = `
+    <!-- AI 디렉터 -->
+    ${aiTips.length ? `
+    <div class="card" style="margin-bottom:16px">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+        <span style="font-size:20px">🤖</span>
+        <span style="font-weight:700;font-size:14px">AI 챕터 디렉터</span>
+        <span style="font-size:11px;color:#9ca3af">· ${periodLabel(currentPeriod)} 분석</span>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        ${aiTips.map(t=>`<div class="ai-tip ${t.type}"><span>${t.icon}</span><span>${t.text}</span></div>`).join('')}
+      </div>
+    </div>` : ''}
+
+    <!-- 기간 네비 + 요약 -->
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:16px">
+      <div class="period-nav" style="margin:0">
+        <button id="ov-prev" ${!hasPrev?'disabled':''}>&#8249;</button>
+        <span class="period-label">${periodLabel(currentPeriod)}</span>
+        <button id="ov-next" ${!hasNext?'disabled':''}>&#8250;</button>
+      </div>
+      <div style="display:flex;gap:10px">
+        <span class="score-badge green">🟢 ${green}명</span>
+        <span class="score-badge yellow">🟡 ${yellow}명</span>
+        <span class="score-badge red">🔴 ${red}명</span>
+        ${curRecs.length===0?'<span style="font-size:12px;color:#9ca3af">데이터 없음 — 파일을 가져오세요</span>':''}
+      </div>
+    </div>
+
+    <!-- 멤버 그리드 -->
+    <div class="member-score-grid" id="ov-grid"></div>
+  `;
+
+  el.querySelector('#ov-prev')?.addEventListener('click', () => {
+    currentPeriod = prevPeriod(currentPeriod); renderOverview();
+  });
+  el.querySelector('#ov-next')?.addEventListener('click', () => {
+    currentPeriod = nextPeriod(currentPeriod); renderOverview();
+  });
+
+  renderMemberGrid(scored, periods);
+}
+
+function renderMemberGrid(scored, periods) {
+  const grid = document.getElementById('ov-grid');
+  if (!grid) return;
+
+  const lightEmoji = { green:'🟢', yellow:'🟡', red:'🔴', new:'⚪' };
+
+  // 멤버 목록: 현재 기간 데이터 있는 멤버 + allMembers 병합
+  const names = new Set(scored.map(r => r.member_name));
+  const rows  = scored.length ? scored : allMembers.map(m => ({ member_name: m.name, light:'new', score:0 }));
+
+  grid.innerHTML = rows.sort((a,b) => {
+    const order = { red:0, yellow:1, green:2, new:3 };
+    return (order[a.light]??3) - (order[b.light]??3) || (b.score||0) - (a.score||0);
+  }).map(r => {
+    const sparkBars = periods.map(p => {
+      const rec = allRecords.find(x => x.period_start===p && x.member_name===r.member_name);
+      if (!rec) return `<div class="ms-spark-bar" style="height:4px;background:#e5e7eb"></div>`;
+      const { score, light } = calcScore(rec);
+      const h = Math.max(4, Math.round(score / 100 * 24));
+      const col = { green:'#16a34a', yellow:'#ca8a04', red:'#CC0000' }[light] || '#9ca3af';
+      return `<div class="ms-spark-bar" style="height:${h}px;background:${col}" title="${periodLabel(p)}: ${score}점"></div>`;
     });
-  });
-}
 
-/* ─── ① 대시보드 ─── */
-function renderDashboard() {
-  const green  = memberStats.filter(m => m.status==='green').length;
-  const yellow = memberStats.filter(m => m.status==='yellow').length;
-  const red    = memberStats.filter(m => m.status==='red').length;
-  const total  = memberStats.length;
-  const totalReferrals = memberStats.reduce((s,m) => s+m.referrals, 0);
-  const totalRefAmount = memberStats.reduce((s,m) => s+m.refAmountReceived, 0);
-  const totalVisitors  = memberStats.reduce((s,m) => s+m.visitors, 0);
-  const avgOno         = total ? memberStats.reduce((s,m) => s+m.ono, 0)/total : 0;
-  const healthScore    = total ? Math.round((green*100+yellow*50)/total) : 0;
-
-  const prev = calcPrevPeriodStats();
-  const prevGreen     = prev.filter(m => m.status==='green').length;
-  const prevYellow    = prev.filter(m => m.status==='yellow').length;
-  const prevRed       = prev.filter(m => m.status==='red').length;
-  const prevReferrals = prev.reduce((s,m) => s+m.referrals, 0);
-  const prevRefAmount = prev.reduce((s,m) => s+m.refAmountReceived, 0);
-  const prevVisitors  = prev.reduce((s,m) => s+m.visitors, 0);
-  const prevAvgOno    = total ? prev.reduce((s,m) => s+m.ono, 0)/total : 0;
-  const prevHealth    = total ? Math.round((prevGreen*100+prevYellow*50)/total) : 0;
-
-  document.getElementById('kpiGrid').innerHTML = [
-    { label:'챕터 건강 점수', value:healthScore,          unit:'점', curr:healthScore,    prev:prevHealth    },
-    { label:'총 리퍼럴 (4주)', value:totalReferrals,      unit:'건', curr:totalReferrals, prev:prevReferrals },
-    { label:'감사장 금액',      value:fmt(totalRefAmount), unit:'원', curr:totalRefAmount, prev:prevRefAmount },
-    { label:'평균 1:1 (4주)',  value:avgOno.toFixed(1),   unit:'회', curr:avgOno,         prev:prevAvgOno    },
-    { label:'비지터 초대 (4주)',value:totalVisitors,       unit:'명', curr:totalVisitors,  prev:prevVisitors  },
-  ].map(k => `
-    <div class="kpi-card">
-      <div class="kpi-label">${k.label}</div>
-      <div class="kpi-value">${k.value}<small style="font-size:.7em;font-weight:500"> ${k.unit}</small></div>
-      ${kpiDelta(k.curr, k.prev)}
-    </div>`).join('');
-
-  function cmpBadge(curr, p) {
-    const diff = curr-p;
-    if (diff===0) return `<span class="tl-prev">이전 ${p}명</span>`;
-    const up = diff>0;
-    return `<span class="tl-prev ${up?'tl-prev-up':'tl-prev-dn'}">${up?'▲':'▼'}${Math.abs(diff)} <em>이전 ${p}명</em></span>`;
-  }
-  document.getElementById('trafficDist').innerHTML = `
-    <div class="tl-badge green"><div class="tl-count">${green}</div><div class="tl-label">🟢 Green</div>${cmpBadge(green,prevGreen)}</div>
-    <div class="tl-badge yellow"><div class="tl-count">${yellow}</div><div class="tl-label">🟡 Yellow</div>${cmpBadge(yellow,prevYellow)}</div>
-    <div class="tl-badge red"><div class="tl-count">${red}</div><div class="tl-label">🔴 Red</div>${cmpBadge(red,prevRed)}</div>`;
-
-  renderChart('chartDist','doughnut',['Green','Yellow','Red'],[green,yellow,red],['#27AE60','#F39C12','#CC0000']);
-
-  // 월별 리퍼럴
-  const monthLabels=[], monthAmounts=[], monthCounts=[];
-  for (let i=5; i>=0; i--) {
-    const d = new Date(); d.setDate(1); d.setMonth(d.getMonth()-i);
-    const y=d.getFullYear(), mo=d.getMonth();
-    const mStart=new Date(y,mo,1), mEnd=new Date(y,mo+1,0);
-    const closed = referralFlows.filter(f => new Date(f.referral_date)>=mStart && new Date(f.referral_date)<=mEnd);
-    monthLabels.push(`${y}.${String(mo+1).padStart(2,'0')}`);
-    monthAmounts.push(closed.reduce((s,f) => s+(f.amount||0), 0));
-    monthCounts.push(closed.length);
-  }
-  renderChartDual('chartTrend', monthLabels, monthAmounts, monthCounts);
-
-  // 주간 리퍼럴 추이
-  const weeks8 = getRecentWeeks(8);
-  const weeklyRefCounts = weeks8.map(w => {
-    const wStart=new Date(w+'T00:00:00'), wEnd=new Date(w+'T00:00:00'); wEnd.setDate(wEnd.getDate()+7);
-    return referralFlows.filter(f => { const d=new Date(f.referral_date); return d>=wStart && d<wEnd; }).length;
-  });
-  renderChart('chartWeeklyTrend','bar', weeks8.map(w=>w.slice(5)), weeklyRefCounts, ['#CC0000']);
-
-  const sorted    = [...memberStats].sort((a,b) => b.referrals-a.referrals);
-  renderRankList('rankReferralTop',    sorted.slice(0,5),         m => `${m.referrals}건`);
-  renderRankList('rankReferralBottom', sorted.slice(-5).reverse(),m => `${m.referrals}건`);
-  const sortedOno = [...memberStats].sort((a,b) => b.ono-a.ono);
-  renderRankList('rankOnoTop',    sortedOno.slice(0,5),         m => `${m.ono}회`);
-  renderRankList('rankOnoBottom', sortedOno.slice(-5).reverse(),m => `${m.ono}회`);
-
-  // 포털 topbar의 챕터 배지 업데이트 (있을 때만)
-  const badge = document.getElementById('chapterBadgeTop');
-  if (badge) badge.textContent = `BNI STAR · ${total}명`;
-}
-
-function renderRankList(id, list, valFn) {
-  const numClass = ['gold','silver','bronze','',''];
-  document.getElementById(id).innerHTML = list.map((m,i) => `
-    <div class="rank-item">
-      <span class="rank-num ${numClass[i]}">${i+1}</span>
-      <div style="flex:1">
-        <div class="rank-name">${m.name}</div>
-        <div class="rank-cat">${m.category}</div>
+    return `
+    <div class="ms-card ${r.light||'new'}" data-name="${r.member_name}" onclick="showMemberDetail('${r.member_name}')">
+      <div class="ms-name">${r.member_name}</div>
+      <div class="ms-score-row">
+        <span class="ms-score">${r.score??'—'}</span>
+        <span class="ms-light">${lightEmoji[r.light]||'⚪'}</span>
       </div>
-      <span class="rank-val">${valFn(m)}</span>
-      <span class="rank-tl ${tlClass(m.status)}">${tlLabel(m.status)}</span>
-    </div>`).join('') || '<div class="empty-msg">데이터 없음</div>';
+      <div class="ms-sparkline">${sparkBars.join('')}</div>
+      <div class="ms-sub">${r.given_t1!=null?`준T1:${r.given_t1} 1:1:${r.one_on_one??0} CEU:${r.ceu??0}`:''}</div>
+    </div>`;
+  }).join('');
 }
 
-function renderChart(id, type, labels, data, colors) {
-  if (typeof Chart==='undefined') return;
-  const ctx = document.getElementById(id); if (!ctx) return;
-  if (chartInstances[id]) chartInstances[id].destroy();
-  chartInstances[id] = new Chart(ctx, {
-    type,
-    data: { labels, datasets: [{
-      data,
-      backgroundColor: type==='doughnut' ? colors : colors[0]+'33',
-      borderColor: colors[0], borderWidth: type==='line'?2:1,
-      tension: 0.4, fill: type==='line', pointRadius: 3,
-      borderRadius: type==='bar' ? 4 : 0,
-    }]},
-    options: {
-      responsive:true, maintainAspectRatio:true,
-      plugins: { legend: { display: type==='doughnut', position:'bottom', labels:{ font:{size:11}, padding:10, boxWidth:12 } } },
-      scales: type!=='doughnut' ? { y:{beginAtZero:true,ticks:{font:{size:10}}}, x:{ticks:{font:{size:10}}} } : {},
-    }
+function showMemberDetail(name) {
+  document.querySelectorAll('.tl-tab').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.tl-panel').forEach(p => p.classList.remove('active'));
+  document.querySelector('.tl-tab[data-tab="detail"]').classList.add('active');
+  document.getElementById('tl-detail').classList.add('active');
+  renderDetail(name);
+}
+
+/* ════════════════════════════════════════
+   탭 2: 개인 상세
+════════════════════════════════════════ */
+function renderDetail(preselect = null) {
+  const el = document.getElementById('tl-detail');
+  const names = [...new Set(allRecords.map(r => r.member_name))].sort((a,b) => a.localeCompare(b,'ko'));
+
+  el.innerHTML = `
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;flex-wrap:wrap">
+      <label style="font-size:13px;font-weight:600">멤버 선택</label>
+      <select id="det-member" class="form-input" style="width:200px">
+        <option value="">-- 선택 --</option>
+        ${names.map(n=>`<option value="${n}" ${n===preselect?'selected':''}>${n}</option>`).join('')}
+      </select>
+    </div>
+    <div id="det-body"></div>
+  `;
+
+  el.querySelector('#det-member').addEventListener('change', e => renderMemberDetail(e.target.value));
+  if (preselect) renderMemberDetail(preselect);
+}
+
+function renderMemberDetail(name) {
+  const el = document.getElementById('det-body');
+  if (!name) { el.innerHTML = ''; return; }
+
+  const recs  = allRecords.filter(r => r.member_name === name)
+    .sort((a,b) => a.period_start.localeCompare(b.period_start));
+  const periods = get6Periods().reverse(); // 오래된 순
+
+  // 프로젝션: 데이터 없는 기간은 평균으로 추정
+  const avgRec = avgRecord(recs);
+  const rows = periods.map(p => {
+    const rec = recs.find(r => r.period_start === p);
+    const projected = !rec && avgRec;
+    const data = rec || (projected ? { ...avgRec, period_start:p, period_end:p, id:null } : null);
+    const scored = data ? calcScore(data) : null;
+    return { period:p, data, scored, projected: projected && !rec };
   });
-}
 
-function renderChartDual(id, labels, amounts, counts) {
-  if (typeof Chart==='undefined') return;
-  const ctx = document.getElementById(id); if (!ctx) return;
-  if (chartInstances[id]) chartInstances[id].destroy();
-  chartInstances[id] = new Chart(ctx, {
-    data: { labels, datasets: [
-      { type:'bar',  label:'감사장 금액(원)', data:amounts, backgroundColor:'#CC000033', borderColor:'#CC0000', borderWidth:1.5, yAxisID:'yAmt', order:2 },
-      { type:'line', label:'성사 건수',   data:counts, borderColor:'#1A1A2E', backgroundColor:'transparent', borderWidth:2, pointRadius:4, pointBackgroundColor:'#1A1A2E', tension:0.35, yAxisID:'yCnt', order:1 },
-    ]},
-    options: {
-      responsive:true, maintainAspectRatio:true,
-      plugins: {
-        legend:{ display:true, position:'bottom', labels:{font:{size:11},padding:10,boxWidth:12} },
-        tooltip: { callbacks: { label: ctx => ctx.dataset.yAxisID==='yAmt' ? ` ${fmt(ctx.raw)}원` : ` ${ctx.raw}건` } },
+  // 차트 데이터
+  const chartLabels  = rows.filter(r=>r.scored).map(r=>periodLabel(r.period));
+  const chartScores  = rows.filter(r=>r.scored).map(r=>r.scored.score);
+  const chartColors  = rows.filter(r=>r.scored).map(r=>
+    r.projected ? '#d1d5db' : { green:'#16a34a', yellow:'#ca8a04', red:'#CC0000' }[r.scored.light]);
+
+  // AI 개인 피드백
+  const aiFeedback = genAIMember(name, recs, avgRec);
+
+  el.innerHTML = `
+    <!-- AI 개인 피드백 -->
+    ${aiFeedback.length ? `
+    <div class="card" style="margin-bottom:16px">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+        <span style="font-size:18px">🤖</span>
+        <span style="font-weight:700;font-size:13px">${name}님 개인 피드백</span>
+      </div>
+      ${aiFeedback.map(t=>`<div class="ai-tip ${t.type}" style="margin-bottom:6px"><span>${t.icon}</span><span>${t.text}</span></div>`).join('')}
+    </div>` : ''}
+
+    <!-- 점수 추이 차트 -->
+    <div class="card" style="margin-bottom:16px">
+      <div class="card-title">점수 추이 (6개월)</div>
+      <canvas id="det-chart" height="100"></canvas>
+      <div style="font-size:11px;color:#9ca3af;margin-top:6px">* 회색 = 데이터 없는 기간 추정값</div>
+    </div>
+
+    <!-- 월별 상세 테이블 -->
+    <div class="card">
+      <div class="card-title" style="margin-bottom:12px">월별 상세</div>
+      <div style="overflow-x:auto">
+        <table class="detail-table" id="det-table">
+          <thead>
+            <tr>
+              <th style="text-align:left">기간</th>
+              <th>출석</th><th>결석</th><th>지각</th><th>준T1</th><th>준T2</th>
+              <th>받은T1</th><th>1:1</th><th>감사장</th><th>CEU</th>
+              <th>점수</th><th>등급</th><th></th>
+            </tr>
+          </thead>
+          <tbody id="det-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  `;
+
+  // 차트 렌더
+  const ctx = document.getElementById('det-chart');
+  if (ctx && chartLabels.length) {
+    if (chartInstance) chartInstance.destroy();
+    chartInstance = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: chartLabels,
+        datasets: [{
+          data: chartScores, backgroundColor: chartColors, borderRadius: 4,
+          borderColor: chartColors, borderWidth: 1.5,
+        }]
       },
-      scales: {
-        yAmt:{ type:'linear', position:'left', beginAtZero:true, ticks:{font:{size:10}, callback:v=>v>=10000?(v/10000)+'만':v}, grid:{drawOnChartArea:true} },
-        yCnt:{ type:'linear', position:'right', beginAtZero:true, ticks:{font:{size:10},stepSize:1}, grid:{drawOnChartArea:false} },
-        x:{ ticks:{font:{size:10}} },
-      },
-    },
-  });
+      options: {
+        responsive: true, plugins: { legend: { display: false } },
+        scales: { y: { beginAtZero: true, max: 100, ticks: { callback: v => v+'점' } } }
+      }
+    });
+  }
+
+  renderDetailTable(rows, name);
 }
 
-/* ─── ② 개인 성과 ─── */
-function calcMonthStats(year, month) {
-  const monthStart = new Date(year, month, 1);
-  const monthEnd   = new Date(year, month+1, 0);
-  const wednesdays = [];
-  for (let d=new Date(monthStart); d<=monthEnd; d.setDate(d.getDate()+1))
-    if (d.getDay()===3) wednesdays.push(toLocalDateStr(new Date(d)));
-  const totalMeetings = wednesdays.length;
+function renderDetailTable(rows, name) {
+  const tbody = document.getElementById('det-tbody');
+  if (!tbody) return;
+  const lightEmoji = { green:'🟢', yellow:'🟡', red:'🔴', new:'⚪' };
+  const fmt = v => v >= 10000 ? Math.round(v/10000)+'만' : v?.toLocaleString() || '0';
 
-  return members.map(m => {
-    const recs = weeklyRecords.filter(r => r.member_id===m.id && wednesdays.includes(r.week_start));
-    const attendance = recs.filter(r => r.attended).length;
-    const ono        = recs.reduce((s,r) => s+(r.one_on_one||0), 0);
-    const education  = recs.filter(r => r.education).length;
-    const visitors   = recs.reduce((s,r) => s+(r.visitors_invited||0), 0);
-    const referrals  = referralFlows.filter(f => f.from_member_id===m.id && new Date(f.referral_date)>=monthStart && new Date(f.referral_date)<=monthEnd).length;
+  tbody.innerHTML = rows.map((row, i) => {
+    const d = row.data;
+    const s = row.scored;
+    if (!d) return `<tr><td class="period-col">${periodLabel(row.period)}</td>
+      <td colspan="11" style="color:#9ca3af">데이터 없음</td><td></td></tr>`;
+    const cls = row.projected ? 'projected-row' : '';
+    return `
+    <tr class="${cls}" id="row-${i}">
+      <td class="period-col">
+        ${periodLabel(row.period)}
+        ${row.projected ? '<span style="font-size:10px;color:#9ca3af">(추정)</span>' : ''}
+      </td>
+      <td class="editable" data-field="attendance">${d.attendance??0}</td>
+      <td class="editable" data-field="absence">${d.absence??0}</td>
+      <td class="editable" data-field="late_leave">${d.late_leave??0}</td>
+      <td class="editable" data-field="given_t1">${d.given_t1??0}</td>
+      <td class="editable" data-field="given_t2">${d.given_t2??0}</td>
+      <td class="editable" data-field="received_t1">${d.received_t1??0}</td>
+      <td class="editable" data-field="one_on_one">${d.one_on_one??0}</td>
+      <td class="editable" data-field="tyfcb">${fmt(d.tyfcb)}</td>
+      <td class="editable" data-field="ceu">${d.ceu??0}</td>
+      <td style="font-weight:700">${s?.score??'—'}</td>
+      <td>${lightEmoji[s?.light]||'—'}</td>
+      <td>
+        ${!row.projected && d.id ? `<button class="btn btn-outline btn-sm" onclick="editRow(${i})">수정</button>` : ''}
+      </td>
+    </tr>`;
+  }).join('');
 
-    const critAttend   = attendance >= Math.ceil(totalMeetings*CRITERIA.attendanceRate);
-    const critOno      = ono >= totalMeetings*CRITERIA.onoPerWeek;
-    const critReferral = referrals >= totalMeetings*CRITERIA.referralPerWeek;
-    const failCount    = [critAttend, critOno, critReferral].filter(v => !v).length;
-    let status = 'green';
-    if (failCount===1) status='yellow';
-    if (failCount>=2)  status='red';
-    if (recs.length===0) status='new';
-
-    const refAmountReceived = referralFlows.filter(f=>f.to_member_id===m.id && new Date(f.referral_date)>=monthStart && new Date(f.referral_date)<=monthEnd).reduce((s,f)=>s+(f.amount||0),0);
-    const refAmountGiven    = referralFlows.filter(f=>f.from_member_id===m.id && new Date(f.referral_date)>=monthStart && new Date(f.referral_date)<=monthEnd).reduce((s,f)=>s+(f.amount||0),0);
-
-    return { ...m, attendance, totalMeetings, ono, education, visitors, referrals, refAmountReceived, refAmountGiven, status, critAttend, critOno, critReferral, recs };
-  });
+  window._detailRows = rows;
+  window._detailName = name;
 }
 
-function renderMembers(filter='', lightFilter='') {
-  const stats = calcMonthStats(selectedMonth.year, selectedMonth.month);
-  let list = stats;
-  if (filter) list = list.filter(m => m.name.includes(filter) || (m.category||'').includes(filter));
-  if (lightFilter) list = list.filter(m => m.status===lightFilter);
+function editRow(i) {
+  const rows = window._detailRows;
+  const row  = rows[i];
+  if (!row?.data) return;
+  const d = row.data;
+  const tr = document.getElementById(`row-${i}`);
+  if (!tr) return;
 
-  document.getElementById('memberGrid').innerHTML = list.map(m => `
-    <div class="member-card ${tlClass(m.status)}">
-      <div class="mc-header">
-        <img class="mc-avatar" src="${m.photoUrl||''}" onerror="this.src=''" alt="${m.name}">
-        <div class="mc-info">
-          <div class="mc-name">${m.name}</div>
-          <div class="mc-cat">${m.company} · ${m.category}</div>
-        </div>
-        <span class="mc-tl ${tlClass(m.status)}">${tlLabel(m.status)}</span>
+  const fields = ['attendance','absence','late_leave','given_t1','given_t2','received_t1','one_on_one','tyfcb','ceu'];
+  tr.querySelectorAll('.editable').forEach((td, idx) => {
+    const f = fields[idx];
+    const v = f === 'tyfcb' ? (d[f]||0) : (d[f]||0);
+    td.innerHTML = `<input class="edit-input" type="number" data-field="${f}" value="${v}" min="0">`;
+  });
+
+  // 수정 → 저장 버튼으로 교체
+  const actionTd = tr.querySelector('td:last-child');
+  actionTd.innerHTML = `
+    <button class="btn btn-primary btn-sm" id="save-row-${i}">저장</button>
+    <button class="btn btn-outline btn-sm" onclick="renderDetailTable(window._detailRows, window._detailName)" style="margin-top:4px">취소</button>
+  `;
+
+  // 실시간 점수 미리보기
+  const updatePreview = () => {
+    const draft = { ...d };
+    tr.querySelectorAll('.edit-input').forEach(inp => {
+      draft[inp.dataset.field] = Number(inp.value) || 0;
+    });
+    const { score, light } = calcScore(draft);
+    const lightEmoji = { green:'🟢', yellow:'🟡', red:'🔴' };
+    tr.querySelectorAll('td')[10].textContent = score;
+    tr.querySelectorAll('td')[11].textContent = lightEmoji[light] || '—';
+  };
+  tr.querySelectorAll('.edit-input').forEach(inp => inp.addEventListener('input', updatePreview));
+
+  document.getElementById(`save-row-${i}`)?.addEventListener('click', async () => {
+    const patch = {};
+    tr.querySelectorAll('.edit-input').forEach(inp => {
+      patch[inp.dataset.field] = Number(inp.value) || 0;
+    });
+    const { score, light } = calcScore({ ...d, ...patch });
+    patch.score = score; patch.light = light; patch.is_manual = true;
+
+    const { error } = await getSb().from('palms_records').update(patch).eq('id', d.id);
+    if (error) { alert('저장 실패: ' + error.message); return; }
+    showToast('저장되었습니다');
+    await loadAll();
+    renderDetailTable(
+      get6Periods().reverse().map(p => {
+        const rec = allRecords.find(r => r.period_start===p && r.member_name===window._detailName);
+        const projected = !rec && avgRecord(allRecords.filter(r=>r.member_name===window._detailName));
+        const data = rec || (projected ? { ...projected, period_start:p } : null);
+        return { period:p, data, scored: data ? calcScore(data) : null, projected: !rec && !!projected };
+      }),
+      window._detailName
+    );
+  });
+}
+window.editRow = editRow;
+
+/* 평균 레코드 계산 (프로젝션용) */
+function avgRecord(recs) {
+  if (!recs.length) return null;
+  const fields = ['attendance','absence','late_leave','given_t1','given_t2','received_t1','one_on_one','tyfcb','ceu'];
+  const avg = {};
+  fields.forEach(f => { avg[f] = Math.round(recs.reduce((s,r)=>s+(r[f]||0),0)/recs.length); });
+  return avg;
+}
+
+/* ════════════════════════════════════════
+   탭 3: 파일 가져오기
+════════════════════════════════════════ */
+function renderImport() {
+  const el = document.getElementById('tl-import');
+  el.innerHTML = `
+    <div class="card" style="margin-bottom:16px">
+      <div class="card-title">PALMS 리포트 가져오기</div>
+      <p style="font-size:13px;color:#6b7280;margin-bottom:16px">
+        BNI PALMS에서 내보낸 .xls / .xlsx 파일을 업로드하면 자동으로 파싱합니다.
+      </p>
+      <div class="upload-zone" id="uploadZone">
+        <div style="font-size:36px;margin-bottom:8px">📊</div>
+        <div style="font-weight:700;font-size:14px;margin-bottom:4px">파일을 여기에 드래그하거나 클릭해서 선택</div>
+        <div style="font-size:12px;color:#9ca3af">.xls, .xlsx 지원</div>
+        <input type="file" id="palmsFile" accept=".xls,.xlsx" style="display:none">
       </div>
-      <div class="mc-stats">
-        <div class="mc-stat"><div class="mc-stat-val">${m.attendance}/${m.totalMeetings}</div><div class="mc-stat-label">출석</div></div>
-        <div class="mc-stat"><div class="mc-stat-val">${m.ono}</div><div class="mc-stat-label">1:1</div></div>
-        <div class="mc-stat"><div class="mc-stat-val">${m.referrals}</div><div class="mc-stat-label">리퍼럴</div></div>
-        <div class="mc-stat"><div class="mc-stat-val">${m.visitors}</div><div class="mc-stat-label">비지터</div></div>
-        <div class="mc-stat"><div class="mc-stat-val">${fmt(m.refAmountReceived)}</div><div class="mc-stat-label">감사장 금액</div></div>
-      </div>
-      <div class="mc-criteria">
-        <span class="mc-crit ${m.critAttend?'ok':'fail'}">${m.critAttend?'✓':'✗'} 출석</span>
-        <span class="mc-crit ${m.critOno?'ok':'fail'}">${m.critOno?'✓':'✗'} 1:1</span>
-        <span class="mc-crit ${m.critReferral?'ok':'fail'}">${m.critReferral?'✓':'✗'} 리퍼럴</span>
-        <span style="flex:1"></span>
-        <span style="font-size:.72rem;color:#999">준 금액 ${fmt(m.refAmountGiven)}원</span>
-      </div>
-    </div>`).join('') || '<div class="empty-msg">해당하는 멤버 없음</div>';
+    </div>
+    <div id="importPreview"></div>
+  `;
+
+  const zone = el.querySelector('#uploadZone');
+  const inp  = el.querySelector('#palmsFile');
+  zone.addEventListener('click', () => inp.click());
+  inp.addEventListener('change', () => handleFile(inp.files[0]));
+  zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('drag'); });
+  zone.addEventListener('dragleave', () => zone.classList.remove('drag'));
+  zone.addEventListener('drop', e => { e.preventDefault(); zone.classList.remove('drag'); handleFile(e.dataTransfer.files[0]); });
 }
 
-/* ─── ③ 네트워크 ─── */
-function loadScript(src) {
-  return new Promise((resolve, reject) => {
-    if (document.querySelector(`script[src="${src}"]`)) { resolve(); return; }
-    const s = document.createElement('script'); s.src=src; s.onload=resolve; s.onerror=reject;
-    document.head.appendChild(s);
-  });
-}
+async function handleFile(file) {
+  if (!file) return;
+  const prev = document.getElementById('importPreview');
+  prev.innerHTML = `<div style="text-align:center;padding:24px;color:#9ca3af">파일 분석 중...</div>`;
 
-async function renderNetwork() {
-  const container = document.getElementById('networkContainer');
-  if (!container) return;
-  if (!window.vis) {
-    container.innerHTML = '<div style="text-align:center;padding:40px;color:#999">로딩 중...</div>';
-    try { await loadScript('https://cdn.jsdelivr.net/npm/vis-network@9.1.9/dist/vis-network.min.js'); }
-    catch { container.innerHTML = '<div style="text-align:center;padding:40px;color:#CC0000">vis-network 로드 실패</div>'; return; }
-  }
-  container.innerHTML = '';
-  const degreeMap = {};
-  members.forEach(m => { degreeMap[m.id]={out:0,in:0}; });
-  referralFlows.forEach(f => {
-    if (degreeMap[f.from_member_id]) degreeMap[f.from_member_id].out++;
-    if (degreeMap[f.to_member_id])   degreeMap[f.to_member_id].in++;
-  });
-  const nodes = members.map(m => {
-    const deg  = (degreeMap[m.id]?.out||0)+(degreeMap[m.id]?.in||0);
-    const stat = memberStats.find(s => s.id===m.id);
-    const color = stat?.status==='green'?'#27AE60':stat?.status==='yellow'?'#F39C12':'#CC0000';
-    return { id:m.id, label:m.name, title:`${m.name}\n${m.category}\n준: ${degreeMap[m.id]?.out||0} / 받은: ${degreeMap[m.id]?.in||0}`, size:Math.max(12,12+deg*4), color:{background:color,border:color,highlight:{background:color,border:'#333'}}, font:{size:13,color:'#1E1E1E'} };
-  });
-  const maxAmt = Math.max(...referralFlows.map(f=>f.amount||0),1);
-  const edges = referralFlows.map(f => ({ from:f.from_member_id, to:f.to_member_id, width:Math.max(1,Math.round((f.amount||0)/maxAmt*5)), label:f.amount?fmt(f.amount):'', title:f.description||'', arrows:'to', color:{color:'#CC0000'}, font:{size:10,color:'#666'} }));
-  new window.vis.Network(container, { nodes:new window.vis.DataSet(nodes), edges:new window.vis.DataSet(edges) }, { physics:{stabilization:{iterations:200},barnesHut:{gravitationalConstant:-4000}}, interaction:{hover:true,tooltipDelay:100}, edges:{smooth:{type:'continuous'}} });
-}
-
-/* ─── ④ 직군 현황 ─── */
-function renderPortfolio() {
-  const cats = {};
-  memberStats.forEach(m => {
-    if (!cats[m.category]) cats[m.category]={count:0,referrals:0,green:0,yellow:0,red:0};
-    cats[m.category].count++;
-    cats[m.category].referrals += m.referrals;
-    cats[m.category][m.status]++;
-  });
-  const labels = Object.keys(cats);
-  renderChart('chartCategory',   'bar', labels, labels.map(c=>cats[c].count),    ['#1A1A2E']);
-  renderChart('chartCatReferral','bar', labels, labels.map(c=>cats[c].referrals), ['#CC0000']);
-  document.getElementById('catTable').innerHTML = `
-    <thead><tr><th>직군</th><th>인원</th><th>리퍼럴</th><th><span class="tl-dot green"></span>Green</th><th><span class="tl-dot yellow"></span>Yellow</th><th><span class="tl-dot red"></span>Red</th></tr></thead>
-    <tbody>${labels.map(c=>`<tr><td>${c}</td><td>${cats[c].count}</td><td>${cats[c].referrals}건</td><td style="color:var(--green);font-weight:700">${cats[c].green}</td><td style="color:var(--yellow);font-weight:700">${cats[c].yellow}</td><td style="color:var(--red);font-weight:700">${cats[c].red}</td></tr>`).join('')}</tbody>`;
-}
-
-/* ─── ⑤ 경고 ─── */
-function renderAlerts() {
-  const alerts = [];
-  memberStats.forEach(m => {
-    const reasons = [];
-    const recentWeeks  = getRecentWeeks(4);
-    const lastTwo      = recentWeeks.slice(-2);
-    const twoWeekRecs  = m.recs.filter(r => lastTwo.includes(r.week_start));
-    const consecutiveAbsent = twoWeekRecs.length===2 && twoWeekRecs.every(r => !r.attended);
-    if (consecutiveAbsent) reasons.push('2주 연속 결석');
-    if (m.ono===0) reasons.push('1:1 0회 (4주)');
-    if (m.referrals===0) reasons.push('리퍼럴 0건 (4주)');
-    if (reasons.length>0) alerts.push({ member:m, reasons, severity: m.status==='red'||consecutiveAbsent?'critical':'warning' });
-  });
-  alerts.sort(a => a.severity==='critical'?-1:1);
-  document.getElementById('alertList').innerHTML = alerts.length
-    ? alerts.map(a => `
-      <div class="alert-item ${a.severity}">
-        <div class="alert-header">
-          <span class="alert-name">${a.member.name}</span>
-          <span style="font-size:.78rem;color:var(--sub)">${a.member.category}</span>
-          <span class="alert-badge ${a.severity}">${a.severity==='critical'?'즉시 액션':'모니터링'}</span>
-          <span class="rank-tl ${tlClass(a.member.status)}" style="margin-left:auto">${tlLabel(a.member.status)}</span>
-        </div>
-        <ul class="alert-reasons">${a.reasons.map(r=>`<li>${r}</li>`).join('')}</ul>
-      </div>`).join('')
-    : '<div class="alert-empty">경고 대상 멤버 없음 🎉</div>';
-}
-
-/* ─── ⑥ 입력 폼 ─── */
-function initForms(canEdit) {
-  if (!canEdit) return;
-  const opts = members.map(m => `<option value="${m.id}">${m.name} (${m.category})</option>`).join('');
-  ['fMember','fFrom','fTo'].forEach(id => {
-    const el = document.getElementById(id); if (el) el.innerHTML = '<option value="">선택하세요</option>'+opts;
-  });
-  document.getElementById('fWeekStart').value = getMondayOf();
-  document.getElementById('fRefDate').value   = toLocalDateStr(new Date());
-
-  document.getElementById('submitWeekly').addEventListener('click', async () => {
-    const memberId  = parseInt(document.getElementById('fMember').value);
-    const weekStart = document.getElementById('fWeekStart').value;
-    if (!memberId||!weekStart) return showMsg('weeklyMsg','멤버와 날짜를 선택하세요','err');
-    const payload = { member_id:memberId, week_start:getMondayOf(weekStart), attended:attendVal, one_on_one:parseInt(document.getElementById('fOno').value)||0, education:eduVal, visitors_invited:parseInt(document.getElementById('fVisitors').value)||0, notes:document.getElementById('fNotes').value };
-    let error;
-    if (editingWeeklyId) {
-      ({ error } = await getSb().from('traffic_weekly_records').update(payload).eq('id',editingWeeklyId));
-    } else {
-      ({ error } = await getSb().from('traffic_weekly_records').upsert(payload, { onConflict:'member_id,week_start' }));
-    }
-    if (error) return showMsg('weeklyMsg','저장 실패: '+error.message,'err');
-    showMsg('weeklyMsg', editingWeeklyId?'수정 완료!':'저장 완료!','ok');
-    cancelWeeklyEdit();
-    await loadData(); renderAll(); loadRecentWeekly();
-  });
-
-  document.getElementById('cancelWeekly').addEventListener('click', cancelWeeklyEdit);
-
-  document.getElementById('submitReferral').addEventListener('click', async () => {
-    const from = parseInt(document.getElementById('fFrom').value);
-    const to   = parseInt(document.getElementById('fTo').value);
-    const date = document.getElementById('fRefDate').value;
-    if (!from||!to||!date) return showMsg('referralMsg','모든 필드를 입력하세요','err');
-    if (from===to) return showMsg('referralMsg','같은 멤버는 선택 불가','err');
-    const payload = { from_member_id:from, to_member_id:to, referral_date:date, referral_type:refTypeVal, introduced_name:refTypeVal==='T2'?document.getElementById('fIntroduced').value:null, amount:parseInt(document.getElementById('fRefAmount').value)||0, description:document.getElementById('fRefDesc').value };
-    let error;
-    if (editingReferralId) {
-      ({ error } = await getSb().from('traffic_referral_flows').update(payload).eq('id',editingReferralId));
-    } else {
-      ({ error } = await getSb().from('traffic_referral_flows').insert(payload));
-    }
-    if (error) return showMsg('referralMsg','저장 실패: '+error.message,'err');
-    showMsg('referralMsg', editingReferralId?'수정 완료!':'저장 완료!','ok');
-    cancelReferralEdit();
-    await loadData(); renderAll(); loadRecentReferral();
-  });
-
-  document.getElementById('cancelReferral').addEventListener('click', cancelReferralEdit);
-  loadRecentWeekly();
-  loadRecentReferral();
-}
-
-function cancelWeeklyEdit() {
-  editingWeeklyId = null;
-  document.getElementById('submitWeekly').textContent = '저장';
-  document.getElementById('cancelWeekly').style.display = 'none';
-  document.getElementById('weeklyFormTitle').textContent = '주간 활동 기록';
-  document.getElementById('fMember').value = '';
-  document.getElementById('fWeekStart').value = getMondayOf();
-  document.getElementById('fOno').value = '0';
-  document.getElementById('fVisitors').value = '0';
-  document.getElementById('fNotes').value = '';
-  setAttend(true); setEdu(true);
-}
-
-function cancelReferralEdit() {
-  editingReferralId = null;
-  document.getElementById('submitReferral').textContent = '저장';
-  document.getElementById('cancelReferral').style.display = 'none';
-  document.getElementById('referralFormTitle').textContent = '리퍼럴 기록 (누가 → 누구에게)';
-  document.getElementById('fFrom').value = '';
-  document.getElementById('fTo').value = '';
-  document.getElementById('fRefDate').value = toLocalDateStr(new Date());
-  document.getElementById('fRefAmount').value = '0';
-  document.getElementById('fRefDesc').value = '';
-  document.getElementById('fIntroduced').value = '';
-  setRefType('T1');
-}
-
-function editWeekly(id) {
-  const r = recentWeeklyData.find(x => x.id===id); if (!r) return;
-  editingWeeklyId = id;
-  document.getElementById('weeklyFormTitle').textContent = '주간 활동 수정';
-  document.getElementById('submitWeekly').textContent = '수정 저장';
-  document.getElementById('cancelWeekly').style.display = 'block';
-  document.getElementById('fMember').value    = r.member_id;
-  document.getElementById('fWeekStart').value = r.week_start;
-  document.getElementById('fOno').value       = r.one_on_one||0;
-  document.getElementById('fVisitors').value  = r.visitors_invited||0;
-  document.getElementById('fNotes').value     = r.notes||'';
-  setAttend(!!r.attended); setEdu(!!r.education);
-  document.querySelector('[data-itab="weekly"]').click();
-  document.getElementById('ipanel-weekly').querySelector('.card').scrollIntoView({ behavior:'smooth' });
-}
-
-async function deleteWeekly(id) {
-  if (!confirm('이 활동 기록을 삭제하시겠습니까?')) return;
-  const { error } = await getSb().from('traffic_weekly_records').delete().eq('id',id);
-  if (error) return alert('삭제 실패: '+error.message);
-  if (editingWeeklyId===id) cancelWeeklyEdit();
-  await loadData(); renderAll(); loadRecentWeekly();
-}
-
-function editReferral(id) {
-  const r = recentReferralData.find(x => x.id===id); if (!r) return;
-  editingReferralId = id;
-  document.getElementById('referralFormTitle').textContent = '리퍼럴 수정';
-  document.getElementById('submitReferral').textContent = '수정 저장';
-  document.getElementById('cancelReferral').style.display = 'block';
-  document.getElementById('fFrom').value       = r.from_member_id;
-  document.getElementById('fTo').value         = r.to_member_id;
-  document.getElementById('fRefDate').value    = r.referral_date;
-  document.getElementById('fRefAmount').value  = r.amount||0;
-  document.getElementById('fRefDesc').value    = r.description||'';
-  document.getElementById('fIntroduced').value = r.introduced_name||'';
-  setRefType(r.referral_type||'T1');
-  document.querySelector('[data-itab="referral"]').click();
-  document.getElementById('ipanel-referral').querySelector('.card').scrollIntoView({ behavior:'smooth' });
-}
-
-async function deleteReferral(id) {
-  if (!confirm('이 리퍼럴 기록을 삭제하시겠습니까?')) return;
-  const { error } = await getSb().from('traffic_referral_flows').delete().eq('id',id);
-  if (error) return alert('삭제 실패: '+error.message);
-  if (editingReferralId===id) cancelReferralEdit();
-  await loadData(); renderAll(); loadRecentReferral();
-}
-
-function setAttend(val) {
-  attendVal = val;
-  document.getElementById('toggleYes').classList.toggle('active', val);
-  document.getElementById('toggleNo').classList.toggle('active', !val);
-}
-function setEdu(val) {
-  eduVal = val;
-  document.getElementById('toggleEduY').classList.toggle('active', val);
-  document.getElementById('toggleEduN').classList.toggle('active', !val);
-}
-function setRefType(val) {
-  refTypeVal = val;
-  document.getElementById('toggleT1').classList.toggle('active', val==='T1');
-  document.getElementById('toggleT2').classList.toggle('active', val==='T2');
-  document.getElementById('rowIntroduced').style.display = val==='T2'?'block':'none';
-  if (val==='T1') document.getElementById('fIntroduced').value='';
-}
-function showMsg(id, msg, type) {
-  const el = document.getElementById(id);
-  el.textContent=msg; el.className='form-msg '+type;
-  setTimeout(() => { el.textContent=''; el.className='form-msg'; }, 3000);
-}
-
-async function loadRecentWeekly() {
-  const { data } = await getSb().from('traffic_weekly_records').select('*').order('created_at',{ascending:false}).limit(20);
-  recentWeeklyData = data||[];
-  document.getElementById('recentWeekly').innerHTML = recentWeeklyData.length
-    ? recentWeeklyData.map(r => {
-        const m = members.find(m => m.id===r.member_id);
-        return `<div class="recent-item">
-          <div class="recent-item-left">
-            <div class="recent-item-week">${m?.name||'?'} · ${r.week_start}</div>
-            <div class="recent-item-detail">${r.attended?'✅ 출석':'❌ 결석'} · 1:1 ${r.one_on_one}회 · 교육 ${r.education?'✅':'❌'} · 비지터 ${r.visitors_invited||0}명</div>
-          </div>
-          <div class="recent-item-actions">
-            <button class="ri-edit-btn" onclick="editWeekly('${r.id}')">수정</button>
-            <button class="ri-del-btn"  onclick="deleteWeekly('${r.id}')">삭제</button>
-          </div></div>`;
-      }).join('')
-    : '<div class="empty-msg">입력 내역 없음</div>';
-}
-
-async function loadRecentReferral() {
-  const { data } = await getSb().from('traffic_referral_flows').select('*').order('created_at',{ascending:false}).limit(20);
-  recentReferralData = data||[];
-  document.getElementById('recentReferral').innerHTML = recentReferralData.length
-    ? recentReferralData.map(r => {
-        const from = members.find(m => m.id===r.from_member_id);
-        const to   = members.find(m => m.id===r.to_member_id);
-        const typeLabel = r.referral_type==='T2' ? `T2${r.introduced_name?` (${r.introduced_name})`:''}` : 'T1';
-        return `<div class="recent-item">
-          <div class="recent-item-left">
-            <div class="recent-item-week">${from?.name||'?'} → ${to?.name||'?'} <span style="font-size:.72rem;color:#999;font-weight:700">${typeLabel}</span></div>
-            <div class="recent-item-detail">${r.referral_date} · ${fmt(r.amount)}원</div>
-          </div>
-          <div class="recent-item-actions">
-            <button class="ri-edit-btn" onclick="editReferral('${r.id}')">수정</button>
-            <button class="ri-del-btn"  onclick="deleteReferral('${r.id}')">삭제</button>
-          </div></div>`;
-      }).join('')
-    : '<div class="empty-msg">리퍼럴 내역 없음</div>';
-}
-
-/* ─── 필터 ─── */
-const MIN_MONTH = { year: 2026, month: 4 }; // 챕터 런칭: 2026-05
-
-function updateMonthLabel() {
-  document.getElementById('monthLabel').textContent = `${selectedMonth.year}년 ${selectedMonth.month+1}월`;
-  const now = new Date();
-  document.getElementById('monthNext').disabled = selectedMonth.year>=now.getFullYear() && selectedMonth.month>=now.getMonth();
-  document.getElementById('monthPrev').disabled = selectedMonth.year<=MIN_MONTH.year && selectedMonth.month<=MIN_MONTH.month;
-}
-
-function initFilters() {
-  updateMonthLabel();
-  document.getElementById('monthPrev').addEventListener('click', () => {
-    if (selectedMonth.year<=MIN_MONTH.year && selectedMonth.month<=MIN_MONTH.month) return;
-    if (selectedMonth.month===0) { selectedMonth.month=11; selectedMonth.year--; }
-    else selectedMonth.month--;
-    updateMonthLabel();
-    renderMembers(document.getElementById('memberSearch').value, document.getElementById('lightFilter').value);
-    renderAIDirector('members');
-  });
-  document.getElementById('monthNext').addEventListener('click', () => {
-    const now=new Date();
-    if (selectedMonth.year>=now.getFullYear()&&selectedMonth.month>=now.getMonth()) return;
-    if (selectedMonth.month===11) { selectedMonth.month=0; selectedMonth.year++; }
-    else selectedMonth.month++;
-    updateMonthLabel();
-    renderMembers(document.getElementById('memberSearch').value, document.getElementById('lightFilter').value);
-    renderAIDirector('members');
-  });
-  let debounce;
-  document.getElementById('memberSearch').addEventListener('input', e => {
-    clearTimeout(debounce);
-    debounce = setTimeout(() => renderMembers(e.target.value, document.getElementById('lightFilter').value), 200);
-  });
-  document.getElementById('lightFilter').addEventListener('change', e => {
-    renderMembers(document.getElementById('memberSearch').value, e.target.value);
-  });
-}
-
-/* ─── AI 챕터 디렉터 ─── */
-function generateDirectorInsight(tab) {
-  const total = memberStats.length; if (total===0) return null;
-  const green=memberStats.filter(m=>m.status==='green').length, yellow=memberStats.filter(m=>m.status==='yellow').length, red=memberStats.filter(m=>m.status==='red').length, newM=memberStats.filter(m=>m.status==='new').length;
-  const healthScore=Math.round((green*100+yellow*50)/total);
-
-  if (tab==='dashboard') {
-    const points=[], greenPct=Math.round(green/total*100), redPct=Math.round(red/total*100);
-    if (healthScore>=80) points.push({type:'positive',text:`챕터 건강 점수 ${healthScore}점 — Green 멤버 ${green}명(${greenPct}%)이 활발히 활동 중입니다.`});
-    else if (healthScore>=60) points.push({type:'warning',text:`챕터 건강 점수 ${healthScore}점 — Yellow/Red 멤버 개별 면담을 통한 개선이 필요합니다.`});
-    else points.push({type:'critical',text:`챕터 건강 점수 ${healthScore}점으로 위험 수준입니다. 멤버십위원회의 즉각적인 개입이 필요합니다.`});
-    if (red>0) points.push({type:'action',text:`🔴 Red 멤버 ${red}명(${redPct}%) — 멤버십위원회 1:1 면담을 즉시 진행하세요.`});
-    if (newM>0) points.push({type:'warning',text:`⚪ 데이터 미입력 멤버 ${newM}명 — 정확한 현황 파악에 협조해 주세요.`});
-    const totalRefs=memberStats.reduce((s,m)=>s+m.referrals,0), avgRefs=(totalRefs/total).toFixed(1);
-    if (parseFloat(avgRefs)<1) points.push({type:'action',text:`4주 평균 리퍼럴 멤버당 ${avgRefs}건 — 목표(1건) 미달입니다.`});
-    const topRef=[...memberStats].sort((a,b)=>b.referrals-a.referrals)[0];
-    if (topRef&&topRef.referrals>0) points.push({type:'positive',text:`리퍼럴 MVP: ${topRef.name}님(${topRef.referrals}건) — 미팅에서 공개 인정을 통해 챕터 문화를 강화하세요.`});
-    return points;
-  }
-  if (tab==='members') {
-    const stats=calcMonthStats(selectedMonth.year,selectedMonth.month), mGreen=stats.filter(m=>m.status==='green').length, mYellow=stats.filter(m=>m.status==='yellow').length, mRed=stats.filter(m=>m.status==='red').length;
-    const failAttend=stats.filter(m=>!m.critAttend&&m.recs.length>0).length, failOno=stats.filter(m=>!m.critOno&&m.recs.length>0).length, failRef=stats.filter(m=>!m.critReferral&&m.recs.length>0).length;
-    const points=[], ym=`${selectedMonth.year}년 ${selectedMonth.month+1}월`;
-    points.push({type:mRed>total*0.2?'critical':mYellow>total*0.3?'warning':'positive',text:`${ym} 성과 현황 — 🟢 Green ${mGreen}명 · 🟡 Yellow ${mYellow}명 · 🔴 Red ${mRed}명`});
-    const failItems=[{label:'출석 미달',count:failAttend},{label:'1:1 부족',count:failOno},{label:'리퍼럴 미달',count:failRef}].sort((a,b)=>b.count-a.count);
-    if (failItems[0].count>0) points.push({type:'action',text:`가장 많은 멤버 부진 항목: "${failItems[0].label}" (${failItems[0].count}명)`});
-    const redNames=stats.filter(m=>m.status==='red').map(m=>m.name);
-    if (redNames.length>0&&redNames.length<=6) points.push({type:'critical',text:`즉시 면담 권장: ${redNames.join(', ')}`});
-    else if (redNames.length>6) points.push({type:'critical',text:`🔴 Red 멤버 ${redNames.length}명 — 멤버십위원회 집중 관리 대상입니다.`});
-    return points;
-  }
-  if (tab==='network') {
-    const points=[];
-    const isolated=members.filter(m=>referralFlows.filter(f=>f.from_member_id===m.id||f.to_member_id===m.id).length===0);
-    const hubs=members.map(m=>({...m,cnt:referralFlows.filter(f=>f.from_member_id===m.id||f.to_member_id===m.id).length})).sort((a,b)=>b.cnt-a.cnt).slice(0,3).filter(m=>m.cnt>0);
-    const t2Count=referralFlows.filter(f=>f.referral_type==='T2').length, totalAmt=referralFlows.reduce((s,f)=>s+(f.amount||0),0);
-    if (hubs.length>0) points.push({type:'positive',text:`네트워크 허브: ${hubs.map(m=>m.name).join(', ')}`});
-    if (isolated.length>0) points.push({type:'critical',text:`리퍼럴 고립 멤버 ${isolated.length}명: ${isolated.slice(0,5).map(m=>m.name).join(', ')}${isolated.length>5?' 외':''}`});
-    if (t2Count>0) points.push({type:'positive',text:`T2(소개) 리퍼럴 ${t2Count}건 — 간접 네트워크가 활성화되고 있습니다.`});
-    if (totalAmt>0) points.push({type:'positive',text:`총 리퍼럴 ${referralFlows.length}건 · 누적 금액 ${fmt(totalAmt)}원`});
-    return points;
-  }
-  if (tab==='portfolio') {
-    const points=[], cats={};
-    memberStats.forEach(m=>{if(!cats[m.category])cats[m.category]={count:0,referrals:0,red:0};cats[m.category].count++;cats[m.category].referrals+=m.referrals;if(m.status==='red')cats[m.category].red++;});
-    const catList=Object.entries(cats).sort((a,b)=>b[1].referrals-a[1].referrals);
-    if (catList[0]) points.push({type:'positive',text:`리퍼럴 가장 활발한 직군: ${catList[0][0]} (${catList[0][1].referrals}건)`});
-    const zeroCats=catList.filter(([,v])=>v.referrals===0).map(([c])=>c);
-    if (zeroCats.length>0) points.push({type:'warning',text:`리퍼럴 0건 직군: ${zeroCats.slice(0,4).join(', ')}`});
-    const weakCats=catList.filter(([,v])=>v.count>0&&v.red/v.count>=0.5).map(([c])=>c);
-    if (weakCats.length>0) points.push({type:'critical',text:`Red 비율 50% 이상 직군: ${weakCats.join(', ')}`});
-    return points;
-  }
-  if (tab==='alerts') {
-    const points=[], critical=memberStats.filter(m=>m.status==='red').length;
-    if (critical===0) points.push({type:'positive',text:'즉시 개입이 필요한 멤버가 없습니다. 챕터가 안정적으로 운영되고 있습니다.'});
-    else { points.push({type:'critical',text:`🔴 Red 멤버 ${critical}명 — 멤버십위원회 1:1 면담을 통해 원인을 파악하고 맞춤 지원 계획을 수립하세요.`}); if(critical>=3) points.push({type:'action',text:`다음 멤버십위원회 미팅 아젠다에 Red 멤버 ${critical}명 관리 계획을 포함하세요.`}); }
-    const noData=memberStats.filter(m=>m.recs.length===0);
-    if (noData.length>0) points.push({type:'warning',text:`활동 데이터 미입력 멤버 ${noData.length}명: ${noData.slice(0,4).map(m=>m.name).join(', ')}${noData.length>4?' 외':''}`});
-    return points;
-  }
-  if (tab==='input') {
-    const points=[], lastWeek=getRecentWeeks(1)[0];
-    const missingLast=memberStats.filter(m=>!weeklyRecords.some(r=>r.member_id===m.id&&r.week_start===lastWeek)).length;
-    if (missingLast>0) points.push({type:'warning',text:`지난 주(${lastWeek}) 활동 미입력 멤버 ${missingLast}명`});
-    else points.push({type:'positive',text:'지난 주 모든 멤버의 데이터가 입력되어 있습니다.'});
-    return points;
-  }
-  return null;
-}
-
-function renderAIDirector(tab) {
-  const el = document.getElementById('ai-director-'+tab); if (!el) return;
-  if (memberStats.length===0) { el.style.display='none'; return; }
-  const points = generateDirectorInsight(tab);
-  if (!points||points.length===0) { el.style.display='none'; return; }
-  el.style.display='block';
-  el.innerHTML = `<div class="aidc-header"><span class="aidc-icon">🤖</span><span class="aidc-title">AI 챕터 디렉터</span><span class="aidc-sub">의장단 · 멤버십위원회 참고용</span></div><ul class="aidc-list">${points.map(p=>`<li class="aidc-item ${p.type}">${p.text}</li>`).join('')}</ul>`;
-}
-
-/* ─── 전체 렌더 ─── */
-function renderAll() {
-  renderMembers();
-  renderPortfolio();
-  renderAlerts();
-  ['members','network','portfolio','alerts','input'].forEach(renderAIDirector);
-}
-
-/* ─── 초기화 (포털에서 호출) ─── */
-async function initTrafficLight(canEdit) {
   try {
-    await loadData();
-    renderAll();
-    initForms(canEdit);
-    initFilters();
-    initTabs();
-  } catch (e) {
-    console.error('traffic init error:', e);
-    const kg = document.getElementById('kpiGrid');
-    if (kg) kg.innerHTML = `<div style="grid-column:1/-1;padding:20px;color:#CC0000;font-weight:700">❌ 오류: ${e.message}</div>`;
+    const ab = await file.arrayBuffer();
+    const wb = XLSX.read(ab, { type: 'array', codepage: 949 });
+    const ws = wb.Sheets[wb.SheetNames[0]];
+    const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
+
+    const parsed = parsePALMS(rows);
+    showImportPreview(parsed);
+  } catch(e) {
+    prev.innerHTML = `<div class="alert-banner crit">파일 파싱 실패: ${e.message}</div>`;
   }
 }
+
+function parsePALMS(rows) {
+  // 기간 찾기
+  let periodStart = '', periodEnd = '';
+  for (let i = 0; i < Math.min(15, rows.length); i++) {
+    const r = rows[i];
+    for (let j = 0; j < r.length; j++) {
+      const cell = String(r[j]||'').trim();
+      if (cell.includes('시작') || cell === '시작:') {
+        const val = String(r[j+1]||'').trim();
+        if (val) periodStart = parseDateKR(val);
+      }
+      if (cell.includes('종료') || cell === '종료:') {
+        const val = String(r[j+1]||'').trim();
+        if (val) periodEnd = parseDateKR(val);
+      }
+    }
+  }
+
+  // 헤더 행 찾기 (첫 컬럼이 "이름" 포함)
+  let headerIdx = rows.findIndex(r => String(r[0]||'').includes('이름'));
+  if (headerIdx < 0) headerIdx = rows.findIndex(r => String(r[0]||'') === '한관우' || String(r[0]||'').length >= 2);
+
+  // 컬럼 매핑: 헤더 기준
+  const hRow = rows[headerIdx] || [];
+  const colMap = {};
+  const colNames = ['이름','출석','결석','지각','병가','대리인','준T1','준T2','받은T1','받은T2','비지터','1-2-1','감사장','CEU'];
+  hRow.forEach((h, i) => {
+    const s = String(h||'').replace(/\s/g,'').replace(/[()（）]/g,'');
+    if (s.includes('한글') || s==='이름') colMap.name   = i;
+    if (s==='출석') colMap.attendance = i;
+    if (s==='결석') colMap.absence    = i;
+    if (s.includes('지각')) colMap.late_leave = i;
+    if (s.includes('병가')) colMap.sick_leave = i;
+    if (s.includes('대리')) colMap.substitute = i;
+    if (s==='준T1')  colMap.given_t1   = i;
+    if (s==='준T2')  colMap.given_t2   = i;
+    if (s==='받은T1') colMap.received_t1 = i;
+    if (s==='받은T2') colMap.received_t2 = i;
+    if (s.includes('비지터')) colMap.visitors = i;
+    if (s.includes('1-2-1') || s.includes('121')) colMap.one_on_one = i;
+    if (s.includes('감사장')) colMap.tyfcb = i;
+    if (s==='CEU')   colMap.ceu = i;
+  });
+
+  // 폴백 컬럼 인덱스 (PDF 기준 순서)
+  if (colMap.name    == null) colMap.name       = 0;
+  if (colMap.attendance == null) colMap.attendance = 2;
+  if (colMap.absence == null) colMap.absence    = 3;
+  if (colMap.late_leave == null) colMap.late_leave = 4;
+  if (colMap.sick_leave == null) colMap.sick_leave = 5;
+  if (colMap.substitute == null) colMap.substitute = 6;
+  if (colMap.given_t1 == null) colMap.given_t1  = 7;
+  if (colMap.received_t1 == null) colMap.received_t1 = 8;
+  if (colMap.received_t2 == null) colMap.received_t2 = 9;
+  if (colMap.visitors == null) colMap.visitors  = 10;
+  if (colMap.one_on_one == null) colMap.one_on_one = 11;
+  if (colMap.tyfcb == null) colMap.tyfcb       = 12;
+  if (colMap.ceu == null) colMap.ceu           = 13;
+
+  // 데이터 파싱
+  const skipNames = new Set(['합','비지터','bni','합계','total','']);
+  const data = [];
+  for (let i = headerIdx + 1; i < rows.length; i++) {
+    const row = rows[i];
+    const name = String(row[colMap.name]||'').trim();
+    if (!name || skipNames.has(name.toLowerCase())) continue;
+    if (/^[A-Za-z]/.test(name)) continue; // 영문 이름 행 스킵
+    if (name === '합') break;
+
+    const n = f => Math.max(0, Number(row[colMap[f]])||0);
+    const rec = {
+      member_name: name,
+      attendance:  n('attendance'),
+      absence:     n('absence'),
+      late_leave:  n('late_leave'),
+      sick_leave:  n('sick_leave'),
+      substitute:  n('substitute'),
+      given_t1:    n('given_t1'),
+      given_t2:    n('given_t2'),
+      received_t1: n('received_t1'),
+      received_t2: n('received_t2'),
+      visitors:    n('visitors'),
+      one_on_one:  n('one_on_one'),
+      tyfcb:       n('tyfcb'),
+      ceu:         n('ceu'),
+    };
+    data.push(rec);
+  }
+
+  return { periodStart, periodEnd, data };
+}
+
+function parseDateKR(str) {
+  // "26. 5. 1." → "2026-05-01"
+  const m = str.match(/(\d+)[\.\s]+(\d+)[\.\s]+(\d+)/);
+  if (!m) return '';
+  let y = Number(m[1]);
+  if (y < 100) y += 2000;
+  return `${y}-${String(m[2]).padStart(2,'0')}-${String(m[3]).padStart(2,'0')}`;
+}
+
+function showImportPreview(parsed) {
+  const prev = document.getElementById('importPreview');
+  const { periodStart, periodEnd, data } = parsed;
+
+  // 멤버 매칭
+  const matched = data.map(d => {
+    const mem = allMembers.find(m =>
+      m.name === d.member_name ||
+      m.name.replace(/\s/g,'') === d.member_name.replace(/\s/g,'')
+    );
+    return { ...d, matched: !!mem, member_id: mem?.id || null };
+  });
+
+  const matchedCnt   = matched.filter(m=>m.matched).length;
+  const unmatchedCnt = matched.filter(m=>!m.matched).length;
+
+  prev.innerHTML = `
+    <div class="card" style="margin-bottom:12px">
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:16px">
+        <div>
+          <div class="card-title" style="margin:0">파싱 결과</div>
+          <div style="font-size:12px;color:#9ca3af;margin-top:4px">
+            기간: ${periodStart||'?'} ~ ${periodEnd||'?'} &nbsp;·&nbsp;
+            <span class="match-ok">매칭 ${matchedCnt}명</span>
+            ${unmatchedCnt ? ` &nbsp;·&nbsp; <span class="match-no">미매칭 ${unmatchedCnt}명</span>` : ''}
+          </div>
+        </div>
+        <button class="btn btn-primary" id="confirmImport" ${!periodStart?'disabled':''}>
+          ${periodStart ? `${periodLabel(periodStart)} 데이터 가져오기` : '기간 인식 실패'}
+        </button>
+      </div>
+      <div class="preview-table-wrap">
+        <table class="preview-table">
+          <thead><tr>
+            <th>이름</th><th>매칭</th><th>출석</th><th>결석</th><th>준T1</th><th>준T2</th>
+            <th>받은T1</th><th>1:1</th><th>감사장</th><th>CEU</th><th>점수(예상)</th>
+          </tr></thead>
+          <tbody>
+            ${matched.map(m => {
+              const { score, light } = calcScore(m);
+              const li = { green:'🟢', yellow:'🟡', red:'🔴' }[light];
+              return `<tr class="${m.matched?'':'unmatched'}">
+                <td><strong>${m.member_name}</strong></td>
+                <td class="${m.matched?'match-ok':'match-no'}">${m.matched?'✓ 매칭':'✗ 없음'}</td>
+                <td>${m.attendance}</td><td>${m.absence}</td>
+                <td>${m.given_t1}</td><td>${m.given_t2}</td><td>${m.received_t1}</td>
+                <td>${m.one_on_one}</td><td>${m.tyfcb?.toLocaleString()}</td><td>${m.ceu}</td>
+                <td>${li} ${score}점</td>
+              </tr>`;
+            }).join('')}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  `;
+
+  document.getElementById('confirmImport')?.addEventListener('click', async () => {
+    await importRecords(matched, periodStart, periodEnd);
+  });
+}
+
+async function importRecords(matched, periodStart, periodEnd) {
+  const btn = document.getElementById('confirmImport');
+  if (btn) { btn.disabled = true; btn.textContent = '가져오는 중...'; }
+
+  const rows = matched.map(m => {
+    const { score, light } = calcScore(m);
+    return {
+      member_id: m.member_id,
+      member_name: m.member_name,
+      period_start: periodStart,
+      period_end: periodEnd || periodStart,
+      attendance: m.attendance, absence: m.absence, late_leave: m.late_leave,
+      sick_leave: m.sick_leave, substitute: m.substitute,
+      given_t1: m.given_t1, given_t2: m.given_t2,
+      received_t1: m.received_t1, received_t2: m.received_t2,
+      visitors: m.visitors, one_on_one: m.one_on_one,
+      tyfcb: m.tyfcb, ceu: m.ceu,
+      score, light, is_manual: false,
+    };
+  });
+
+  const { error } = await getSb().from('palms_records').upsert(rows, { onConflict: 'member_name,period_start' });
+  if (error) { alert('가져오기 실패: ' + error.message); if (btn) { btn.disabled=false; btn.textContent='다시 시도'; } return; }
+
+  showToast(`${rows.length}명 데이터 가져오기 완료`);
+  currentPeriod = periodStart;
+  await loadAll();
+  renderOverview();
+
+  // 전체현황 탭으로 이동
+  document.querySelectorAll('.tl-tab').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.tl-panel').forEach(p => p.classList.remove('active'));
+  document.querySelector('.tl-tab[data-tab="overview"]').classList.add('active');
+  document.getElementById('tl-overview').classList.add('active');
+}
+
+/* ════════════════════════════════════════
+   탭 4: 점수 설정
+════════════════════════════════════════ */
+function renderConfig() {
+  const el = document.getElementById('tl-config');
+  const c  = scoreConfig;
+  el.innerHTML = `
+    <div class="card">
+      <div class="card-title">점수 기준 설정</div>
+      <p style="font-size:12px;color:#9ca3af;margin-bottom:16px">각 항목의 가중치 합계는 100이 되어야 합니다. 목표치 미달 시 비례 감점.</p>
+
+      <div class="config-row" style="font-size:11px;font-weight:700;color:#9ca3af;border-bottom:2px solid var(--border)">
+        <span>항목</span><span style="text-align:center">목표치</span><span style="text-align:center">가중치(%)</span>
+      </div>
+      ${[
+        { label:'출석률',      sub:'출석/(출석+결석+지각) %',    fTarget:'attend_target',   unit:'%',  fWeight:'attend_weight'   },
+        { label:'리퍼럴(준)',  sub:'준T1+T2 건수/월',            fTarget:'referral_target', unit:'건', fWeight:'referral_weight' },
+        { label:'감사장 금액', sub:'만원/월',                    fTarget:'tyfcb_target',    unit:'만', fWeight:'tyfcb_weight'    },
+        { label:'1:1 횟수',   sub:'회/월',                      fTarget:'ono_target',      unit:'회', fWeight:'ono_weight'      },
+        { label:'CEU',         sub:'점/월',                      fTarget:'ceu_target',      unit:'점', fWeight:'ceu_weight'      },
+      ].map(row => `
+        <div class="config-row">
+          <div><div class="config-label">${row.label}</div><div class="config-sub">${row.sub}</div></div>
+          <div style="text-align:center">
+            <input class="config-input" type="number" id="cfg-${row.fTarget}" value="${c[row.fTarget]}" min="0" style="width:80px">
+            <span style="font-size:11px;color:#9ca3af"> ${row.unit}</span>
+          </div>
+          <div style="text-align:center">
+            <input class="config-input" type="number" id="cfg-${row.fWeight}" value="${c[row.fWeight]}" min="0" max="100" style="width:60px">
+            <span style="font-size:11px;color:#9ca3af"> %</span>
+          </div>
+        </div>`).join('')}
+
+      <div class="config-row">
+        <div><div class="config-label">🟢 Green 기준</div><div class="config-sub">이상 점수</div></div>
+        <div style="text-align:center">
+          <input class="config-input" type="number" id="cfg-green_min" value="${c.green_min}" min="0" max="100" style="width:80px"> 점
+        </div>
+        <div></div>
+      </div>
+      <div class="config-row">
+        <div><div class="config-label">🟡 Yellow 기준</div><div class="config-sub">이상 점수</div></div>
+        <div style="text-align:center">
+          <input class="config-input" type="number" id="cfg-yellow_min" value="${c.yellow_min}" min="0" max="100" style="width:80px"> 점
+        </div>
+        <div></div>
+      </div>
+
+      <div style="margin-top:16px;display:flex;gap:10px">
+        <button class="btn btn-primary" id="saveConfig">설정 저장</button>
+        <div id="configMsg" style="font-size:12px;color:#16a34a;line-height:36px"></div>
+      </div>
+    </div>
+  `;
+
+  document.getElementById('saveConfig').addEventListener('click', async () => {
+    const patch = {};
+    ['attend_target','attend_weight','referral_target','referral_weight',
+     'tyfcb_target','tyfcb_weight','ono_target','ono_weight',
+     'ceu_target','ceu_weight','green_min','yellow_min'].forEach(k => {
+      const el2 = document.getElementById('cfg-'+k);
+      if (el2) patch[k] = Number(el2.value) || 0;
+    });
+    const total = patch.attend_weight + patch.referral_weight + patch.tyfcb_weight + patch.ono_weight + patch.ceu_weight;
+    if (total !== 100) { document.getElementById('configMsg').textContent = `⚠️ 가중치 합계 ${total}% (100이어야 함)`; document.getElementById('configMsg').style.color='#CC0000'; return; }
+
+    const { error } = await getSb().from('palms_score_config').upsert({ id:1, ...patch });
+    if (error) { alert('저장 실패: '+error.message); return; }
+    Object.assign(scoreConfig, patch);
+    document.getElementById('configMsg').textContent = '✓ 저장되었습니다';
+    document.getElementById('configMsg').style.color = '#16a34a';
+  });
+}
+
+/* ════════════════════════════════════════
+   AI 디렉터
+════════════════════════════════════════ */
+function genAIOverview(scored, periods) {
+  if (!scored.length) return [];
+  const total  = scored.length;
+  const green  = scored.filter(r=>r.light==='green').length;
+  const yellow = scored.filter(r=>r.light==='yellow').length;
+  const red    = scored.filter(r=>r.light==='red').length;
+  const health = Math.round((green*100+yellow*50)/total);
+  const tips   = [];
+
+  if (health >= 80) tips.push({ type:'positive', icon:'✅', text:`챕터 건강 점수 ${health}점 — Green 멤버 ${green}명(${Math.round(green/total*100)}%)이 기준을 충족하고 있습니다.` });
+  else if (health >= 60) tips.push({ type:'warning', icon:'⚠️', text:`챕터 건강 점수 ${health}점 — Yellow/Red 멤버 집중 면담이 필요합니다.` });
+  else tips.push({ type:'critical', icon:'🚨', text:`챕터 건강 점수 ${health}점으로 위험 수준입니다. 멤버십위원회의 즉각 개입이 필요합니다.` });
+
+  if (red > 0) {
+    const redNames = scored.filter(r=>r.light==='red').sort((a,b)=>a.score-b.score).slice(0,3).map(r=>r.member_name);
+    tips.push({ type:'action', icon:'👉', text:`🔴 Red 멤버 ${red}명 — 즉시 면담 권장: ${redNames.join(', ')}${red>3?' 외':''}.` });
+  }
+
+  const avgScore = Math.round(scored.reduce((s,r)=>s+r.score,0)/total);
+  const weakRef  = scored.filter(r=>(r.given_t1||0)+(r.given_t2||0)===0);
+  if (weakRef.length > total*0.3)
+    tips.push({ type:'warning', icon:'⚠️', text:`리퍼럴 0건 멤버 ${weakRef.length}명(${Math.round(weakRef.length/total*100)}%) — 리퍼럴 교육 및 1:1 코칭을 권장합니다.` });
+
+  const topMem = [...scored].sort((a,b)=>b.score-a.score)[0];
+  if (topMem) tips.push({ type:'positive', icon:'🏆', text:`이달 MVP: ${topMem.member_name}님 (${topMem.score}점) — 미팅에서 공개 표창으로 챕터 문화를 강화하세요.` });
+
+  return tips;
+}
+
+function genAIMember(name, recs, avg) {
+  if (!recs.length) return [{ type:'warning', icon:'⚠️', text:'아직 데이터가 없습니다. PALMS 파일을 가져오면 자동 분석됩니다.' }];
+  const latest = recs[recs.length - 1];
+  const { score, light } = calcScore(latest);
+  const tips = [];
+
+  const lightMsg = { green:`Green — 모든 기준을 충족하고 있습니다.`, yellow:`Yellow — 일부 항목 개선이 필요합니다.`, red:`Red — 여러 항목이 기준 미달입니다. 면담이 필요합니다.` };
+  tips.push({ type: light==='green'?'positive':light==='yellow'?'warning':'critical', icon: {green:'✅',yellow:'⚠️',red:'🚨'}[light], text: `현재 점수 ${score}점 · ${lightMsg[light]}` });
+
+  // 약점 분석
+  const cfg = scoreConfig;
+  const totalMtg = (latest.attendance||0)+(latest.absence||0)+(latest.late_leave||0);
+  const attendPct = totalMtg > 0 ? Math.round(latest.attendance/totalMtg*100) : 0;
+  if (attendPct < cfg.attend_target) tips.push({ type:'action', icon:'👉', text:`출석률 ${attendPct}% (목표 ${cfg.attend_target}%) — 미달입니다. 병가/대리인 제도를 적극 활용하세요.` });
+
+  const refs = (latest.given_t1||0)+(latest.given_t2||0);
+  if (refs < cfg.referral_target) tips.push({ type:'action', icon:'👉', text:`리퍼럴 ${refs}건 (목표 ${cfg.referral_target}건) — 1:1 미팅에서 구체적인 도움 요청을 늘려보세요.` });
+
+  const tyfcbWan = Math.round((latest.tyfcb||0)/10000);
+  if (tyfcbWan < cfg.tyfcb_target) tips.push({ type:'action', icon:'👉', text:`감사장 금액 ${tyfcbWan}만원 (목표 ${cfg.tyfcb_target}만원) — 받은 리퍼럴 성사 후 감사장 입력을 잊지 마세요.` });
+
+  if ((latest.one_on_one||0) < cfg.ono_target) tips.push({ type:'action', icon:'👉', text:`1:1 ${latest.one_on_one||0}회 (목표 ${cfg.ono_target}회) — 매주 1회 1:1 미팅을 목표로 하세요.` });
+
+  // 추세
+  if (recs.length >= 2) {
+    const prev = calcScore(recs[recs.length-2]).score;
+    const diff = score - prev;
+    if (diff > 5)  tips.push({ type:'positive', icon:'📈', text:`지난달 대비 ${diff}점 향상! 좋은 흐름을 유지하세요.` });
+    if (diff < -5) tips.push({ type:'warning',  icon:'📉', text:`지난달 대비 ${Math.abs(diff)}점 하락. 어떤 항목이 줄었는지 확인하세요.` });
+  }
+
+  return tips;
+}
+
+/* ── Helpers ── */
+function showToast(msg) {
+  const t = document.createElement('div');
+  t.style.cssText = 'position:fixed;bottom:24px;right:24px;background:#1a1f2e;color:#fff;padding:10px 20px;border-radius:8px;font-size:13px;z-index:999;opacity:0;transition:opacity .3s';
+  t.textContent = msg;
+  document.body.appendChild(t);
+  requestAnimationFrame(()=>{ t.style.opacity='1'; setTimeout(()=>{ t.style.opacity='0'; setTimeout(()=>t.remove(),300); },2000); });
+}
+window.showMemberDetail = showMemberDetail;
