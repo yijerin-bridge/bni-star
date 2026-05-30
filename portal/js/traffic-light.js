@@ -205,13 +205,16 @@ function renderOverview() {
     <div class="member-score-grid">
       ${memberScores.map(m => {
         const lEmoji = {green:'🟢',yellow:'🟡',red:'🔴',gray:'⚫'}[m.light]||'⚫';
+        // 바 = 주차별 출결 상태 (녹=출석, 빨=결석, 노=지각, 회=미입력)
         const wBars  = WEEKS_ALL.slice(0,pastWeeks).slice(-24).map(w => {
-          const r = m.recs.find(x=>x.week_date===w);
-          if (!r) return `<div class="ms-spark-bar" style="height:4px;background:#e5e7eb"></div>`;
-          const sc = calcMemberScore([r]);
-          const h  = Math.max(4, Math.round(sc.total/100*24));
-          const col= {green:'#16a34a',yellow:'#ca8a04',red:'#CC0000',gray:'#9ca3af'}[sc.light];
-          return `<div class="ms-spark-bar" style="height:${h}px;background:${col}" title="W${WEEKS_24.indexOf(w)+1}: ${sc.total}점"></div>`;
+          const i = WEEKS_ALL.indexOf(w) + 1;
+          const r = m.recs.find(x => x.week_date === w);
+          if (!r) return `<div class="ms-spark-bar" style="height:14px;background:#e5e7eb;border-radius:2px" title="W${i} 미입력"></div>`;
+          const col = r.absent ? '#CC0000' : r.late ? '#ca8a04' : '#16a34a';
+          const label = r.absent ? '결석' : r.late ? '지각' : '출석';
+          const activity = (r.given_t1||0)+(r.given_t2||0)+(r.one_on_one||0)+(r.visitors||0);
+          const h = activity > 0 ? 20 : 14; // 활동 있으면 더 높게
+          return `<div class="ms-spark-bar" style="height:${h}px;background:${col};border-radius:2px;opacity:${r.absent?1:0.85}" title="W${i}(${w.slice(5)}): ${label}${activity>0?' · 활동'+activity+'건':''}"></div>`;
         });
         return `
         <div class="ms-card ${m.light}" onclick="showMemberDetail('${m.name}')">
@@ -220,8 +223,13 @@ function renderOverview() {
             <span class="ms-score">${m.recs.length ? m.total : '—'}</span>
             <span class="ms-light">${lEmoji}</span>
           </div>
+          <div style="font-size:9px;color:#9ca3af;margin-bottom:3px">주차별 출결 (W1~W${pastWeeks})</div>
           <div class="ms-sparkline">${wBars.join('')}</div>
-          <div class="ms-sub">${m.recs.length ? `${m.recs.length}주 기록 · T1:${m.stats.totRef||0} 비:${m.stats.totVis||0}` : '데이터 없음'}</div>
+          <div class="ms-sub" style="margin-top:5px">
+            ${m.recs.length
+              ? `T1:${m.stats.totRef||0}건 · 1:1:${m.stats.totOno||0} · 비:${m.stats.totVis||0}`
+              : '데이터 없음'}
+          </div>
         </div>`;
       }).join('')}
     </div>
