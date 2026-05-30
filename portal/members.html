@@ -242,6 +242,7 @@ window.editMember = async (id) => {
         <div class="form-group"><label class="form-label">전화</label><input type="tel" id="em_phone" class="form-input" value="${m.phone||''}"></div>
       </div>
       <div class="form-group"><label class="form-label">이메일</label><input type="email" id="em_email" class="form-input" value="${m.email||''}"></div>
+      <div class="form-group"><label class="form-label">입회일</label><input type="date" id="em_joined" class="form-input" value="${m.joined_date||''}"></div>
       <div style="display:flex;gap:10px;justify-content:flex-end">
         <button class="btn btn-outline" onclick="this.closest('div[style]').remove()">취소</button>
         <button class="btn btn-primary" id="confirmEditMember">저장</button>
@@ -250,11 +251,12 @@ window.editMember = async (id) => {
   document.body.appendChild(form);
   form.querySelector('#confirmEditMember').addEventListener('click', async () => {
     const payload = {
-      name:     form.querySelector('#em_name').value.trim(),
-      company:  form.querySelector('#em_company').value.trim() || null,
-      category: form.querySelector('#em_category').value.trim() || null,
-      phone:    form.querySelector('#em_phone').value.trim() || null,
-      email:    form.querySelector('#em_email').value.trim() || null,
+      name:        form.querySelector('#em_name').value.trim(),
+      company:     form.querySelector('#em_company').value.trim() || null,
+      category:    form.querySelector('#em_category').value.trim() || null,
+      phone:       form.querySelector('#em_phone').value.trim() || null,
+      email:       form.querySelector('#em_email').value.trim() || null,
+      joined_date: form.querySelector('#em_joined').value || null,
     };
     const { error } = await getSb().from('members').update(payload).eq('id', id);
     if (error) alert('오류: ' + error.message);
