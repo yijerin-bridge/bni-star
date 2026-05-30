@@ -7,13 +7,18 @@
 const CHAPTER_LAUNCH = '2026-05-13';
 const TODAY = new Date().toISOString().slice(0, 10);
 
-// 런칭일부터 이번 주(수요일) +1주까지 자동 생성 — 매주 자동 확장
+// 런칭일부터 최소 24주 항상 표시 + 시간 지나면 자동으로 1주씩 추가
 function getAllWeeks() {
   const arr = [];
   const start = new Date('2026-05-13T00:00:00Z');
-  // 다음 수요일까지 포함 (이번 주 포함 보장)
-  const cutoff = new Date(TODAY + 'T00:00:00Z');
-  cutoff.setUTCDate(cutoff.getUTCDate() + 7);
+  // 최소 24주 끝 날짜
+  const min24End = new Date('2026-05-13T00:00:00Z');
+  min24End.setUTCDate(min24End.getUTCDate() + 23 * 7);
+  // 오늘 이후 1주 (현재 주차 포함)
+  const todayNext = new Date(TODAY + 'T00:00:00Z');
+  todayNext.setUTCDate(todayNext.getUTCDate() + 7);
+  // 둘 중 더 큰 날짜까지 생성
+  const cutoff = todayNext > min24End ? todayNext : min24End;
   let d = new Date(start);
   while (d <= cutoff) {
     arr.push(d.toISOString().slice(0, 10));
