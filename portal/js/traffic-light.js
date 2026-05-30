@@ -222,6 +222,8 @@ function renderOverview() {
             <span class="ms-score">${m.recs.length ? m.total : '—'}</span>
             <span class="ms-light">${lEmoji}</span>
           </div>
+          ${m.light === 'gray' ? `<div style="font-size:10px;color:#9ca3af;background:#f9fafb;border-radius:6px;padding:4px 8px;margin-bottom:6px">💬 활동 독려가 필요합니다</div>` : ''}
+          ${m.light === 'red'  ? `<div style="font-size:10px;color:#CC0000;background:#fff1f2;border-radius:6px;padding:4px 8px;margin-bottom:6px">⚠️ 개선 상담을 권장합니다</div>` : ''}
           <div style="font-size:9px;color:#9ca3af;margin-bottom:3px">월별 점수 추세 ${months.length ? `(${months[0].slice(0,7)} ~ ${months[months.length-1].slice(0,7)})` : ''}</div>
           <div class="ms-sparkline" style="align-items:flex-end">${wBars.length ? wBars.join('') : '<span style="font-size:10px;color:#d1d5db">데이터 없음</span>'}</div>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-top:8px">
