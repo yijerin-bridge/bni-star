@@ -634,26 +634,20 @@ function renderImport() {
     <!-- 붙여넣기 모드 -->
     <div id="mode-paste">
       <div class="card" style="margin-bottom:12px">
-        <div class="card-title" style="margin-bottom:8px">PALMS 데이터 붙여넣기</div>
+        <div class="card-title" style="margin-bottom:8px">PALMS 주간 데이터 붙여넣기</div>
         <p style="font-size:12px;color:#6b7280;margin-bottom:12px">
-          PALMS 또는 엑셀에서 셀을 복사(Ctrl+C)한 후 붙여넣으세요.<br>
-          헤더 행이 있으면 <strong>컬럼 순서 자동 인식</strong>, 없으면 한글 이름 기준으로 파싱합니다.
+          PALMS에서 해당 주차 셀 전체를 복사(Ctrl+C) 후 붙여넣으세요.<br>
+          <code style="background:#f3f4f6;padding:2px 6px;border-radius:4px">PALMS 컬럼 P=출석 / A=결석 / L=지각</code>
         </p>
-        <div style="display:flex;gap:12px;align-items:center;margin-bottom:10px;flex-wrap:wrap">
-          <div style="display:flex;gap:8px;align-items:center">
-            <label style="font-size:12px;font-weight:600;white-space:nowrap">저장 날짜</label>
-            <input type="date" id="paste-date" class="form-input" value="${TODAY}" style="width:160px">
-          </div>
-          <div style="display:flex;gap:8px;align-items:center">
-            <label style="font-size:12px;font-weight:600;white-space:nowrap">주수</label>
-            <input type="number" id="paste-weeks" class="form-input" value="1" min="1" max="6" style="width:70px">
-            <span style="font-size:11px;color:#9ca3af">주 (월 전체=4~5)</span>
-          </div>
+        <div style="display:flex;gap:8px;align-items:center;margin-bottom:10px;flex-wrap:wrap">
+          <label style="font-size:12px;font-weight:600;white-space:nowrap">날짜</label>
+          <input type="text" id="paste-date-text" class="form-input" placeholder="5월 13일 또는 2026-05-13" style="width:200px">
+          <span id="paste-date-resolved" style="font-size:12px;color:#16a34a"></span>
         </div>
-        <textarea id="pasteArea" class="form-input" rows="8"
-          placeholder="여기에 PALMS 데이터를 붙여넣으세요 (탭 구분)..." style="font-size:12px;font-family:monospace"></textarea>
+        <textarea id="pasteArea" class="form-input" rows="10"
+          placeholder="여기에 붙여넣기..." style="font-size:12px;font-family:monospace"></textarea>
         <div style="display:flex;gap:8px;margin-top:10px">
-          <button class="btn btn-secondary btn-sm" id="parseBtn">미리보기</button>
+          <button class="btn btn-primary btn-sm" id="parseBtn">미리보기</button>
         </div>
       </div>
       <div id="pastePreview"></div>
@@ -690,14 +684,21 @@ function renderImport() {
     });
   });
 
+  // 날짜 입력 실시간 파싱
+  el.querySelector('#paste-date-text').addEventListener('input', e => {
+    const resolved = parseFlexDate(e.target.value);
+    const span = document.getElementById('paste-date-resolved');
+    span.textContent = resolved ? `→ ${resolved}` : '';
+    span.style.color = resolved ? '#16a34a' : '#CC0000';
+  });
+
   // 붙여넣기 파싱
   el.querySelector('#parseBtn').addEventListener('click', () => {
-    const text  = el.querySelector('#pasteArea').value.trim();
-    const date  = el.querySelector('#paste-date').value;
-    const weeks = Number(el.querySelector('#paste-weeks').value) || 1;
+    const text = el.querySelector('#pasteArea').value.trim();
+    const date = parseFlexDate(el.querySelector('#paste-date-text').value) || TODAY;
     if (!text) return;
     const parsed = parsePasteText(text);
-    showPastePreview(parsed, date, weeks);
+    showPastePreview(parsed, date, 1);
   });
 
   // 파일 업로드
@@ -711,6 +712,30 @@ function renderImport() {
 }
 
 /* ── 붙여넣기 파싱 ── */
+// "5월 13일" / "5/13" / "2026-05-13" / "26.5.13" 등 유연 파싱
+function parseFlexDate(str) {
+  const s = (str || '').trim();
+  if (!s) return '';
+  // ISO
+  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+  // 한국어 "5월 13일" or "2026년 5월 13일"
+  const kr = s.match(/(?:(\d{4})년\s*)?(\d{1,2})월\s*(\d{1,2})일?/);
+  if (kr) {
+    const y = kr[1] ? Number(kr[1]) : new Date().getFullYear();
+    return `${y}-${String(kr[2]).padStart(2,'0')}-${String(kr[3]).padStart(2,'0')}`;
+  }
+  // "5/13" or "05/13"
+  const sl = s.match(/^(\d{1,2})\/(\d{1,2})$/);
+  if (sl) return `${new Date().getFullYear()}-${String(sl[1]).padStart(2,'0')}-${String(sl[2]).padStart(2,'0')}`;
+  // "26.5.13" or "2026.5.13"
+  const dot = s.match(/(\d{2,4})\.(\d{1,2})\.(\d{1,2})/);
+  if (dot) {
+    let y = Number(dot[1]); if (y < 100) y += 2000;
+    return `${y}-${String(dot[2]).padStart(2,'0')}-${String(dot[3]).padStart(2,'0')}`;
+  }
+  return '';
+}
+
 function parsePasteText(text) {
   // 탭 구분 또는 2개 이상 공백 구분 모두 처리
   const lines = text.split('\n')
@@ -730,47 +755,65 @@ function parsePasteText(text) {
   const col = {};
   hRow.forEach((h, i) => {
     const s = h.replace(/\s|\(.*?\)/g, '').toLowerCase();
-    if (/이름|name|member/.test(s))    col.name       = i;
-    if (/^출석$|^attend/.test(s))       col.attendance = i;
-    if (/^결석$|^absent/.test(s))       col.absence    = i;
-    if (/지각|조퇴|late/.test(s))       col.late_leave = i;
-    if (/병가|sick/.test(s))            col.sick_leave = i;
-    if (/대리|subst/.test(s))           col.substitute = i;
-    if (/준t1|givent1|t1$/.test(s))     col.given_t1   = i;
-    if (/준t2|givent2|t2$/.test(s))     col.given_t2   = i;
-    if (/받은t1|rect1/.test(s))         col.received_t1= i;
-    if (/받은t2|rect2/.test(s))         col.received_t2= i;
-    if (/비지터|visit/.test(s))         col.visitors   = i;
-    if (/1.?2.?1|ono|one.on/.test(s))  col.one_on_one = i;
-    if (/감사장|tyfcb|amount/.test(s))  col.tyfcb      = i;
-    if (/^ceu$/.test(s))               col.ceu        = i;
+    // 이름: 한글 우선, 영문은 name_en
+    if (/이름.*한글|^이름$|^name$|^member$/.test(s)) col.name    = i;
+    if (/이름.*영문|영문.*이름/.test(s))              col.name_en = i;
+    // PALMS 출결 컬럼 (P/A/L)
+    if (/^palms$/.test(s))                           col.palms   = i;
+    if (/^출석$|^attend/.test(s))                    col.attendance = i;
+    if (/^결석$|^absent/.test(s))                    col.absence    = i;
+    if (/지각|조퇴|late/.test(s))                    col.late_leave = i;
+    if (/병가|sick/.test(s))                         col.sick_leave = i;
+    if (/대리|subst/.test(s))                        col.substitute = i;
+    if (/준.*t1|givent1/.test(s))                    col.given_t1   = i;
+    if (/준.*t2|givent2/.test(s))                    col.given_t2   = i;
+    if (/받은.*t1|rect1/.test(s))                    col.received_t1= i;
+    if (/받은.*t2|rect2/.test(s))                    col.received_t2= i;
+    if (/비지터|visit/.test(s))                      col.visitors   = i;
+    if (/1.?2.?1|ono|one.on/.test(s))               col.one_on_one = i;
+    if (/감사장|tyfcb|amount/.test(s))               col.tyfcb      = i;
+    if (/^ceu$/.test(s))                             col.ceu        = i;
   });
+  // 이름 컬럼이 없으면 첫 번째 컬럼
+  if (col.name == null) col.name = 0;
 
   const skip = new Set(['합','비지터','bni','합계','total','']);
   const n = (r, k) => k != null ? Math.max(0, Number(String(r[k]||'').replace(/,/g,''))||0) : 0;
 
   return lines.slice(headerIdx + 1)
     .filter(r => {
-      const name = String(r[col.name ?? 0]||'').trim();
-      return name && !skip.has(name.toLowerCase()) && !/^[A-Za-z\d]/.test(name) === false
-        || (name && !skip.has(name.toLowerCase()) && /[가-힣]/.test(name));
+      const name = String(r[col.name]||'').trim();
+      return name && !skip.has(name.toLowerCase()) && /[가-힣]/.test(name);
     })
-    .map(r => ({
-      member_name: String(r[col.name ?? 0]||'').trim(),
-      attendance:  n(r, col.attendance),
-      absence:     n(r, col.absence),
-      late_leave:  n(r, col.late_leave),
-      sick_leave:  n(r, col.sick_leave),
-      substitute:  n(r, col.substitute),
-      given_t1:    n(r, col.given_t1),
-      given_t2:    n(r, col.given_t2),
-      received_t1: n(r, col.received_t1),
-      received_t2: n(r, col.received_t2),
-      visitors:    n(r, col.visitors),
-      one_on_one:  n(r, col.one_on_one),
-      tyfcb:       n(r, col.tyfcb),
-      ceu:         n(r, col.ceu),
-    }))
+    .map(r => {
+      const name = String(r[col.name]||'').trim();
+
+      // PALMS 컬럼: P=출석, A=결석, L=지각 (없으면 출석 컬럼 사용)
+      let attended = true, absent = false, late = false;
+      if (col.palms != null) {
+        const p = String(r[col.palms]||'').trim().toUpperCase();
+        attended = p !== 'A';
+        absent   = p === 'A';
+        late     = p === 'L';
+      } else {
+        absent = n(r, col.absence) > 0;
+        late   = n(r, col.late_leave) > 0;
+        attended = !absent;
+      }
+
+      return {
+        member_name: name,
+        attended, absent, late,
+        given_t1:    n(r, col.given_t1),
+        given_t2:    n(r, col.given_t2),
+        received_t1: n(r, col.received_t1),
+        received_t2: n(r, col.received_t2),
+        visitors:    n(r, col.visitors),
+        one_on_one:  n(r, col.one_on_one),
+        tyfcb:       n(r, col.tyfcb),
+        ceu:         n(r, col.ceu),
+      };
+    })
     .filter(r => r.member_name);
 }
 
@@ -794,13 +837,15 @@ function showPastePreview(data, date, weeks) {
     const mem = allMembers.find(m => m.name===d.member_name||m.name.replace(/\s/g,'')===d.member_name.replace(/\s/g,''));
     return { ...d, matched:!!mem, member_id:mem?.id||null };
   });
-  if (!matched.length) { prev.innerHTML = '<div class="alert-banner crit">파싱된 데이터가 없습니다. 형식을 확인하세요.</div>'; return; }
+  if (!matched.length) { prev.innerHTML = '<div class="alert-banner crit">파싱된 데이터가 없습니다. 한글 이름이 포함된 행이 있는지 확인하세요.</div>'; return; }
+
+  const attendLabel = m => m.absent ? '❌ 결석' : m.late ? '⚠️ 지각' : '✅ 출석';
 
   prev.innerHTML = `
     <div class="card">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px">
         <div style="font-size:13px">
-          <strong>${date}</strong> 저장 · ${weeks}주 데이터 &nbsp;·&nbsp;
+          <strong>${date}</strong> 저장 &nbsp;·&nbsp;
           <span class="match-ok">매칭 ${matched.filter(m=>m.matched).length}명</span>
           ${matched.filter(m=>!m.matched).length?`&nbsp;·&nbsp;<span class="match-no">미매칭 ${matched.filter(m=>!m.matched).length}명</span>`:''}
         </div>
@@ -808,14 +853,14 @@ function showPastePreview(data, date, weeks) {
       </div>
       <div class="preview-table-wrap">
         <table class="preview-table">
-          <thead><tr><th>이름</th><th>매칭</th><th>출석</th><th>결석</th><th>지각</th><th>준T1</th><th>준T2</th><th>비지터</th><th>1:1</th><th>감사장</th><th>CEU</th></tr></thead>
+          <thead><tr><th>이름</th><th>매칭</th><th>출결</th><th>준T1</th><th>준T2</th><th>비지터</th><th>1:1</th><th>감사장</th><th>CEU</th></tr></thead>
           <tbody>
             ${matched.map(m=>`<tr class="${m.matched?'':'unmatched'}">
               <td><strong>${m.member_name}</strong></td>
               <td class="${m.matched?'match-ok':'match-no'}">${m.matched?'✓':'✗'}</td>
-              <td>${m.attendance}</td><td>${m.absence}</td><td>${m.late_leave||0}</td>
-              <td>${m.given_t1}</td><td>${m.given_t2||0}</td><td>${m.visitors}</td>
-              <td>${m.one_on_one}</td><td>${fmtWan(m.tyfcb)}</td><td>${m.ceu}</td>
+              <td>${attendLabel(m)}</td>
+              <td>${m.given_t1||0}</td><td>${m.given_t2||0}</td><td>${m.visitors||0}</td>
+              <td>${m.one_on_one||0}</td><td>${fmtWan(m.tyfcb||0)}</td><td>${m.ceu||0}</td>
             </tr>`).join('')}
           </tbody>
         </table>
