@@ -477,20 +477,41 @@ async function handleFile(file) {
 }
 
 function parsePALMS(rows) {
-  // 기간 찾기
+  // 기간 찾기 — 여러 형식 대응
   let periodStart = '', periodEnd = '';
-  for (let i = 0; i < Math.min(15, rows.length); i++) {
+
+  for (let i = 0; i < Math.min(20, rows.length); i++) {
     const r = rows[i];
     for (let j = 0; j < r.length; j++) {
-      const cell = String(r[j]||'').trim();
-      if (cell.includes('시작') || cell === '시작:') {
-        const val = String(r[j+1]||'').trim();
-        if (val) periodStart = parseDateKR(val);
+      const cell = String(r[j] ?? '').trim();
+
+      const tryStart = (val) => {
+        if (!periodStart && val) { const d = parseDateKR(val); if (d) periodStart = d; }
+      };
+      const tryEnd = (val) => {
+        if (!periodEnd && val) { const d = parseDateKR(val); if (d) periodEnd = d; }
+      };
+
+      if (cell.includes('시작')) {
+        // 같은 셀에 날짜 포함: "시작: 26. 5. 1."
+        tryStart(cell.replace(/시작[：:\s]*/,''));
+        // 인접 셀들 탐색
+        for (let k = j+1; k < Math.min(j+5, r.length); k++) tryStart(String(r[k]??'').trim());
       }
-      if (cell.includes('종료') || cell === '종료:') {
-        const val = String(r[j+1]||'').trim();
-        if (val) periodEnd = parseDateKR(val);
+      if (cell.includes('종료')) {
+        tryEnd(cell.replace(/종료[：:\s]*/,''));
+        for (let k = j+1; k < Math.min(j+5, r.length); k++) tryEnd(String(r[k]??'').trim());
       }
+    }
+    if (periodStart && periodEnd) break;
+  }
+
+  // 못 찾으면 리포트 파일명/메타에서 연도-월 추출 시도
+  if (!periodStart) {
+    for (let i = 0; i < Math.min(5, rows.length); i++) {
+      const flat = rows[i].map(c=>String(c??'')).join(' ');
+      const m = flat.match(/20(\d{2})[\.\-\/\s]+(\d{1,2})[\.\-\/\s]+(\d{1,2})/);
+      if (m) { periodStart = `20${m[1]}-${m[2].padStart(2,'0')}-${m[3].padStart(2,'0')}`; break; }
     }
   }
 
@@ -569,17 +590,32 @@ function parsePALMS(rows) {
 }
 
 function parseDateKR(str) {
-  // "26. 5. 1." → "2026-05-01"
-  const m = str.match(/(\d+)[\.\s]+(\d+)[\.\s]+(\d+)/);
+  const s = String(str ?? '').trim();
+  if (!s || s === '0') return '';
+
+  // ISO "2026-05-01"
+  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+
+  // Excel 시리얼 숫자 (40000~60000 범위)
+  const num = Number(s);
+  if (!isNaN(num) && num > 40000 && num < 60000) {
+    const d = new Date(Date.UTC(1899, 11, 30) + num * 86400000);
+    return d.toISOString().slice(0, 10);
+  }
+
+  // "26. 5. 1." / "2026. 5. 1." / "26.5.1" / "2026/05/01"
+  const m = s.match(/(\d{2,4})[.\-\/\s]+(\d{1,2})[.\-\/\s]+(\d{1,2})/);
   if (!m) return '';
   let y = Number(m[1]);
   if (y < 100) y += 2000;
-  return `${y}-${String(m[2]).padStart(2,'0')}-${String(m[3]).padStart(2,'0')}`;
+  const mo = Number(m[2]), da = Number(m[3]);
+  if (mo < 1 || mo > 12 || da < 1 || da > 31) return '';
+  return `${y}-${String(mo).padStart(2,'0')}-${String(da).padStart(2,'0')}`;
 }
 
 function showImportPreview(parsed) {
   const prev = document.getElementById('importPreview');
-  const { periodStart, periodEnd, data } = parsed;
+  let { periodStart, periodEnd, data } = parsed;
 
   // 멤버 매칭
   const matched = data.map(d => {
@@ -595,18 +631,26 @@ function showImportPreview(parsed) {
 
   prev.innerHTML = `
     <div class="card" style="margin-bottom:12px">
-      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:16px">
-        <div>
-          <div class="card-title" style="margin:0">파싱 결과</div>
-          <div style="font-size:12px;color:#9ca3af;margin-top:4px">
-            기간: ${periodStart||'?'} ~ ${periodEnd||'?'} &nbsp;·&nbsp;
+      <div style="margin-bottom:16px">
+        <div class="card-title" style="margin-bottom:12px">파싱 결과 · 기간 확인</div>
+        <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:12px">
+          <div style="display:flex;align-items:center;gap:8px">
+            <label style="font-size:12px;font-weight:600;white-space:nowrap">시작일</label>
+            <input type="date" id="imp-start" class="form-input" value="${periodStart||''}" style="width:150px">
+          </div>
+          <div style="display:flex;align-items:center;gap:8px">
+            <label style="font-size:12px;font-weight:600;white-space:nowrap">종료일</label>
+            <input type="date" id="imp-end" class="form-input" value="${periodEnd||''}" style="width:150px">
+          </div>
+          ${!periodStart ? `<span style="font-size:12px;color:#CC0000">⚠️ 기간 자동 인식 실패 — 직접 입력해주세요</span>` : `<span style="font-size:12px;color:#16a34a">✓ 기간 자동 인식됨</span>`}
+        </div>
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
+          <div style="font-size:12px;color:#9ca3af">
             <span class="match-ok">매칭 ${matchedCnt}명</span>
             ${unmatchedCnt ? ` &nbsp;·&nbsp; <span class="match-no">미매칭 ${unmatchedCnt}명</span>` : ''}
           </div>
+          <button class="btn btn-primary" id="confirmImport">데이터 가져오기</button>
         </div>
-        <button class="btn btn-primary" id="confirmImport" ${!periodStart?'disabled':''}>
-          ${periodStart ? `${periodLabel(periodStart)} 데이터 가져오기` : '기간 인식 실패'}
-        </button>
       </div>
       <div class="preview-table-wrap">
         <table class="preview-table">
@@ -634,7 +678,10 @@ function showImportPreview(parsed) {
   `;
 
   document.getElementById('confirmImport')?.addEventListener('click', async () => {
-    await importRecords(matched, periodStart, periodEnd);
+    const ps = document.getElementById('imp-start')?.value;
+    const pe = document.getElementById('imp-end')?.value;
+    if (!ps) { alert('시작일을 입력해주세요'); return; }
+    await importRecords(matched, ps, pe || ps);
   });
 }
 
