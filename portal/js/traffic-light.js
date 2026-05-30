@@ -545,15 +545,15 @@ function renderImport() {
   const el = document.getElementById('tl-import');
   el.innerHTML = `
     <div class="card" style="margin-bottom:16px">
-      <div class="card-title">PALMS 월별 리포트 → 주간 데이터로 변환</div>
+      <div class="card-title">PALMS 주간 리포트 가져오기</div>
       <p style="font-size:12px;color:#6b7280;margin-bottom:16px">
-        BNI PALMS .xls/.xlsx 파일을 올리면 해당 월의 주차들에 균등 분배합니다.
+        주단위 PALMS 파일을 여러 개 한 번에 올리면 각 주차에 자동 매핑합니다.
       </p>
       <div class="upload-zone" id="uploadZone">
         <div style="font-size:36px;margin-bottom:8px">📊</div>
-        <div style="font-weight:700;font-size:14px;margin-bottom:4px">파일 드래그 또는 클릭</div>
-        <div style="font-size:12px;color:#9ca3af">.xls, .xlsx</div>
-        <input type="file" id="palmsFile" accept=".xls,.xlsx" style="display:none">
+        <div style="font-weight:700;font-size:14px;margin-bottom:4px">파일 드래그 또는 클릭 (복수 선택 가능)</div>
+        <div style="font-size:12px;color:#9ca3af">.xls, .xlsx · 여러 주차 동시 업로드 가능</div>
+        <input type="file" id="palmsFile" accept=".xls,.xlsx" multiple style="display:none">
       </div>
     </div>
     <div id="importPreview"></div>
@@ -561,21 +561,25 @@ function renderImport() {
   const zone = el.querySelector('#uploadZone');
   const inp  = el.querySelector('#palmsFile');
   zone.addEventListener('click', () => inp.click());
-  inp.addEventListener('change', () => handleFile(inp.files[0]));
+  inp.addEventListener('change', () => handleFiles([...inp.files]));
   zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('drag'); });
   zone.addEventListener('dragleave', () => zone.classList.remove('drag'));
-  zone.addEventListener('drop', e => { e.preventDefault(); zone.classList.remove('drag'); handleFile(e.dataTransfer.files[0]); });
+  zone.addEventListener('drop', e => { e.preventDefault(); zone.classList.remove('drag'); handleFiles([...e.dataTransfer.files]); });
 }
 
-async function handleFile(file) {
-  if (!file) return;
-  document.getElementById('importPreview').innerHTML = `<div style="text-align:center;padding:24px;color:#9ca3af">분석 중...</div>`;
+async function handleFiles(files) {
+  if (!files.length) return;
+  const prev = document.getElementById('importPreview');
+  prev.innerHTML = `<div style="text-align:center;padding:24px;color:#9ca3af">${files.length}개 파일 분석 중...</div>`;
   try {
-    const ab = await file.arrayBuffer();
-    const wb = XLSX.read(ab, { type:'array', codepage:949 });
-    const ws = wb.Sheets[wb.SheetNames[0]];
-    const rows = XLSX.utils.sheet_to_json(ws, { header:1, defval:'' });
-    showImportPreview(parsePALMS(rows));
+    const parsed = await Promise.all(files.map(async file => {
+      const ab = await file.arrayBuffer();
+      const wb = XLSX.read(ab, { type:'array', codepage:949 });
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      const rows = XLSX.utils.sheet_to_json(ws, { header:1, defval:'' });
+      return { fileName: file.name, ...parsePALMS(rows) };
+    }));
+    showMultiImportPreview(parsed);
   } catch(e) {
     document.getElementById('importPreview').innerHTML = `<div class="alert-banner crit">파싱 실패: ${e.message}</div>`;
   }
@@ -640,51 +644,142 @@ function parseDateKR(str) {
   return `${y}-${String(mo).padStart(2,'0')}-${String(da).padStart(2,'0')}`;
 }
 
+/* ── 복수 파일 미리보기 ── */
+function showMultiImportPreview(parsedList) {
+  const prev = document.getElementById('importPreview');
+
+  // 각 파일에 주차 자동 매핑
+  const items = parsedList.map(p => {
+    const weekDate = p.periodStart ? findWeekDate(p.periodStart, p.periodEnd) : null;
+    const weekNum  = weekDate ? WEEKS_ALL.indexOf(weekDate) + 1 : null;
+    const matched  = p.data.map(d => {
+      const mem = allMembers.find(m => m.name===d.member_name||m.name.replace(/\s/g,'')===d.member_name.replace(/\s/g,''));
+      return { ...d, matched:!!mem, member_id:mem?.id||null };
+    });
+    return { ...p, weekDate, weekNum, matched };
+  }).sort((a,b) => (a.weekDate||'').localeCompare(b.weekDate||''));
+
+  const allOk = items.every(i => i.weekDate);
+
+  prev.innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:8px">
+      <span style="font-size:13px;font-weight:600">${items.length}개 파일 → ${items.filter(i=>i.weekDate).length}개 주차 자동 매핑</span>
+      <button class="btn btn-primary" id="confirmMultiImport" ${!allOk?'disabled':''}>전체 가져오기</button>
+    </div>
+
+    ${items.map((item, idx) => `
+    <div class="card" style="margin-bottom:12px">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap">
+        <span style="font-size:13px;font-weight:700">${item.fileName}</span>
+        ${item.weekDate
+          ? `<span style="background:#eff6ff;color:#2563eb;font-weight:700;padding:3px 10px;border-radius:20px;font-size:12px">W${item.weekNum} · ${item.weekDate}</span>`
+          : `<span style="color:#CC0000;font-size:12px">⚠️ 주차 인식 실패</span>`}
+        <span style="font-size:11px;color:#9ca3af">기간: ${item.periodStart||'?'} ~ ${item.periodEnd||'?'}</span>
+        ${!item.weekDate ? `
+        <select class="form-input week-override" data-idx="${idx}" style="width:200px;font-size:12px">
+          ${WEEKS_ALL.map((w,i)=>`<option value="${w}">W${i+1} · ${w}</option>`).join('')}
+        </select>` : ''}
+      </div>
+      <div style="font-size:12px;color:#9ca3af;margin-bottom:8px">
+        <span class="match-ok">매칭 ${item.matched.filter(m=>m.matched).length}명</span>
+        ${item.matched.filter(m=>!m.matched).length?`&nbsp;·&nbsp;<span class="match-no">미매칭 ${item.matched.filter(m=>!m.matched).length}명</span>`:''}
+        &nbsp;·&nbsp; 멤버 ${item.matched.length}명
+      </div>
+    </div>`).join('')}
+  `;
+
+  // 수동 주차 선택 처리
+  prev.querySelectorAll('.week-override').forEach(sel => {
+    sel.addEventListener('change', () => {
+      const idx = Number(sel.dataset.idx);
+      items[idx].weekDate = sel.value;
+      items[idx].weekNum  = WEEKS_ALL.indexOf(sel.value) + 1;
+    });
+  });
+
+  document.getElementById('confirmMultiImport')?.addEventListener('click', async () => {
+    const btn = document.getElementById('confirmMultiImport');
+    btn.disabled = true; btn.textContent = '가져오는 중...';
+    let total = 0;
+    for (const item of items) {
+      if (!item.weekDate) continue;
+      const cnt = await importWeeklyFromPALMS(item.matched, item.weekDate);
+      total += cnt || 0;
+    }
+    showToast(`총 ${total}개 레코드 저장 완료`);
+    await loadAll();
+    renderOverview();
+    document.querySelector('.tl-tab[data-tab="overview"]')?.click();
+  });
+}
+
+// 기간에서 가장 가까운 수요일(WEEKS_ALL 기준) 찾기
+function findWeekDate(periodStart, periodEnd) {
+  const ps = periodStart || '';
+  const pe = periodEnd   || ps;
+  // 기간 내 수요일이 있으면 그걸 사용
+  const inRange = WEEKS_ALL.find(w => w >= ps && w <= pe);
+  if (inRange) return inRange;
+  // 없으면 periodStart와 가장 가까운 수요일
+  return WEEKS_ALL.reduce((best, w) =>
+    Math.abs(new Date(w) - new Date(ps)) < Math.abs(new Date(best) - new Date(ps)) ? w : best
+  , WEEKS_ALL[0]);
+}
+
 function showImportPreview(parsed) {
   const prev = document.getElementById('importPreview');
   let { periodStart, periodEnd, data } = parsed;
-
-  // 이 기간에 속하는 24주 기준 주차 찾기
-  const weeksInPeriod = WEEKS_24.filter(w => w >= (periodStart||'') && w <= (periodEnd||periodStart||''));
 
   const matched = data.map(d => {
     const mem = allMembers.find(m => m.name===d.member_name||m.name.replace(/\s/g,'')===d.member_name.replace(/\s/g,''));
     return { ...d, matched:!!mem, member_id:mem?.id||null };
   });
 
+  // 자동으로 매핑될 주차 계산
+  const autoWeek     = periodStart ? findWeekDate(periodStart, periodEnd) : null;
+  const autoWeekNum  = autoWeek ? WEEKS_ALL.indexOf(autoWeek) + 1 : null;
+
+  const renderWeekBadge = (w) => {
+    if (!w) return '—';
+    const n = WEEKS_ALL.indexOf(w) + 1;
+    return `<span style="background:#eff6ff;color:#2563eb;font-weight:700;padding:3px 10px;border-radius:20px;font-size:13px">W${n} · ${w}</span>`;
+  };
+
   prev.innerHTML = `
     <div class="card">
       <div class="card-title" style="margin-bottom:12px">파싱 결과</div>
-      <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:12px">
-        <div style="display:flex;gap:8px;align-items:center">
-          <label style="font-size:12px;font-weight:600">시작일</label>
-          <input type="date" id="imp-start" class="form-input" value="${periodStart}" style="width:150px">
+
+      <!-- 주차 선택 -->
+      <div style="background:#f9fafb;border-radius:10px;padding:14px;margin-bottom:14px">
+        <div style="font-size:12px;font-weight:700;margin-bottom:10px">📅 저장할 주차</div>
+        <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:8px">
+          <label style="font-size:12px;font-weight:600">수요일 날짜 선택</label>
+          <select id="imp-week" class="form-input" style="width:220px">
+            ${WEEKS_ALL.map((w,i) => `<option value="${w}" ${w===autoWeek?'selected':''}>${`W${i+1} · ${w}${w<=TODAY?'':' (예상)'}`}</option>`).join('')}
+          </select>
+          ${autoWeek ? `<span style="font-size:12px;color:#16a34a">✓ 자동 인식 → ${renderWeekBadge(autoWeek)}</span>` : '<span style="font-size:12px;color:#CC0000">⚠️ 직접 선택해주세요</span>'}
         </div>
-        <div style="display:flex;gap:8px;align-items:center">
-          <label style="font-size:12px;font-weight:600">종료일</label>
-          <input type="date" id="imp-end" class="form-input" value="${periodEnd}" style="width:150px">
-        </div>
-        ${!periodStart?'<span style="font-size:12px;color:#CC0000">⚠️ 기간 직접 입력 필요</span>':'<span style="font-size:12px;color:#16a34a">✓ 자동 인식</span>'}
+        <div style="font-size:11px;color:#9ca3af">파일 기간: ${periodStart||'?'} ~ ${periodEnd||'?'}</div>
       </div>
-      <div style="font-size:12px;color:#9ca3af;margin-bottom:12px">
-        해당 기간 주차: ${weeksInPeriod.length ? weeksInPeriod.map((w,i)=>`W${WEEKS_24.indexOf(w)+1}(${w.slice(5)})`).join(', ') : '기간을 입력하면 자동 계산'}
-      </div>
+
       <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:12px">
         <span style="font-size:12px">
           <span class="match-ok">매칭 ${matched.filter(m=>m.matched).length}명</span>
           ${matched.filter(m=>!m.matched).length?`&nbsp;·&nbsp;<span class="match-no">미매칭 ${matched.filter(m=>!m.matched).length}명</span>`:''}
         </span>
-        <button class="btn btn-primary" id="confirmImport">주간 데이터로 가져오기</button>
+        <button class="btn btn-primary" id="confirmImport">이 주차로 가져오기</button>
       </div>
+
       <div class="preview-table-wrap">
         <table class="preview-table">
-          <thead><tr><th>이름</th><th>매칭</th><th>출석</th><th>결석</th><th>준T1</th><th>준T2</th><th>비지터</th><th>1:1</th><th>감사장</th><th>CEU</th></tr></thead>
+          <thead><tr><th>이름</th><th>매칭</th><th>출석</th><th>결석</th><th>지각</th><th>준T1</th><th>준T2</th><th>비지터</th><th>1:1</th><th>감사장</th><th>CEU</th></tr></thead>
           <tbody>
             ${matched.map(m=>`<tr class="${m.matched?'':'unmatched'}">
               <td><strong>${m.member_name}</strong></td>
               <td class="${m.matched?'match-ok':'match-no'}">${m.matched?'✓':'✗'}</td>
-              <td>${m.attendance}</td><td>${m.absence}</td><td>${m.given_t1}</td>
-              <td>${m.given_t2||0}</td><td>${m.visitors}</td><td>${m.one_on_one}</td>
+              <td>${m.attendance}</td><td>${m.absence}</td><td>${m.late_leave||0}</td>
+              <td>${m.given_t1}</td><td>${m.given_t2||0}</td>
+              <td>${m.visitors}</td><td>${m.one_on_one}</td>
               <td>${fmtWan(m.tyfcb)}</td><td>${m.ceu}</td>
             </tr>`).join('')}
           </tbody>
@@ -694,41 +789,32 @@ function showImportPreview(parsed) {
   `;
 
   document.getElementById('confirmImport')?.addEventListener('click', async () => {
-    const ps = document.getElementById('imp-start')?.value;
-    const pe = document.getElementById('imp-end')?.value || ps;
-    if (!ps) { alert('시작일을 입력해주세요'); return; }
-    const weeks = WEEKS_24.filter(w => w >= ps && w <= pe);
-    if (!weeks.length) { alert('해당 기간에 속하는 주차가 없습니다'); return; }
-    await importWeeklyFromPALMS(matched, weeks);
+    const weekDate = document.getElementById('imp-week')?.value;
+    if (!weekDate) { alert('주차를 선택해주세요'); return; }
+    await importWeeklyFromPALMS(matched, weekDate);
   });
 }
 
-async function importWeeklyFromPALMS(matched, weeks) {
-  const n = weeks.length;
-  const rows = [];
-  for (const m of matched) {
-    for (const w of weeks) {
-      rows.push({
-        member_id: m.member_id, member_name: m.member_name,
-        week_date: w,
-        attended: m.absence === 0,
-        absent: false, late: false,
-        given_t1:   Math.round(m.given_t1 / n),
-        given_t2:   Math.round((m.given_t2||0) / n),
-        visitors:   Math.round(m.visitors / n),
-        one_on_one: Math.round(m.one_on_one / n),
-        tyfcb:      Math.round(m.tyfcb / n),
-        ceu:        Math.round(m.ceu / n),
-        is_estimated: false,
-      });
-    }
-  }
+async function importWeeklyFromPALMS(matched, weekDate) {
+  const rows = matched.map(m => ({
+    member_id:    m.member_id,
+    member_name:  m.member_name,
+    week_date:    weekDate,
+    attended:     m.absence === 0 && (m.late_leave||0) === 0,
+    absent:       m.absence > 0,
+    late:         (m.late_leave||0) > 0,
+    given_t1:     m.given_t1   || 0,
+    given_t2:     m.given_t2   || 0,
+    visitors:     m.visitors   || 0,
+    one_on_one:   m.one_on_one || 0,
+    tyfcb:        m.tyfcb      || 0,
+    ceu:          m.ceu        || 0,
+    is_estimated: weekDate > TODAY,
+  }));
+
   const { error } = await getSb().from('weekly_records').upsert(rows, { onConflict:'member_name,week_date' });
   if (error) { alert('가져오기 실패: '+error.message); return; }
-  showToast(`${rows.length}개 주간 레코드 저장 완료`);
-  await loadAll();
-  renderOverview();
-  document.querySelector('.tl-tab[data-tab="overview"]')?.click();
+  return rows.length;
 }
 
 /* ═══════════════════════════════════════════════
