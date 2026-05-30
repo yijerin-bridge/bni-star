@@ -754,28 +754,33 @@ function parsePasteText(text) {
   // 헤더 → 컬럼 인덱스 매핑 (한국어/영어 모두)
   const col = {};
   hRow.forEach((h, i) => {
-    const s = h.replace(/\s|\(.*?\)/g, '').toLowerCase();
-    // 이름: 한글 우선, 영문은 name_en
-    if (/이름.*한글|^이름$|^name$|^member$/.test(s)) col.name    = i;
-    if (/이름.*영문|영문.*이름/.test(s))              col.name_en = i;
+    const hOrig = h.toLowerCase();                        // 원본 (괄호 유지)
+    const s     = h.replace(/\s|\(.*?\)/g,'').toLowerCase(); // 괄호 제거본
+
+    // 이름: 괄호 제거 전 원본으로 한글/영문 구분 → 덮어쓰기 방지
+    if (/한글/.test(hOrig))                              { col.name    = i; }
+    else if (/영문/.test(hOrig))                         { col.name_en = i; }
+    else if (/^(이름|name|member)$/.test(s) && col.name == null) { col.name = i; }
+
     // PALMS 출결 컬럼 (P/A/L)
-    if (/^palms$/.test(s))                           col.palms   = i;
-    if (/^출석$|^attend/.test(s))                    col.attendance = i;
-    if (/^결석$|^absent/.test(s))                    col.absence    = i;
-    if (/지각|조퇴|late/.test(s))                    col.late_leave = i;
-    if (/병가|sick/.test(s))                         col.sick_leave = i;
-    if (/대리|subst/.test(s))                        col.substitute = i;
-    if (/준.*t1|givent1/.test(s))                    col.given_t1   = i;
-    if (/준.*t2|givent2/.test(s))                    col.given_t2   = i;
-    if (/받은.*t1|rect1/.test(s))                    col.received_t1= i;
-    if (/받은.*t2|rect2/.test(s))                    col.received_t2= i;
-    if (/비지터|visit/.test(s))                      col.visitors   = i;
-    if (/1.?2.?1|ono|one.on/.test(s))               col.one_on_one = i;
-    if (/감사장|tyfcb|amount/.test(s))               col.tyfcb      = i;
-    if (/^ceu$/.test(s))                             col.ceu        = i;
+    if (/^palms$/.test(s))               col.palms      = i;
+    if (/^출석$|^attend/.test(s))        col.attendance = i;
+    if (/^결석$|^absent/.test(s))        col.absence    = i;
+    if (/지각|조퇴|late/.test(s))        col.late_leave = i;
+    if (/병가|sick/.test(s))             col.sick_leave = i;
+    if (/대리|subst/.test(s))            col.substitute = i;
+    if (/준.*t1|givent1/.test(s))        col.given_t1   = i;
+    if (/준.*t2|givent2/.test(s))        col.given_t2   = i;
+    if (/받은.*t1|rect1/.test(s))        col.received_t1= i;
+    if (/받은.*t2|rect2/.test(s))        col.received_t2= i;
+    if (/비지터|visit/.test(s))          col.visitors   = i;
+    if (/1.?2.?1|ono|one.on/.test(s))   col.one_on_one = i;
+    if (/감사장|tyfcb|amount/.test(s))   col.tyfcb      = i;
+    if (/^ceu$/.test(s))                col.ceu        = i;
   });
-  // 이름 컬럼이 없으면 첫 번째 컬럼
+  // 이름 컬럼 최종 폴백
   if (col.name == null) col.name = 0;
+  console.log('[paste] col mapping:', col);
 
   const skip = new Set(['합','비지터','bni','합계','total','']);
   const n = (r, k) => k != null ? Math.max(0, Number(String(r[k]||'').replace(/,/g,''))||0) : 0;
