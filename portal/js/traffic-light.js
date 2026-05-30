@@ -5,16 +5,32 @@
 
 /* ── 상수 ── */
 const CHAPTER_LAUNCH = '2026-05-13';
-const WEEKS_24 = (() => {
-  const arr = [];
-  for (let i = 0; i < 24; i++) {
-    const d = new Date('2026-05-13T00:00:00Z');
-    d.setUTCDate(d.getUTCDate() + i * 7);
-    arr.push(d.toISOString().slice(0, 10));
-  }
-  return arr; // W1~W24
-})();
 const TODAY = new Date().toISOString().slice(0, 10);
+
+// 런칭일부터 이번 주(수요일) +1주까지 자동 생성 — 매주 자동 확장
+function getAllWeeks() {
+  const arr = [];
+  const start = new Date('2026-05-13T00:00:00Z');
+  // 다음 수요일까지 포함 (이번 주 포함 보장)
+  const cutoff = new Date(TODAY + 'T00:00:00Z');
+  cutoff.setUTCDate(cutoff.getUTCDate() + 7);
+  let d = new Date(start);
+  while (d <= cutoff) {
+    arr.push(d.toISOString().slice(0, 10));
+    d.setUTCDate(d.getUTCDate() + 7);
+  }
+  return arr;
+}
+
+// 채점용: 직전 24주 슬라이딩 윈도우
+function getLast24Weeks(allWeeks) {
+  const past = allWeeks.filter(w => w <= TODAY);
+  return past.slice(-24);
+}
+
+// 페이지 로드 시 한 번만 계산
+const WEEKS_ALL  = getAllWeeks();
+const WEEKS_24   = getLast24Weeks(WEEKS_ALL); // 채점 기준 (최근 24주)
 
 /* ── 채점 함수 (사용자 지정 기준) ── */
 function scoreAbsence(n)      { return n > 2 ? 0 : n === 2 ? 5 : n === 1 ? 10 : 15; }
@@ -124,7 +140,7 @@ function renderOverview() {
   const yellow = memberScores.filter(m=>m.light==='yellow').length;
   const red    = memberScores.filter(m=>m.light==='red').length;
   const gray   = memberScores.filter(m=>m.light==='gray').length;
-  const pastWeeks = WEEKS_24.filter(w => w <= TODAY).length;
+  const pastWeeks = WEEKS_ALL.filter(w => w <= TODAY).length;
 
   const aiTips = genAIOverview(memberScores);
 
@@ -152,7 +168,7 @@ function renderOverview() {
     <div class="member-score-grid">
       ${memberScores.map(m => {
         const lEmoji = {green:'🟢',yellow:'🟡',red:'🔴',gray:'⚫'}[m.light]||'⚫';
-        const wBars  = WEEKS_24.slice(0,pastWeeks).map(w => {
+        const wBars  = WEEKS_ALL.slice(0,pastWeeks).slice(-24).map(w => {
           const r = m.recs.find(x=>x.week_date===w);
           if (!r) return `<div class="ms-spark-bar" style="height:4px;background:#e5e7eb"></div>`;
           const sc = calcMemberScore([r]);
@@ -211,7 +227,7 @@ function renderMemberDetail(name) {
       <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;flex-wrap:wrap">
         <span style="font-size:28px;font-weight:900">${sc.total}</span>
         <span style="font-size:20px">${lEmoji}</span>
-        <span style="font-size:13px;color:#6b7280">${sc.stats.n||0}주 기록 기준 · ${WEEKS_24.filter(w=>w<=TODAY).length}주차</span>
+        <span style="font-size:13px;color:#6b7280">${sc.stats.n||0}주 기록 기준 · ${WEEKS_ALL.filter(w=>w<=TODAY).length}주차</span>
       </div>
       <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px">
         ${[
@@ -276,9 +292,9 @@ function renderWeekTable(name, recs) {
   const tbody = document.getElementById('week-tbody');
   if (!tbody) return;
   const recMap = Object.fromEntries(recs.map(r=>[r.week_date, r]));
-  const attend = {true:{present:'✅ 출석',late:'⚠️ 지각',absent:'❌ 결석'},false:{absent:'❌ 결석',late:'⚠️ 지각',present:'✅ 출석'}};
 
-  tbody.innerHTML = WEEKS_24.map((w, i) => {
+  // 전체 주차 기준으로 표시 (W번호는 WEEKS_ALL 기준)
+  tbody.innerHTML = WEEKS_ALL.map((w, i) => {
     const r    = recMap[w];
     const past = w <= TODAY;
     const label = r ? (r.absent?'❌ 결석': r.late?'⚠️ 지각':'✅ 출석') : '—';
@@ -429,15 +445,15 @@ async function reloadAndRefreshDetail(name) {
 ═══════════════════════════════════════════════ */
 function renderInput() {
   const el = document.getElementById('tl-input');
-  const pastWeeks = WEEKS_24.filter(w => w <= TODAY);
+  const lastPast = [...WEEKS_ALL].filter(w => w <= TODAY).pop();
 
   el.innerHTML = `
     <div class="card" style="margin-bottom:12px">
-      <div class="card-title">주차 선택</div>
+      <div class="card-title">주차 선택 <span style="font-size:11px;font-weight:400;color:#9ca3af">· W${WEEKS_ALL.length}까지 자동 확장</span></div>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
-        ${WEEKS_24.map((w, i) => `
+        ${WEEKS_ALL.map((w, i) => `
           <button class="btn btn-outline btn-sm ${w > TODAY ? 'projected-row' : ''}"
-            style="${w===pastWeeks[pastWeeks.length-1]?'border-color:var(--red);color:var(--red);font-weight:700':''}"
+            style="${w===lastPast?'border-color:var(--red);color:var(--red);font-weight:700':''}"
             onclick="loadWeekInput('${w}', ${i+1})">
             W${i+1}<br><span style="font-size:10px">${w.slice(5)}</span>
           </button>`).join('')}
