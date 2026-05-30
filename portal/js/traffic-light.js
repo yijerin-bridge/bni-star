@@ -706,10 +706,25 @@ function showMultiImportPreview(parsedList) {
       const cnt = await importWeeklyFromPALMS(item.matched, item.weekDate);
       total += cnt || 0;
     }
-    showToast(`총 ${total}개 레코드 저장 완료`);
     await loadAll();
     renderOverview();
     document.querySelector('.tl-tab[data-tab="overview"]')?.click();
+
+    // 검수 안내 배너
+    const banner = document.createElement('div');
+    banner.style.cssText = 'position:fixed;top:0;left:0;right:0;background:#1a1f2e;color:#fff;padding:14px 24px;z-index:500;display:flex;align-items:center;justify-content:space-between;gap:12px;font-size:13px;box-shadow:0 4px 12px rgba(0,0,0,.3)';
+    banner.innerHTML = `
+      <div style="display:flex;align-items:center;gap:10px">
+        <span style="font-size:18px">🚦</span>
+        <div>
+          <div style="font-weight:700;margin-bottom:2px">총 ${total}개 데이터 가져오기 완료</div>
+          <div style="color:#9ca3af;font-size:12px">⚠️ [멤버십] 트래픽라이트 담당자가 데이터를 검수한 후 확정해주세요.</div>
+        </div>
+      </div>
+      <button style="background:rgba(255,255,255,.15);border:none;color:#fff;padding:6px 14px;border-radius:8px;cursor:pointer;font-size:12px" onclick="this.parentElement.remove()">확인</button>
+    `;
+    document.body.appendChild(banner);
+    setTimeout(() => banner?.remove(), 8000);
   });
 }
 
