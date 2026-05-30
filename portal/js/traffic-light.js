@@ -390,7 +390,7 @@ function renderWeekTable(name, recs, weeksList = WEEKS_ALL) {
   const makeRow = (w, i, hidden) => {
     const r     = recMap[w];
     const past  = w <= TODAY;
-    const label = r ? (r.absent?'❌ 결석': r.late?'⚠️ 지각':'✅ 출석') : '—';
+    const label = r ? (r.absent?'❌ 결석': r.late?'⚠️ 지각': r.substitute?'🔄 대리인': r.sick?'🏥 병가':'✅ 출석') : '—';
     const rowCls = [past ? '' : 'projected-row', hidden ? 'week-hidden' : ''].join(' ').trim();
     return `
     <tr class="${rowCls}" id="wr-${i}" ${hidden ? 'style="display:none"' : ''}>
@@ -436,18 +436,23 @@ function openWeekEdit(weekDate, memberName) {
   const rec = allWeeklyRecs.find(r => r.week_date === weekDate && r.member_name === memberName);
   const past = weekDate <= TODAY;
 
-  const attendVal = rec ? (rec.absent ? 'absent' : rec.late ? 'late' : 'present') : 'present';
+  const attendVal = rec
+    ? (rec.absent ? 'absent' : rec.late ? 'late' : rec.substitute ? 'substitute' : rec.sick ? 'sick' : 'present')
+    : 'present';
   const modal = createModal(`
     <div style="font-size:16px;font-weight:700;margin-bottom:4px">${memberName}</div>
     <div style="font-size:12px;color:#9ca3af;margin-bottom:20px">${weekDate} ${past ? '(실제)' : '(예상)'}</div>
 
     <div class="form-group" style="margin-bottom:16px">
       <label class="form-label">출결</label>
-      <div class="toggle-wrap" id="attend-toggle">
-        <button class="toggle-btn ${attendVal==='present'?'active':''}" data-v="present" onclick="setAttendToggle(this)">✅ 출석</button>
-        <button class="toggle-btn ${attendVal==='late'?'active':''}"    data-v="late"    onclick="setAttendToggle(this)">⚠️ 지각</button>
-        <button class="toggle-btn ${attendVal==='absent'?'active':''}"  data-v="absent"  onclick="setAttendToggle(this)">❌ 결석</button>
+      <div class="toggle-wrap" id="attend-toggle" style="flex-wrap:wrap;gap:6px">
+        <button class="toggle-btn ${attendVal==='present'?'active':''}"    data-v="present"    onclick="setAttendToggle(this)">✅ 출석</button>
+        <button class="toggle-btn ${attendVal==='late'?'active':''}"       data-v="late"       onclick="setAttendToggle(this)">⚠️ 지각</button>
+        <button class="toggle-btn ${attendVal==='absent'?'active':''}"     data-v="absent"     onclick="setAttendToggle(this)">❌ 결석</button>
+        <button class="toggle-btn ${attendVal==='substitute'?'active':''}" data-v="substitute" onclick="setAttendToggle(this)">🔄 대리인</button>
+        <button class="toggle-btn ${attendVal==='sick'?'active':''}"       data-v="sick"       onclick="setAttendToggle(this)">🏥 병가</button>
       </div>
+      <div style="font-size:11px;color:#9ca3af;margin-top:4px">대리인·병가는 출석으로 인정됩니다</div>
     </div>
 
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
@@ -509,6 +514,8 @@ function openWeekEdit(weekDate, memberName) {
       attended:    av !== 'absent',
       absent:      av === 'absent',
       late:        av === 'late',
+      substitute:  av === 'substitute',
+      sick:        av === 'sick',
       given_t1:    Number(document.getElementById('ed-t1').value)||0,
       given_t2:    Number(document.getElementById('ed-t2').value)||0,
       visitors:    Number(document.getElementById('ed-vis').value)||0,
@@ -776,7 +783,7 @@ function showVPPreview(text, memberName) {
           ${rows.map(r=>`<tr>
             <td><strong>${r.week_date}</strong></td>
             <td style="color:#9ca3af">${r.original_date}</td>
-            <td>${r.absent?'❌결석':r.late?'⚠️지각':'✅출석'}</td>
+            <td>${r.absent?'❌결석':r.late?'⚠️지각':r.substitute?'🔄대리인':r.sick?'🏥병가':'✅출석'}</td>
             <td>${r.given_t1}</td><td>${r.given_t2}</td>
             <td>${r.received_t1}</td><td>${r.received_t2}</td>
             <td>${r.visitors}</td><td>${r.one_on_one}</td>
@@ -950,7 +957,7 @@ function showPastePreview(data, date, weeks) {
   });
   if (!matched.length) { prev.innerHTML = '<div class="alert-banner crit">파싱된 데이터가 없습니다. 한글 이름이 포함된 행이 있는지 확인하세요.</div>'; return; }
 
-  const attendLabel = m => m.absent ? '❌ 결석' : m.late ? '⚠️ 지각' : '✅ 출석';
+  const attendLabel = m => m.absent ? '❌ 결석' : m.late ? '⚠️ 지각' : m.substitute ? '🔄 대리인' : m.sick ? '🏥 병가' : '✅ 출석';
 
   prev.innerHTML = `
     <div class="card">
