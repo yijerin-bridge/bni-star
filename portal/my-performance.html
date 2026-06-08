@@ -16,177 +16,193 @@
 <script src="/portal/js/portal-auth.js"></script>
 <script src="/portal/js/portal-nav.js"></script>
 <script>
-const CRITERIA_P = { attendanceRate: 1.0, onoPerWeek: 1, referralPerWeek: 1 };
-
 document.addEventListener('DOMContentLoaded', async () => {
   const layout = renderPortalLayout({ title: '내 성과' });
   if (!layout) return;
   const { session, bodyEl } = layout;
 
+  const myName = session.memberName;
+  if (!myName) {
+    bodyEl.innerHTML = `<div class="alert-banner crit">로그인 정보에 이름이 없습니다. 다시 로그인해 주세요.</div>`;
+    return;
+  }
+
   bodyEl.innerHTML = `<div style="text-align:center;padding:48px;color:#9ca3af">데이터 불러오는 중...</div>`;
 
-  const myId = session.memberId;
-  const members = await loadPortalMembers();
-  const me = members.find(m => (m.legacy_id ?? m.id) == myId);
-
-  // Fetch data
-  const [wRes, rRes] = await Promise.all([
-    getSb().from('traffic_weekly_records').select('*').eq('member_id', myId).order('week_start', { ascending: false }).limit(52),
-    getSb().from('traffic_referral_flows').select('*').or(`from_member_id.eq.${myId},to_member_id.eq.${myId}`).order('referral_date', { ascending: false }),
+  const [wRes, membersData] = await Promise.all([
+    getSb().from('weekly_records').select('*').eq('member_name', myName).order('week_date', { ascending: false }).limit(52),
+    loadPortalMembers(),
   ]);
-  const weekly   = wRes.data  || [];
-  const referral = rRes.data  || [];
+  const weekly = wRes.data || [];
+  const me = membersData.find(m => m.name === myName);
 
-  // All weeks I have records for, plus recent 12 weeks
-  const recentWeeks = getRecentWeeks(12);
-  const allWeeks    = [...new Set([...recentWeeks, ...weekly.map(w => w.week_start)])].sort().reverse().slice(0,12);
+  const weeks12 = getRecentWeeks(12);
+  const weeks4  = weeks12.slice(0, 4);
 
-  const wStats = getWindowStats(myId, weekly, referral, recentWeeks.slice(0,4));
+  const stats4 = calcStats(myName, weekly, weeks4);
 
-  const lightColor = { green:'#16a34a', yellow:'#ca8a04', red:'#CC0000', new:'#9ca3af' };
-  const lightLabel = { green:'Green', yellow:'Yellow', red:'Red', new:'미입력' };
-  const lc = lightColor[wStats.light] || '#9ca3af';
+  const lc    = { green:'#16a34a', yellow:'#ca8a04', red:'#CC0000', new:'#9ca3af' }[stats4.light] || '#9ca3af';
+  const lbl   = { green:'Green 🟢', yellow:'Yellow 🟡', red:'Red 🔴', new:'미입력 ⚪' }[stats4.light] || '—';
 
   bodyEl.innerHTML = `
     <div class="page-header">
       <div>
-        <h1>${me?.name || session.memberName} 님의 성과</h1>
+        <h1>${myName} 님의 성과</h1>
         <p>${me?.company || ''} · 최근 4주 기준</p>
       </div>
     </div>
 
-    <div class="kpi-grid">
+    <div class="kpi-grid" style="grid-template-columns:repeat(auto-fill,minmax(130px,1fr))">
       <div class="kpi-card" style="border-top:3px solid ${lc}">
         <div class="kpi-label">트래픽라이트</div>
-        <div class="kpi-num" style="color:${lc}">${lightLabel[wStats.light]}</div>
+        <div class="kpi-num" style="color:${lc};font-size:18px">${lbl}</div>
       </div>
       <div class="kpi-card">
-        <div class="kpi-label">출석 (최근 4주)</div>
-        <div class="kpi-num">${wStats.attendance}/4</div>
+        <div class="kpi-label">출석 (4주)</div>
+        <div class="kpi-num">${stats4.attendance}/4</div>
       </div>
       <div class="kpi-card">
-        <div class="kpi-label">1:1 (최근 4주)</div>
-        <div class="kpi-num">${wStats.ono}회</div>
+        <div class="kpi-label">1:1 미팅 (4주)</div>
+        <div class="kpi-num">${stats4.ono}회</div>
       </div>
       <div class="kpi-card">
-        <div class="kpi-label">리퍼럴 준 것 (최근 4주)</div>
-        <div class="kpi-num">${wStats.referralsSent}건</div>
+        <div class="kpi-label">리퍼럴 준 것 (4주)</div>
+        <div class="kpi-num">${stats4.givenRef}건</div>
       </div>
       <div class="kpi-card">
-        <div class="kpi-label">리퍼럴 받은 것 (최근 4주)</div>
-        <div class="kpi-num">${wStats.referralsRecv}건</div>
+        <div class="kpi-label">리퍼럴 받은 것 (4주)</div>
+        <div class="kpi-num">${stats4.recvRef}건</div>
       </div>
       <div class="kpi-card">
-        <div class="kpi-label">총 리퍼럴 금액</div>
-        <div class="kpi-num" style="font-size:18px">${fmtAmt(wStats.totalAmt)}</div>
+        <div class="kpi-label">비지터 초대 (4주)</div>
+        <div class="kpi-num">${stats4.visitors}명</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">감사장 금액 (4주)</div>
+        <div class="kpi-num" style="font-size:16px">${fmtAmt(stats4.tyfcb)}</div>
       </div>
     </div>
 
     <div class="section-row">
-      <div class="card">
+      <div class="card" style="flex:2">
         <div class="card-title">주별 활동 내역 (최근 12주)</div>
+        <div style="overflow-x:auto">
         <table class="data-table">
-          <thead><tr><th>주차</th><th>출석</th><th>1:1</th><th>비지터</th><th>교육</th></tr></thead>
+          <thead>
+            <tr>
+              <th>주차</th>
+              <th>출석</th>
+              <th>리퍼럴</th>
+              <th>1:1</th>
+              <th>비지터</th>
+              <th>감사장</th>
+              <th>교육</th>
+            </tr>
+          </thead>
           <tbody id="weeklyTable"></tbody>
         </table>
+        </div>
       </div>
-      <div class="card">
-        <div class="card-title">리퍼럴 내역</div>
-        <div id="referralList"></div>
+      <div class="card" style="flex:1">
+        <div class="card-title">월별 감사장 금액</div>
+        <canvas id="chartTyfcb" height="200"></canvas>
+        <div class="card-title" style="margin-top:20px">월별 리퍼럴 건수</div>
+        <canvas id="chartRef" height="180"></canvas>
       </div>
-    </div>
-
-    <div class="card">
-      <div class="card-title">월별 리퍼럴 추이</div>
-      <canvas id="chartMyTrend" height="140"></canvas>
     </div>
   `;
 
-  // Weekly table
+  // 주별 테이블
   const tbody = document.getElementById('weeklyTable');
-  allWeeks.forEach(w => {
-    const rec = weekly.find(r => r.week_start === w);
+  const attendLabel = r => {
+    if (!r) return '<span style="color:#d1d5db">—</span>';
+    if (r.absent) return '<span style="color:#CC0000">결석</span>';
+    if (r.late)   return '<span style="color:#ca8a04">지각</span>';
+    if (r.sick)   return '<span style="color:#6366f1">병가</span>';
+    if (r.substitute) return '<span style="color:#0891b2">대리인</span>';
+    if (r.attended)   return '<span style="color:#16a34a">✓ 출석</span>';
+    return '<span style="color:#d1d5db">—</span>';
+  };
+
+  weeks12.forEach(w => {
+    const rec = weekly.find(r => r.week_date === w);
+    const ref = rec ? (rec.given_t1||0) + (rec.given_t2||0) : null;
+    const recv = rec ? (rec.received_t1||0) + (rec.received_t2||0) : null;
     const tr = document.createElement('tr');
     tr.innerHTML = `
-      <td>${w}</td>
-      <td>${rec ? (rec.attended ? '✅' : '❌') : '—'}</td>
-      <td>${rec ? (rec.one_on_one || 0) : '—'}</td>
-      <td>${rec ? (rec.visitors_invited || 0) : '—'}</td>
-      <td>${rec ? (rec.education ? '✅' : '—') : '—'}</td>`;
+      <td style="white-space:nowrap;font-size:12px">${w}</td>
+      <td>${attendLabel(rec)}</td>
+      <td>${rec ? `<span style="font-weight:600">${ref}</span><span style="color:#9ca3af;font-size:11px"> +${recv}수신</span>` : '—'}</td>
+      <td>${rec ? (rec.one_on_one||0) + '회' : '—'}</td>
+      <td>${rec ? (rec.visitors||0) + '명' : '—'}</td>
+      <td>${rec && rec.tyfcb ? fmtAmt(Number(rec.tyfcb)) : '—'}</td>
+      <td>${rec ? (rec.ceu ? '✓' : '—') : '—'}</td>
+    `;
     tbody.appendChild(tr);
   });
 
-  // Referral list
-  const rlEl = document.getElementById('referralList');
-  const myName = me?.name || session.memberName;
-  const allRef = referral.slice(0, 20);
-  if (allRef.length === 0) {
-    rlEl.innerHTML = '<div class="empty-state"><div class="es-icon">🤝</div><p>리퍼럴 내역이 없습니다</p></div>';
-  } else {
-    rlEl.innerHTML = allRef.map(r => {
-      const isSent = r.from_member_id == myId;
-      const other = members.find(m => (m.legacy_id ?? m.id) == (isSent ? r.to_member_id : r.from_member_id));
-      return `<div class="rank-item" style="border-bottom:1px solid #f3f4f6;padding:8px 0">
-        <span style="font-size:11px;color:#9ca3af;width:80px">${r.referral_date}</span>
-        <span style="flex:1;font-size:13px">${isSent ? '→' : '←'} ${other?.name||'알수없음'} <span style="color:#9ca3af;font-size:11px">${r.referral_type}</span></span>
-        <span style="font-size:13px;font-weight:600;color:${isSent?'#1a1f2e':'#16a34a'}">${fmtAmt(Number(r.amount)||0)}</span>
-      </div>`;
-    }).join('');
+  // 월별 감사장 차트
+  const tyfcbMap = {}, refMap = {};
+  weekly.forEach(r => {
+    const m = r.week_date?.slice(0,7); if (!m) return;
+    tyfcbMap[m] = (tyfcbMap[m]||0) + (Number(r.tyfcb)||0);
+    refMap[m]   = (refMap[m]||0)   + (r.given_t1||0) + (r.given_t2||0);
+  });
+  const mLabels = [...new Set([...Object.keys(tyfcbMap), ...Object.keys(refMap)])].sort().slice(-6);
+
+  const ctxT = document.getElementById('chartTyfcb');
+  if (ctxT && mLabels.length) {
+    new Chart(ctxT, {
+      type: 'bar',
+      data: { labels: mLabels.map(l=>l.slice(2)), datasets:[{ data: mLabels.map(l=>tyfcbMap[l]||0), backgroundColor:'#CC0000', borderRadius:4 }] },
+      options: { responsive:true, plugins:{legend:{display:false}}, scales:{y:{beginAtZero:true, ticks:{callback:v=>fmtAmt(v)}}} },
+    });
   }
 
-  // Monthly chart
-  const mMap = {};
-  referral.filter(r => r.from_member_id == myId).forEach(r => {
-    const m = r.referral_date?.slice(0,7); if (!m) return;
-    mMap[m] = (mMap[m]||0) + (Number(r.amount)||0);
-  });
-  const mLabels = Object.keys(mMap).sort().slice(-6);
-  const ctx = document.getElementById('chartMyTrend');
-  if (ctx && mLabels.length) {
-    new Chart(ctx, {
+  const ctxR = document.getElementById('chartRef');
+  if (ctxR && mLabels.length) {
+    new Chart(ctxR, {
       type: 'bar',
-      data: { labels: mLabels.map(l=>l.slice(2)), datasets: [{ data: mLabels.map(l=>mMap[l]), backgroundColor: '#CC0000', borderRadius: 4 }] },
-      options: { responsive:true, plugins:{legend:{display:false}}, scales:{y:{beginAtZero:true, ticks:{callback:v=>fmtAmt(v)}}} },
+      data: { labels: mLabels.map(l=>l.slice(2)), datasets:[{ data: mLabels.map(l=>refMap[l]||0), backgroundColor:'#1a1f2e', borderRadius:4 }] },
+      options: { responsive:true, plugins:{legend:{display:false}}, scales:{y:{beginAtZero:true, ticks:{stepSize:1}}} },
     });
   }
 });
 
-function getWindowStats(myId, weekly, referral, weeks) {
-  const wRecs = weekly.filter(w => weeks.includes(w.week_start));
-  const attendance   = wRecs.filter(w => w.attended).length;
-  const ono          = wRecs.reduce((s,w) => s+(w.one_on_one||0), 0);
-  const referralsSent = referral.filter(r => r.from_member_id==myId && weeks.some(w => sameWeek(r.referral_date,w))).length;
-  const referralsRecv = referral.filter(r => r.to_member_id==myId   && weeks.some(w => sameWeek(r.referral_date,w))).length;
-  const totalAmt = referral.filter(r => r.from_member_id==myId).reduce((s,r)=>s+(Number(r.amount)||0),0);
+function calcStats(name, weekly, weeks) {
+  const recs = weekly.filter(w => weeks.includes(w.week_date));
+  const attendance = recs.filter(w => w.attended || w.sick || w.substitute).length;
+  const ono        = recs.reduce((s,w) => s + (w.one_on_one||0), 0);
+  const givenRef   = recs.reduce((s,w) => s + (w.given_t1||0) + (w.given_t2||0), 0);
+  const recvRef    = recs.reduce((s,w) => s + (w.received_t1||0) + (w.received_t2||0), 0);
+  const visitors   = recs.reduce((s,w) => s + (w.visitors||0), 0);
+  const tyfcb      = recs.reduce((s,w) => s + (Number(w.tyfcb)||0), 0);
   const n = weeks.length;
-  const critA = attendance >= Math.ceil(n * CRITERIA_P.attendanceRate);
-  const critO = ono        >= n * CRITERIA_P.onoPerWeek;
-  const critR = referralsSent >= n * CRITERIA_P.referralPerWeek;
+  const critA = attendance >= Math.ceil(n * 0.8);
+  const critO = ono      >= n;
+  const critR = givenRef >= n;
   let light = 'red';
   if (critA && critO && critR) light = 'green';
   else if (critA && (critO || critR)) light = 'yellow';
-  else if (!wRecs.length) light = 'new';
-  return { attendance, ono, referralsSent, referralsRecv, totalAmt, light };
+  else if (!recs.length) light = 'new';
+  return { attendance, ono, givenRef, recvRef, visitors, tyfcb, light };
+}
+
+function toLocalDate(d) {
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 }
 
 function getRecentWeeks(n) {
   const today = new Date(), dow = today.getDay();
   const diff = dow >= 3 ? dow - 3 : dow + 4;
   const wed = new Date(today); wed.setDate(today.getDate() - diff);
-  return Array.from({length:n}, (_,i) => { const d=new Date(wed); d.setDate(wed.getDate()-i*7); return d.toISOString().slice(0,10); });
-}
-
-function sameWeek(dateStr, weekStart) {
-  if (!dateStr||!weekStart) return false;
-  const d=new Date(dateStr), ws=new Date(weekStart), we=new Date(ws);
-  we.setDate(ws.getDate()+6);
-  return d>=ws && d<=we;
+  return Array.from({length:n}, (_,i) => { const d=new Date(wed); d.setDate(wed.getDate()-i*7); return toLocalDate(d); });
 }
 
 function fmtAmt(v) {
-  if (v >= 100000000) return (v/100000000).toFixed(1)+'억';
-  if (v >= 10000)     return Math.round(v/10000)+'만';
-  return v.toLocaleString()+'원';
+  const n = Number(v) || 0;
+  if (n >= 100000000) return (n/100000000).toFixed(1) + '억원';
+  return n.toLocaleString('ko-KR') + '원';
 }
 </script>
 </body>
