@@ -166,7 +166,7 @@ function renderOverview() {
     const memWeeks  = getMemberWeeks(m.joined_date);
     const elapsed   = memWeeks.filter(w => w <= TODAY).length;
     const recorded  = new Set(recs.map(r => r.week_date)).size;
-    const sc        = calcMemberScore(recs, Math.max(elapsed, recorded));
+    const sc        = calcMemberScore(recs, recorded || 1);
     return { ...m, ...sc, recs };
   }).sort((a,b) => {
     const ord = { gray:0, red:1, yellow:2, green:3 };
@@ -209,8 +209,7 @@ function renderOverview() {
         const months = [...new Set(m.recs.map(r => r.week_date.slice(0,7)))].sort();
         const wBars = months.map(mo => {
           const recsUpTo = m.recs.filter(r => r.week_date.slice(0,7) <= mo);
-          const elapsedUpTo = WEEKS_ALL.filter(w => w.slice(0,7) <= mo && w <= TODAY).length;
-          const sc = calcMemberScore(recsUpTo, Math.max(elapsedUpTo, recsUpTo.length));
+          const sc = calcMemberScore(recsUpTo, recsUpTo.length || 1);
           const h = Math.max(4, Math.round(sc.total / 100 * 28));
           const col = {green:'#16a34a', yellow:'#ca8a04', red:'#CC0000', gray:'#9ca3af'}[sc.light] || '#9ca3af';
           return `<div class="ms-spark-bar" style="height:${h}px;background:${col};border-radius:2px" title="${mo}: ${sc.total}점 (${sc.light})"></div>`;
@@ -291,7 +290,7 @@ function renderMemberDetail(name) {
   const recs      = allWeeklyRecs.filter(r => r.member_name === name);
   const elapsed   = memWeeks.filter(w => w <= TODAY).length;
   const recorded  = new Set(recs.map(r => r.week_date)).size;
-  const sc        = calcMemberScore(recs, Math.max(elapsed, recorded));
+  const sc        = calcMemberScore(recs, recorded || 1);
   const lEmoji = {green:'🟢',yellow:'🟡',red:'🔴',gray:'⚫'}[sc.light]||'⚫';
   const lightColor = {green:'#16a34a',yellow:'#ca8a04',red:'#CC0000',gray:'#9ca3af'}[sc.light]||'#9ca3af';
 
@@ -302,10 +301,10 @@ function renderMemberDetail(name) {
         <span style="font-size:28px;font-weight:900">${sc.total}</span>
         <span style="font-size:20px">${lEmoji}</span>
         <span style="font-size:13px;color:#6b7280">
-          분모 ${Math.max(elapsed, recorded)}주 (경과 ${elapsed} / 기록 ${recorded}) ·
+          기록 ${recorded}주 기준 ·
           ${isNew
             ? `가입 ${member.joined_date}`
-            : `챕터 ${elapsed}주차`}
+            : `챕터 ${elapsed}주 경과`}
         </span>
       </div>
       <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px">
