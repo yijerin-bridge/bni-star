@@ -1716,6 +1716,24 @@ function genAIMember(name, recs, sc) {
   if (sc.breakdown.ceu < 10)
     tips.push({type:'action', icon:'📚', text:`CEU 누적 ${sc.stats.totCeu}점 — 교육 세션 참여 시 빠짐없이 기록해 주세요. 목표 15점까지 ${Math.max(0,15-sc.stats.totCeu)}점 남았습니다.`});
 
+  // 지금 당장 가장 효과적인 행동 하나
+  if (sc.light !== 'green') {
+    const candidates = [
+      { gap: 20 - sc.breakdown.referral, label:'리퍼럴',   icon:'🤝', action:'이번 주 1:1 미팅에서 "소개해 줄 분 있으세요?"라고 직접 물어보세요. 주 1건이 목표입니다.' },
+      { gap: 20 - sc.breakdown.visitor,  label:'비지터',   icon:'🙋', action:'지금 바로 주변 1명에게 연락해 다음 미팅에 초대하세요.' },
+      { gap: 15 - sc.breakdown.absence,  label:'출석',     icon:'📅', action:'다음 미팅부터 빠지지 마세요. 불가피하면 반드시 대리인을 보내세요.' },
+      { gap: 15 - sc.breakdown.tyfcb,    label:'감사장',   icon:'💰', action:'받은 리퍼럴 중 성사된 건이 있다면 지금 바로 감사장을 기록하세요.' },
+      { gap: 10 - sc.breakdown.ono,      label:'1:1',     icon:'☕', action:'이번 주 1:1 미팅 1회를 먼저 캘린더에 잡으세요.' },
+      { gap: 10 - sc.breakdown.late,     label:'지각',     icon:'⏰', action:'미팅 10분 전 도착을 습관화하면 바로 점수가 오릅니다.' },
+      { gap: 10 - sc.breakdown.ceu,      label:'교육(CEU)',icon:'📚', action:'다음 교육 세션에 참여하고 CEU를 기록하세요.' },
+    ].filter(c => c.gap > 0).sort((a,b) => b.gap - a.gap);
+
+    if (candidates.length) {
+      const best = candidates[0];
+      tips.push({ type:'highlight', icon:'⭐', text:`지금 가장 효과적인 행동: ${best.label} (최대 +${best.gap}점) — ${best.action}` });
+    }
+  }
+
   return tips;
 }
 
