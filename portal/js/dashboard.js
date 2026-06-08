@@ -1,8 +1,6 @@
 /* ============================================================
-   BNI STAR Portal — Dashboard
+   BNI STAR Portal — Dashboard  (weekly_records 기반)
    ============================================================ */
-
-const CRITERIA_P = { attendanceRate: 1.0, onoPerWeek: 1, referralPerWeek: 1 };
 
 document.addEventListener('DOMContentLoaded', async () => {
   const layout = renderPortalLayout({ title: '대시보드' });
@@ -12,44 +10,33 @@ document.addEventListener('DOMContentLoaded', async () => {
   bodyEl.innerHTML = `<div style="text-align:center;padding:48px;color:#9ca3af">데이터 불러오는 중...</div>`;
 
   try {
-    // Fetch all data in parallel
-    const [weeklyRes, referralRes] = await Promise.all([
-      getSb().from('traffic_weekly_records').select('*').order('week_start', { ascending: false }),
-      getSb().from('traffic_referral_flows').select('*').order('referral_date', { ascending: false }),
+    const [weeklyRes, members] = await Promise.all([
+      getSb().from('weekly_records').select('*').order('week_date', { ascending: false }),
+      loadPortalMembers(),
     ]);
 
-    const weekly   = weeklyRes.data  || [];
-    const referral = referralRes.data || [];
-
-    const members = await loadPortalMembers();
-    buildDashboard(session, bodyEl, members, weekly, referral);
+    const weekly = weeklyRes.data || [];
+    buildDashboard(session, bodyEl, members, weekly);
   } catch (err) {
     bodyEl.innerHTML = `<div class="alert-banner crit">데이터 로드 실패: ${err.message}</div>`;
   }
 });
 
-function buildDashboard(session, el, members, weekly, referral) {
+function buildDashboard(session, el, members, weekly) {
   const tier = ROLE_META[session.roleType]?.tier ?? 3;
   const isLeader = tier <= 2;
 
-  // Calculate date windows
-  const weeks = getRecentWeeks(8);
+  const weeks  = getRecentWeeks(8);
   const weeks4 = weeks.slice(0, 4);
   const weeksPrev = weeks.slice(4, 8);
 
-  // Stats per member
-  const statsMap = {};
-  members.forEach(m => {
-    const mid = m.legacy_id ?? m.id;
-    statsMap[mid] = calcMemberStats(mid, weekly, referral, weeks4);
-  });
+  const statsMap     = {};
   const statsPrevMap = {};
   members.forEach(m => {
-    const mid = m.legacy_id ?? m.id;
-    statsPrevMap[mid] = calcMemberStats(mid, weekly, referral, weeksPrev);
+    statsMap[m.name]     = calcMemberStats(m.name, weekly, weeks4);
+    statsPrevMap[m.name] = calcMemberStats(m.name, weekly, weeksPrev);
   });
 
-  // Chapter-wide stats
   const allStats  = Object.values(statsMap);
   const greenCnt  = allStats.filter(s => s.light === 'green').length;
   const yellowCnt = allStats.filter(s => s.light === 'yellow').length;
@@ -60,53 +47,41 @@ function buildDashboard(session, el, members, weekly, referral) {
   const prevRed    = prevAllStats.filter(s => s.light === 'red').length;
 
   const totalMembers = members.length;
+  const w4Recs    = weekly.filter(w => weeks4.includes(w.week_date));
+  const wPrevRecs = weekly.filter(w => weeksPrev.includes(w.week_date));
 
-  const w4Recs    = weekly.filter(w => weeks4.includes(w.week_start));
-  const wPrevRecs = weekly.filter(w => weeksPrev.includes(w.week_start));
+  const attendCount = r => (r.attended || r.sick || r.substitute) ? 1 : 0;
 
-  const attendRecs     = w4Recs.filter(w => w.attended);
-  const attendPct      = (totalMembers * weeks4.length) ? Math.round(attendRecs.length / (totalMembers * weeks4.length) * 100) : 0;
-  const prevAttendRecs = wPrevRecs.filter(w => w.attended);
-  const prevAttendPct  = (totalMembers * weeksPrev.length) ? Math.round(prevAttendRecs.length / (totalMembers * weeksPrev.length) * 100) : 0;
+  const attendRecs    = w4Recs.filter(attendCount);
+  const attendPct     = (totalMembers * weeks4.length) ? Math.round(attendRecs.length / (totalMembers * weeks4.length) * 100) : 0;
+  const prevAttendPct = (totalMembers * weeksPrev.length) ? Math.round(wPrevRecs.filter(attendCount).length / (totalMembers * weeksPrev.length) * 100) : 0;
 
-  const ref4     = referral.filter(r => weeks4.some(w    => sameWeek(r.referral_date, w)));
-  const refPrev  = referral.filter(r => weeksPrev.some(w => sameWeek(r.referral_date, w)));
-  const ref4Amt  = ref4.reduce((s,r)  => s + (Number(r.amount)||0), 0);
-  const refPrevAmt = refPrev.reduce((s,r) => s + (Number(r.amount)||0), 0);
+  const ref4Cnt     = w4Recs.reduce((s,w) => s + (w.given_t1||0) + (w.given_t2||0), 0);
+  const refPrevCnt  = wPrevRecs.reduce((s,w) => s + (w.given_t1||0) + (w.given_t2||0), 0);
 
-  const onoCnt  = w4Recs.reduce((s,w)    => s + (w.one_on_one||0), 0);
-  const onoPrev = wPrevRecs.reduce((s,w) => s + (w.one_on_one||0), 0);
+  const tyfcb4      = w4Recs.reduce((s,w) => s + (Number(w.tyfcb)||0), 0);
+  const tyfcbPrev   = wPrevRecs.reduce((s,w) => s + (Number(w.tyfcb)||0), 0);
 
-  const visitorCnt  = w4Recs.reduce((s,w)    => s + (w.visitors_count||0), 0);
-  const visitorPrev = wPrevRecs.reduce((s,w) => s + (w.visitors_count||0), 0);
+  const onoCnt      = w4Recs.reduce((s,w) => s + (w.one_on_one||0), 0);
+  const onoPrev     = wPrevRecs.reduce((s,w) => s + (w.one_on_one||0), 0);
 
-  const perMemberAmt  = totalMembers ? Math.round(ref4Amt  / totalMembers) : 0;
-  const perMemberPrev = totalMembers ? Math.round(refPrevAmt / totalMembers) : 0;
+  const visitorCnt  = w4Recs.reduce((s,w) => s + (w.visitors||0), 0);
+  const visitorPrev = wPrevRecs.reduce((s,w) => s + (w.visitors||0), 0);
 
-  // 신규 멤버 — 최근 4주 이내 joined_date
-  const cutoff4w = new Date(weeks4[weeks4.length - 1]);
+  const perMemberAmt  = totalMembers ? Math.round(tyfcb4  / totalMembers) : 0;
+  const perMemberPrev = totalMembers ? Math.round(tyfcbPrev / totalMembers) : 0;
+
+  const cutoff4w     = new Date(weeks4[weeks4.length - 1]);
+  const cutoffPrev   = new Date(weeksPrev[weeksPrev.length - 1]);
   const newMemberCnt  = members.filter(m => m.joined_date && new Date(m.joined_date) >= cutoff4w).length;
-  const cutoffPrev    = new Date(weeksPrev[weeksPrev.length - 1]);
   const newMemberPrev = members.filter(m => m.joined_date && new Date(m.joined_date) >= cutoffPrev && new Date(m.joined_date) < cutoff4w).length;
 
-  // 비지터 전환율 — 신규멤버 / 비지터 초대 (같은 기간)
   const convRate     = visitorCnt  > 0 ? Math.round(newMemberCnt  / visitorCnt  * 100) : 0;
   const convRatePrev = visitorPrev > 0 ? Math.round(newMemberPrev / visitorPrev * 100) : 0;
 
-  // 멤버 갱신율 — 별도 쿼리 필요 (비활성 멤버 left_date 기준)
-  const renewalRate = null;
+  const myName  = session.memberName;
+  const myStats = myName ? calcMemberStats(myName, weekly, weeks4) : null;
 
-  // 리퍼럴 성사율 — amount > 0인 건 / 전체 리퍼럴
-  const closedRef4     = ref4.filter(r => (r.amount || 0) > 0).length;
-  const closedRefPrev  = refPrev.filter(r => (r.amount || 0) > 0).length;
-  const successRate     = ref4.length  > 0 ? Math.round(closedRef4    / ref4.length  * 100) : 0;
-  const successRatePrev = refPrev.length > 0 ? Math.round(closedRefPrev / refPrev.length * 100) : 0;
-
-  // Personal stats
-  const myId   = session.memberId;
-  const myStats = myId ? calcMemberStats(myId, weekly, referral, weeks4) : null;
-
-  // ── Render ──
   el.innerHTML = `
     <div class="page-header">
       <div>
@@ -117,13 +92,12 @@ function buildDashboard(session, el, members, weekly, referral) {
     </div>
 
     ${isLeader ? `
-    <!-- ════ AI 디렉터 ════ -->
     <div class="dash-section-label">🤖 AI 챕터 디렉터</div>
     <div id="aiDirectorCard" class="card" style="margin-bottom:16px;display:none"></div>
 
-    <!-- ════ 챕터 현황 ════ -->
     <div class="dash-section-label">📊 챕터 현황</div>
-    ${renderChapterKPI({ totalMembers, newMemberCnt, newMemberPrev, visitorCnt, visitorPrev, convRate, convRatePrev, renewalRate, ref4Cnt: ref4.length, refPrevCnt: refPrev.length, ref4Amt, refPrevAmt, perMemberAmt, perMemberPrev, onoCnt, onoPrev, successRate, successRatePrev })}
+    ${renderChapterKPI({ totalMembers, newMemberCnt, newMemberPrev, visitorCnt, visitorPrev, convRate, convRatePrev,
+      ref4Cnt, refPrevCnt, tyfcb4, tyfcbPrev, perMemberAmt, perMemberPrev, onoCnt, onoPrev, attendPct, prevAttendPct })}
 
     <div class="section-row">
       <div class="card">
@@ -144,19 +118,16 @@ function buildDashboard(session, el, members, weekly, referral) {
     </div>
 
     <div class="section-row">
-      ${renderRankCard('리퍼럴 Top 5', topN(members, statsMap, 'referrals', 5))}
-      ${renderRankCard('1:1 Top 5', topN(members, statsMap, 'ono', 5))}
+      ${renderRankCard('리퍼럴 Top 5',   topN(members, statsMap, 'referrals', 5, '건'))}
+      ${renderRankCard('1:1 Top 5',      topN(members, statsMap, 'ono',       5, '회'))}
     </div>
     ` : ''}
 
-    <!-- ════ 내 현황 ════ -->
     ${myStats ? `
     <div class="dash-section-label" style="margin-top:${isLeader?'8px':'0'}">👤 내 현황</div>
     ${renderPersonalCard(session, myStats, weeks4.length)}
     ` : ''}
 
-
-    <!-- ════ 최근 회의 ════ -->
     <div class="dash-section-label">📋 최근 회의</div>
     <div class="card" style="margin-bottom:16px">
       <div id="recentMeetings"><div style="color:#9ca3af;font-size:13px">회의록 로딩 중...</div></div>
@@ -167,33 +138,31 @@ function buildDashboard(session, el, members, weekly, referral) {
     </div>
   `;
 
-  // Charts
   if (isLeader) {
     renderDistChart(greenCnt, yellowCnt, redCnt);
-    renderWeeklyChart(referral, weeks);
-    renderMonthlyChart(referral);
-    renderAIDirector(allStats, members, referral, totalMembers);
+    renderWeeklyChart(weekly, weeks);
+    renderMonthlyChart(weekly);
+    renderAIDirector(allStats, members, totalMembers);
   }
 
-  // Load recent meetings async
-  loadRecentMeetings(session);
+  loadRecentMeetings();
 }
 
-/* ── Chapter KPI Block ── */
-function renderChapterKPI({ totalMembers, newMemberCnt, newMemberPrev, visitorCnt, visitorPrev, convRate, convRatePrev, renewalRate, ref4Cnt, refPrevCnt, ref4Amt, refPrevAmt, perMemberAmt, perMemberPrev, onoCnt, onoPrev, successRate, successRatePrev }) {
+/* ── Chapter KPI ── */
+function renderChapterKPI({ totalMembers, newMemberCnt, newMemberPrev, visitorCnt, visitorPrev, convRate, convRatePrev,
+  ref4Cnt, refPrevCnt, tyfcb4, tyfcbPrev, perMemberAmt, perMemberPrev, onoCnt, onoPrev, attendPct, prevAttendPct }) {
   return `
   <div style="margin-bottom:8px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--text-muted)">챕터 KPI · 최근 4주</div>
   <div class="kpi-grid" style="grid-template-columns:repeat(5,1fr)">
-    ${kpiCard('활성 멤버',     totalMembers + '명',                          null)}
-    ${kpiCard('신규 멤버',     newMemberCnt + '명',                          deltaStr(newMemberCnt, newMemberPrev))}
-    ${kpiCard('비지터 초대',   visitorCnt + '명',                            deltaStr(visitorCnt, visitorPrev))}
-    ${kpiCard('비지터 전환율', convRate + '%',                               deltaStr(convRate, convRatePrev))}
-    ${kpiCard('멤버 갱신율',   renewalRate !== null ? renewalRate + '%' : '—', null)}
-    ${kpiCard('원투원',        onoCnt + '회',                                deltaStr(onoCnt, onoPrev))}
-    ${kpiCard('리퍼럴',        ref4Cnt + '건',                               deltaStr(ref4Cnt, refPrevCnt))}
-    ${kpiCard('리퍼럴 성사율', successRate + '%',                            deltaStr(successRate, successRatePrev))}
-    ${kpiCard('감사장 금액',   fmtAmt(ref4Amt),                             deltaStr(ref4Amt, refPrevAmt))}
-    ${kpiCard('밸류시트(인당)', fmtAmt(perMemberAmt),                       deltaStr(perMemberAmt, perMemberPrev))}
+    ${kpiCard('활성 멤버',     totalMembers + '명',    null)}
+    ${kpiCard('출석률',         attendPct + '%',        deltaStr(attendPct, prevAttendPct))}
+    ${kpiCard('신규 멤버',     newMemberCnt + '명',     deltaStr(newMemberCnt, newMemberPrev))}
+    ${kpiCard('비지터 초대',   visitorCnt + '명',       deltaStr(visitorCnt, visitorPrev))}
+    ${kpiCard('비지터 전환율', convRate + '%',          deltaStr(convRate, convRatePrev))}
+    ${kpiCard('원투원',        onoCnt + '회',           deltaStr(onoCnt, onoPrev))}
+    ${kpiCard('리퍼럴',        ref4Cnt + '건',          deltaStr(ref4Cnt, refPrevCnt))}
+    ${kpiCard('감사장 금액',   fmtAmt(tyfcb4),         deltaStr(tyfcb4, tyfcbPrev))}
+    ${kpiCard('밸류시트(인당)', fmtAmt(perMemberAmt),  deltaStr(perMemberAmt, perMemberPrev))}
   </div>`;
 }
 
@@ -213,8 +182,8 @@ function deltaStr(curr, prev) {
 
 /* ── Personal Card ── */
 function renderPersonalCard(session, stats, weeks) {
-  const lightEmoji = { green: '🟢', yellow: '🟡', red: '🔴' }[stats.light] || '⚪';
-  const lightLabel = { green: 'Green', yellow: 'Yellow', red: 'Red' }[stats.light] || '미입력';
+  const lightEmoji = { green:'🟢', yellow:'🟡', red:'🔴' }[stats.light] || '⚪';
+  const lightLabel = { green:'Green', yellow:'Yellow', red:'Red' }[stats.light] || '미입력';
   const accentColor = { green:'#16a34a', yellow:'#ca8a04', red:'#CC0000' }[stats.light] || '#e5e7eb';
   return `
   <div class="card" style="border-left:4px solid ${accentColor};margin-bottom:16px">
@@ -259,7 +228,7 @@ function renderRankCard(title, list) {
 
 /* ── Quick Nav ── */
 function renderQuickNav(session) {
-  const items = getNavItems(session).slice(1); // exclude dashboard
+  const items = getNavItems(session).slice(1);
   return items.map(item => `
     <a href="${item.href}" class="card" style="display:block;text-align:center;padding:20px;text-decoration:none;cursor:pointer;transition:box-shadow .15s" onmouseover="this.style.boxShadow='0 4px 12px rgba(0,0,0,.1)'" onmouseout="this.style.boxShadow=''">
       <div style="font-size:28px;margin-bottom:8px">${item.icon}</div>
@@ -268,7 +237,7 @@ function renderQuickNav(session) {
 }
 
 /* ── Load Recent Meetings ── */
-async function loadRecentMeetings(session) {
+async function loadRecentMeetings() {
   const el = document.getElementById('recentMeetings');
   if (!el) return;
   try {
@@ -301,32 +270,35 @@ function renderDistChart(g, y, r) {
       labels: ['Green','Yellow','Red'],
       datasets: [{ data: [g,y,r], backgroundColor: ['#16a34a','#ca8a04','#CC0000'], borderWidth: 0 }],
     },
-    options: { responsive: true, plugins: { legend: { position: 'bottom', labels: { font: { family: 'Noto Sans KR', size: 12 } } } } },
+    options: { responsive: true, plugins: { legend: { position: 'bottom', labels: { font: { family:'Noto Sans KR', size:12 } } } } },
   });
 }
 
-function renderWeeklyChart(referral, weeks) {
+function renderWeeklyChart(weekly, weeks) {
   const ctx = document.getElementById('chartWeekly');
   if (!ctx) return;
-  const counts = weeks.map(w => referral.filter(r => sameWeek(r.referral_date, w)).length);
+  const counts = weeks.map(w => {
+    const recs = weekly.filter(r => r.week_date === w);
+    return recs.reduce((s,r) => s + (r.given_t1||0) + (r.given_t2||0), 0);
+  });
   new Chart(ctx, {
     type: 'bar',
     data: {
       labels: weeks.map(w => w.slice(5)),
       datasets: [{ data: counts, backgroundColor: '#CC0000', borderRadius: 4 }],
     },
-    options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } } },
+    options: { responsive: true, plugins: { legend: { display:false } }, scales: { y: { beginAtZero:true, ticks:{ stepSize:1 } } } },
   });
 }
 
-function renderMonthlyChart(referral) {
+function renderMonthlyChart(weekly) {
   const ctx = document.getElementById('chartMonthly');
   if (!ctx) return;
   const monthMap = {};
-  referral.forEach(r => {
-    const m = r.referral_date?.slice(0,7);
+  weekly.forEach(r => {
+    const m = r.week_date?.slice(0,7);
     if (!m) return;
-    monthMap[m] = (monthMap[m] || 0) + (Number(r.amount)||0);
+    monthMap[m] = (monthMap[m] || 0) + (Number(r.tyfcb)||0);
   });
   const labels = Object.keys(monthMap).sort().slice(-6);
   const data   = labels.map(l => monthMap[l]);
@@ -336,16 +308,16 @@ function renderMonthlyChart(referral) {
       labels: labels.map(l => l.slice(2)),
       datasets: [{ data, backgroundColor: '#1a1f2e', borderRadius: 4 }],
     },
-    options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { callback: v => fmtAmt(v) } } } },
+    options: { responsive: true, plugins: { legend: { display:false } }, scales: { y: { beginAtZero:true, ticks:{ callback: v => fmtAmt(v) } } } },
   });
 }
 
 /* ── Helpers ── */
 function getRecentWeeks(n) {
   const today = new Date();
-  const dow = today.getDay();
+  const dow  = today.getDay();
   const diff = (dow >= 3) ? dow - 3 : dow + 4;
-  const wed = new Date(today); wed.setDate(today.getDate() - diff);
+  const wed  = new Date(today); wed.setDate(today.getDate() - diff);
   const weeks = [];
   for (let i = 0; i < n; i++) {
     const d = new Date(wed); d.setDate(wed.getDate() - i * 7);
@@ -354,37 +326,30 @@ function getRecentWeeks(n) {
   return weeks;
 }
 
-function sameWeek(dateStr, weekStart) {
-  if (!dateStr || !weekStart) return false;
-  const d = new Date(dateStr), ws = new Date(weekStart);
-  const we = new Date(ws); we.setDate(ws.getDate() + 6);
-  return d >= ws && d <= we;
-}
-
-function calcMemberStats(memberId, weekly, referral, weeks) {
-  const wRecs = weekly.filter(w => weeks.includes(w.week_start) && w.member_id == memberId);
-  const attendance = wRecs.filter(w => w.attended).length;
-  const ono        = wRecs.reduce((s, w) => s + (w.one_on_one||0), 0);
-  const visitors   = wRecs.reduce((s, w) => s + (w.visitors_count||0), 0);
-  const referrals  = referral.filter(r => r.from_member_id == memberId && weeks.some(w => sameWeek(r.referral_date, w))).length;
+function calcMemberStats(memberName, weekly, weeks) {
+  const recs = weekly.filter(w => weeks.includes(w.week_date) && w.member_name === memberName);
+  const attendance = recs.filter(w => w.attended || w.sick || w.substitute).length;
+  const ono        = recs.reduce((s,w) => s + (w.one_on_one||0), 0);
+  const visitors   = recs.reduce((s,w) => s + (w.visitors||0), 0);
+  const referrals  = recs.reduce((s,w) => s + (w.given_t1||0) + (w.given_t2||0), 0);
   const n = weeks.length;
-  const critAttend   = attendance >= Math.ceil(n * CRITERIA_P.attendanceRate);
-  const critOno      = ono >= n * CRITERIA_P.onoPerWeek;
-  const critReferral = referrals >= n * CRITERIA_P.referralPerWeek;
+  const critAttend   = attendance >= Math.ceil(n * 0.8);
+  const critOno      = ono >= n;
+  const critReferral = referrals >= n;
   let light = 'red';
   if (critAttend && critOno && critReferral) light = 'green';
   else if (critAttend && (critOno || critReferral)) light = 'yellow';
-  else if (!wRecs.length) light = 'new';
+  else if (!recs.length) light = 'new';
   return { attendance, ono, visitors, referrals, light };
 }
 
-function topN(members, statsMap, field, n) {
+function topN(members, statsMap, field, n, unit) {
   return members
-    .map(m => ({ name: m.name, val: statsMap[m.legacy_id ?? m.id]?.[field] ?? 0 }))
+    .map(m => ({ name: m.name, val: statsMap[m.name]?.[field] ?? 0 }))
     .sort((a,b) => b.val - a.val)
     .slice(0, n)
     .filter(x => x.val > 0)
-    .map(x => ({ name: x.name, val: x.val + (field === 'referrals' ? '건' : '회') }));
+    .map(x => ({ name: x.name, val: x.val + unit }));
 }
 
 function cmpArrow(curr, prev, invert = false) {
@@ -401,7 +366,7 @@ function fmtAmt(v) {
 }
 
 /* ── AI 챕터 디렉터 ── */
-function renderAIDirector(allStats, members, referral, total) {
+function renderAIDirector(allStats, members, total) {
   const el = document.getElementById('aiDirectorCard');
   if (!el || !allStats.length) return;
 
@@ -413,37 +378,32 @@ function renderAIDirector(allStats, members, referral, total) {
 
   const points = [];
 
-  // 전반적 건강도
   if (health >= 80)
-    points.push({ type: 'positive', text: `챕터 건강 점수 ${health}점 — Green 멤버 ${green}명(${Math.round(green/total*100)}%)이 활발히 활동 중입니다.` });
+    points.push({ type:'positive', text:`챕터 건강 점수 ${health}점 — Green 멤버 ${green}명(${Math.round(green/total*100)}%)이 활발히 활동 중입니다.` });
   else if (health >= 60)
-    points.push({ type: 'warning',  text: `챕터 건강 점수 ${health}점 — Yellow·Red 멤버 개별 면담을 통한 개선이 필요합니다.` });
+    points.push({ type:'warning',  text:`챕터 건강 점수 ${health}점 — Yellow·Red 멤버 개별 면담을 통한 개선이 필요합니다.` });
   else
-    points.push({ type: 'critical', text: `챕터 건강 점수 ${health}점으로 위험 수준입니다. 멤버십위원회의 즉각적인 개입이 필요합니다.` });
+    points.push({ type:'critical', text:`챕터 건강 점수 ${health}점으로 위험 수준입니다. 멤버십위원회의 즉각적인 개입이 필요합니다.` });
 
-  // Red 멤버
   if (red > 0)
-    points.push({ type: 'action', text: `🔴 Red 멤버 ${red}명(${Math.round(red/total*100)}%) — 멤버십위원회 1:1 면담을 즉시 진행하세요.` });
+    points.push({ type:'action', text:`🔴 Red 멤버 ${red}명(${Math.round(red/total*100)}%) — 멤버십위원회 1:1 면담을 즉시 진행하세요.` });
 
-  // 미입력 멤버
   if (newM > 0)
-    points.push({ type: 'warning', text: `⚪ 데이터 미입력 멤버 ${newM}명 — 정확한 현황 파악에 협조해 주세요.` });
+    points.push({ type:'warning', text:`⚪ 데이터 미입력 멤버 ${newM}명 — 트래픽라이트에 주간 데이터를 입력해 주세요.` });
 
-  // 평균 리퍼럴
-  const totalRefs = allStats.reduce((s, m) => s + (m.referrals || 0), 0);
+  const totalRefs = allStats.reduce((s,m) => s + (m.referrals||0), 0);
   const avgRefs   = total ? (totalRefs / total).toFixed(1) : 0;
   if (parseFloat(avgRefs) < 1)
-    points.push({ type: 'action', text: `4주 평균 리퍼럴 멤버당 ${avgRefs}건 — 목표(1건) 미달입니다.` });
+    points.push({ type:'action', text:`4주 평균 리퍼럴 멤버당 ${avgRefs}건 — 목표(주 1건) 미달입니다.` });
 
-  // 리퍼럴 MVP (statsMap 기준 상위 멤버)
-  const topIdx = allStats.reduce((best, s, i, arr) => s.referrals > arr[best].referrals ? i : best, 0);
+  const topIdx    = allStats.reduce((best,s,i,arr) => s.referrals > arr[best].referrals ? i : best, 0);
   const topMember = members[topIdx];
   if (topMember && allStats[topIdx]?.referrals > 0)
-    points.push({ type: 'positive', text: `리퍼럴 MVP: ${topMember.name}님(${allStats[topIdx].referrals}건) — 미팅에서 공개 인정으로 챕터 문화를 강화하세요.` });
+    points.push({ type:'positive', text:`리퍼럴 MVP: ${topMember.name}님(${allStats[topIdx].referrals}건) — 미팅에서 공개 인정으로 챕터 문화를 강화하세요.` });
 
   if (!points.length) { el.style.display = 'none'; return; }
 
-  const typeIcon = { positive: '✅', warning: '⚠️', critical: '🚨', action: '👉' };
+  const typeIcon = { positive:'✅', warning:'⚠️', critical:'🚨', action:'👉' };
   el.style.display = 'block';
   el.innerHTML = `
     <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
