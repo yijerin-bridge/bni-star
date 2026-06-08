@@ -313,6 +313,10 @@ function renderMonthlyChart(weekly) {
 }
 
 /* ── Helpers ── */
+function toLocalDate(d) {
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
 function getRecentWeeks(n) {
   const today = new Date();
   const dow  = today.getDay();
@@ -321,7 +325,7 @@ function getRecentWeeks(n) {
   const weeks = [];
   for (let i = 0; i < n; i++) {
     const d = new Date(wed); d.setDate(wed.getDate() - i * 7);
-    weeks.push(d.toISOString().slice(0, 10));
+    weeks.push(toLocalDate(d));
   }
   return weeks;
 }
