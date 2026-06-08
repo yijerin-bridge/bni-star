@@ -183,7 +183,7 @@ function deltaStr(curr, prev) {
 /* ── Personal Card ── */
 function renderPersonalCard(session, stats, weeks) {
   const lightEmoji = { green:'🟢', yellow:'🟡', red:'🔴' }[stats.light] || '⚪';
-  const lightLabel = { green:'Green', yellow:'Yellow', red:'Red' }[stats.light] || '미입력';
+  const lightLabel = { green:'Green', yellow:'Yellow', red:'Red' }[stats.light] || '활동 저조';
   const accentColor = { green:'#16a34a', yellow:'#ca8a04', red:'#CC0000' }[stats.light] || '#e5e7eb';
   return `
   <div class="card" style="border-left:4px solid ${accentColor};margin-bottom:16px">
@@ -393,7 +393,7 @@ function renderAIDirector(allStats, members, total) {
     points.push({ type:'action', text:`🔴 Red 멤버 ${red}명(${Math.round(red/total*100)}%) — 멤버십위원회 1:1 면담을 즉시 진행하세요.` });
 
   if (newM > 0)
-    points.push({ type:'warning', text:`⚪ 데이터 미입력 멤버 ${newM}명 — 트래픽라이트에 주간 데이터를 입력해 주세요.` });
+    points.push({ type:'warning', text:`⚫ 활동 저조 멤버 ${newM}명 — 면담 및 활동 독려를 검토해 주세요.` });
 
   const totalRefs = allStats.reduce((s,m) => s + (m.referrals||0), 0);
   const avgRefs   = total ? (totalRefs / total).toFixed(1) : 0;

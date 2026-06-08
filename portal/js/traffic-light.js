@@ -199,7 +199,7 @@ function renderOverview() {
       <span class="score-badge green">🟢 ${green}명</span>
       <span class="score-badge yellow">🟡 ${yellow}명</span>
       <span class="score-badge red">🔴 ${red}명</span>
-      <span class="score-badge gray">⚫ ${gray}명 (미입력)</span>
+      <span class="score-badge gray">⚫ ${gray}명</span>
     </div>
 
     <div class="member-score-grid">
@@ -1664,7 +1664,7 @@ function genAIOverview(memberScores) {
     const redNames = memberScores.filter(m=>m.light==='red').sort((a,b)=>a.total-b.total).slice(0,3).map(m=>m.name);
     tips.push({type:'action',icon:'👉',text:`🔴 Red 멤버 ${red}명 — 즉시 면담 권장: ${redNames.join(', ')}${red>3?' 외':''}`});
   }
-  if (gray > 0) tips.push({type:'warning',icon:'⚠️',text:`⚫ 미입력 멤버 ${gray}명 — 데이터 입력을 독려해 주세요.`});
+  if (gray > 0) tips.push({type:'warning',icon:'⚠️',text:`⚫ 저조 멤버 ${gray}명 — 활동 독려 및 면담을 검토해 주세요.`});
 
   const topM = memberScores.find(m=>m.light==='green'&&m.recs.length>0);
   if (topM) tips.push({type:'positive',icon:'🏆',text:`최고 점수: ${topM.name}님 ${topM.total}점 — 멤버십 모범 사례로 공유해 챕터 문화를 강화하세요.`});

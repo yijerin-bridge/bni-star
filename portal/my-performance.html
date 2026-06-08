@@ -42,7 +42,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   const stats4 = calcStats(myName, weekly, weeks4);
 
   const lc    = { green:'#16a34a', yellow:'#ca8a04', red:'#CC0000', new:'#9ca3af' }[stats4.light] || '#9ca3af';
-  const lbl   = { green:'Green 🟢', yellow:'Yellow 🟡', red:'Red 🔴', new:'미입력 ⚪' }[stats4.light] || '—';
+  const lbl   = { green:'Green 🟢', yellow:'Yellow 🟡', red:'Red 🔴', new:'활동 저조 ⚫' }[stats4.light] || '—';
 
   bodyEl.innerHTML = `
     <div class="page-header">
