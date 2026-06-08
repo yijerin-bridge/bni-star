@@ -1697,7 +1697,7 @@ function genAIMember(name, recs, sc) {
   if (sc.breakdown.referral < 20) {
     const avg = parseFloat(sc.stats.avgRef) || 0;
     const next = avg < 0.5 ? '주 1건' : avg < 1.0 ? '주 1건 이상' : '주 1.2건';
-    tips.push({type:'action', icon:'🤝', text:`리퍼럴 주평균 ${sc.stats.avgRef}건 → 목표 ${next}. 이번 주 1:1 미팅에서 "소개해 줄 분 있으세요?"라고 직접 물어보세요. 어렵다면 원투원코디에게 도움을 요청하세요.`});
+    tips.push({type:'action', icon:'🤝', text:`리퍼럴 주평균 ${sc.stats.avgRef}건 → 목표 ${next}. 1:1 상대 중 지금 바로 소개해 줄 수 있는 분을 떠올려 보세요. 어렵다면 원투원코디에게 도움을 요청하세요.`});
   }
 
   if (sc.breakdown.visitor < 20) {
@@ -1719,7 +1719,7 @@ function genAIMember(name, recs, sc) {
   // 지금 당장 가장 효과적인 행동 하나
   if (sc.light !== 'green') {
     const candidates = [
-      { gap: 20 - sc.breakdown.referral, label:'리퍼럴',   icon:'🤝', action:'이번 주 1:1 미팅에서 "소개해 줄 분 있으세요?"라고 직접 물어보세요. 주 1건이 목표입니다.' },
+      { gap: 20 - sc.breakdown.referral, label:'리퍼럴',   icon:'🤝', action:'내 1:1 상대 중 소개해 줄 수 있는 분을 떠올려 보세요. 주 1건 소개가 목표입니다.' },
       { gap: 20 - sc.breakdown.visitor,  label:'비지터',   icon:'🙋', action:'지금 바로 주변 1명에게 연락해 다음 미팅에 초대하세요.' },
       { gap: 15 - sc.breakdown.absence,  label:'출석',     icon:'📅', action:'다음 미팅부터 빠지지 마세요. 불가피하면 반드시 대리인을 보내세요.' },
       { gap: 15 - sc.breakdown.tyfcb,    label:'감사장',   icon:'💰', action:'받은 리퍼럴 중 성사된 건이 있다면 지금 바로 감사장을 기록하세요.' },
