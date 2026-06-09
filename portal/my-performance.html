@@ -58,8 +58,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         <div class="kpi-num" style="color:${lc};font-size:18px">${lbl}</div>
       </div>
       <div class="kpi-card">
-        <div class="kpi-label">출석 (4주)</div>
-        <div class="kpi-num">${stats4.attendance}/4</div>
+        <div class="kpi-label">출석 (기록 ${stats4.recorded}주)</div>
+        <div class="kpi-num">${stats4.attendance}/${stats4.recorded}</div>
       </div>
       <div class="kpi-card">
         <div class="kpi-label">1:1 미팅 (4주)</div>
@@ -177,15 +177,15 @@ function calcStats(name, weekly, weeks) {
   const recvRef    = recs.reduce((s,w) => s + (w.received_t1||0) + (w.received_t2||0), 0);
   const visitors   = recs.reduce((s,w) => s + (w.visitors||0), 0);
   const tyfcb      = recs.reduce((s,w) => s + (Number(w.tyfcb)||0), 0);
-  const n = weeks.length;
+  const n = recs.length; // 기록된 주수만 분모로
+  if (!n) return { attendance, ono, givenRef, recvRef, visitors, tyfcb, light: 'new', recorded: 0 };
   const critA = attendance >= Math.ceil(n * 0.8);
   const critO = ono      >= n;
   const critR = givenRef >= n;
   let light = 'red';
   if (critA && critO && critR) light = 'green';
   else if (critA && (critO || critR)) light = 'amber';
-  else if (!recs.length) light = 'new';
-  return { attendance, ono, givenRef, recvRef, visitors, tyfcb, light };
+  return { attendance, ono, givenRef, recvRef, visitors, tyfcb, light, recorded: n };
 }
 
 function toLocalDate(d) {
