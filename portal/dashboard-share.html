@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BNI STAR — 챕터 현황</title>
+  <meta name="robots" content="noindex, nofollow">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="/js/supabase-config.js"></script>
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:'Noto Sans KR',sans-serif;font-size:14px;background:#f0f2f5;color:#111827;padding:20px 16px}
+    .wrap{max-width:900px;margin:0 auto}
+    .hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;flex-wrap:wrap;gap:12px}
+    .hdr-left{display:flex;align-items:center;gap:10px}
+    .logo{font-size:16px;font-weight:900;color:#CC0000}
+    .hdr-title{font-size:20px;font-weight:900}
+    .hdr-sub{font-size:12px;color:#9ca3af;margin-top:2px}
+    .ro-tag{font-size:11px;color:#9ca3af;background:#f3f4f6;padding:3px 10px;border-radius:20px}
+    .card{background:#fff;border-radius:12px;border:1px solid #e5e7eb;padding:18px;margin-bottom:14px}
+    .card-title{font-size:11px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px}
+    .section-row{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
+    @media(max-width:600px){.section-row{grid-template-columns:1fr}}
+    .kpi-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px;margin-bottom:14px}
+    .kpi-card{background:#fff;border-radius:10px;border:1px solid #e5e7eb;padding:14px}
+    .kpi-label{font-size:11px;color:#6b7280;margin-bottom:4px}
+    .kpi-num{font-size:22px;font-weight:900}
+    .tl-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+    .tl-pill{display:inline-flex;align-items:center;gap:6px;padding:6px 14px;border-radius:20px;font-size:13px;font-weight:700}
+    .tl-pill.green{background:#dcfce7;color:#166534}
+    .tl-pill.amber{background:#fef9c3;color:#713f12}
+    .tl-pill.red{background:#fee2e2;color:#7f1d1d}
+    .tl-pill.gray{background:#f3f4f6;color:#374151}
+    .rank-list{display:flex;flex-direction:column;gap:6px}
+    .rank-item{display:flex;align-items:center;gap:10px;font-size:13px}
+    .rank-num{font-size:12px;font-weight:700;width:20px;text-align:center;color:#9ca3af}
+    .rank-num.top1{color:#f59e0b}.rank-num.top2{color:#6b7280}.rank-num.top3{color:#92400e}
+    .rank-name{flex:1}
+    .rank-val{font-weight:700;color:#1a1f2e}
+    .footer{text-align:center;font-size:11px;color:#d1d5db;margin-top:24px}
+    .img-btn{padding:6px 16px;font-size:12px;border:1.5px solid #e5e7eb;border-radius:20px;background:#fff;cursor:pointer;font-family:inherit}
+  </style>
+</head>
+<body>
+<div class="wrap" id="wrap">
+  <div class="hdr">
+    <div class="hdr-left">
+      <span class="logo">BNI ★ STAR</span>
+      <div>
+        <div class="hdr-title">챕터 현황</div>
+        <div class="hdr-sub" id="hdrSub">불러오는 중...</div>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center">
+      <span class="ro-tag">🔒 읽기 전용</span>
+      <button class="img-btn" id="imgBtn" onclick="saveImage()">📸 이미지 저장</button>
+    </div>
+  </div>
+
+  <div id="root"><div style="text-align:center;padding:60px;color:#9ca3af">데이터 불러오는 중...</div></div>
+  <div class="footer">BNI STAR Portal · 챕터 현황 공유 페이지 · <span id="genTime"></span></div>
+</div>
+
+<script>
+const CHAPTER_LAUNCH = '2026-05-13';
+
+function toLocalDate(d) {
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
+function getRecentWeeks(n) {
+  const today = new Date(), dow = today.getDay();
+  const diff = dow >= 3 ? dow - 3 : dow + 4;
+  const wed = new Date(today); wed.setDate(today.getDate() - diff);
+  return Array.from({length:n}, (_,i) => { const d=new Date(wed); d.setDate(wed.getDate()-i*7); return toLocalDate(d); });
+}
+
+function fmtAmt(v) {
+  const n = Number(v)||0;
+  if (n >= 100000000) return (n/100000000).toFixed(1)+'억원';
+  return n.toLocaleString('ko-KR')+'원';
+}
+
+function scoreAbsence(n)    { return n>2?0:n===2?5:n===1?10:15; }
+function scoreLate(n)       { return n>=2?0:n===1?5:10; }
+function scoreReferral(avg) { return avg<0.5?0:avg<0.75?5:avg<1.0?10:avg<1.2?15:20; }
+function scoreTyfcb(t)      { return t<25000000?0:t<50000000?5:t<100000000?10:15; }
+function scoreVisitor(avg)  { return avg<0.1?0:avg<0.2?5:avg<0.4?10:avg<0.6?15:20; }
+function scoreOno(avg)      { return avg<1?0:avg<2?5:10; }
+function scoreCeu(t)        { return t<5?0:t<15?5:10; }
+
+function calcLight(recs) {
+  const n = recs.length; if (!n) return 'gray';
+  const absN = recs.filter(r=>r.absent).length;
+  const lateN = recs.filter(r=>r.late).length;
+  const totRef = recs.reduce((s,r)=>s+(r.given_t1||0)+(r.given_t2||0),0);
+  const totVis = recs.reduce((s,r)=>s+(r.visitors||0),0);
+  const totOno = recs.reduce((s,r)=>s+(r.one_on_one||0),0);
+  const totTyf = recs.reduce((s,r)=>s+(Number(r.tyfcb)||0),0);
+  const totCeu = recs.reduce((s,r)=>s+(r.ceu||0),0);
+  const total = scoreAbsence(absN)+scoreLate(lateN)+scoreReferral(totRef/n)+scoreTyfcb(totTyf)+scoreVisitor(totVis/n)+scoreOno(totOno/n)+scoreCeu(totCeu);
+  return total>=70?'green':total>=50?'amber':total>=30?'red':'gray';
+}
+
+function renderRank(title, list) {
+  const nc = i => i===0?'top1':i===1?'top2':i===2?'top3':'';
+  return `<div class="card">
+    <div class="card-title">${title}</div>
+    <div class="rank-list">
+      ${list.length ? list.map((x,i)=>`<div class="rank-item"><span class="rank-num ${nc(i)}">${i+1}</span><span class="rank-name">${x.name}</span><span class="rank-val">${x.val}</span></div>`).join('') : '<div style="color:#9ca3af;font-size:13px">데이터 없음</div>'}
+    </div>
+  </div>`;
+}
+
+(async () => {
+  const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+  const [wRes, mRes] = await Promise.all([
+    sb.from('weekly_records').select('*'),
+    sb.from('members').select('*').eq('is_active', true).order('name'),
+  ]);
+  const weekly  = wRes.data || [];
+  const members = mRes.data || [];
+  const weeks4  = getRecentWeeks(4);
+  const w4      = weekly.filter(w => weeks4.includes(w.week_date));
+
+  // 트래픽라이트 색상
+  const lightMap = {};
+  members.forEach(m => { lightMap[m.name] = calcLight(weekly.filter(r => r.member_name === m.name)); });
+
+  const green = Object.values(lightMap).filter(l=>l==='green').length;
+  const amber = Object.values(lightMap).filter(l=>l==='amber').length;
+  const red   = Object.values(lightMap).filter(l=>l==='red').length;
+  const gray  = Object.values(lightMap).filter(l=>l==='gray').length;
+
+  // KPI
+  const attendCnt  = w4.filter(r=>r.attended||r.sick||r.substitute).length;
+  const attendPct  = w4.length ? Math.round(attendCnt/w4.length*100) : 0;
+  const refCnt     = w4.reduce((s,r)=>s+(r.given_t1||0)+(r.given_t2||0),0);
+  const visCnt     = w4.reduce((s,r)=>s+(r.visitors||0),0);
+  const onoCnt     = w4.reduce((s,r)=>s+(r.one_on_one||0),0);
+  const tyfcb4     = w4.reduce((s,r)=>s+(Number(r.tyfcb)||0),0);
+
+  // 랭킹
+  const mkTop = (field, unit, fmt) => members.map(m => {
+    const recs = weekly.filter(r=>r.member_name===m.name);
+    const val = recs.reduce((s,r)=>s+(field==='tyfcb'?Number(r.tyfcb)||0:(r[field]||0)),0);
+    return {name:m.name, val};
+  }).sort((a,b)=>b.val-a.val).slice(0,5).filter(x=>x.val>0).map(x=>({name:x.name,val:fmt?fmt(x.val):x.val+unit}));
+
+  const now = new Date().toLocaleDateString('ko-KR',{year:'numeric',month:'long',day:'numeric'});
+  document.getElementById('hdrSub').textContent = `${now} · 최근 4주 기준`;
+  document.getElementById('genTime').textContent = now + ' 기준';
+
+  document.getElementById('root').innerHTML = `
+    <div class="tl-row">
+      <div class="tl-pill green">🟢 Green ${green}명</div>
+      <div class="tl-pill amber">🟡 Amber ${amber}명</div>
+      <div class="tl-pill red">🔴 Red ${red}명</div>
+      <div class="tl-pill gray">⚫ Gray ${gray}명</div>
+    </div>
+
+    <div class="kpi-grid">
+      ${[
+        ['활성 멤버',   members.length+'명'],
+        ['출석률',      attendPct+'%'],
+        ['리퍼럴',      refCnt+'건'],
+        ['비지터 초대', visCnt+'명'],
+        ['원투원',      onoCnt+'회'],
+        ['감사장 금액', fmtAmt(tyfcb4)],
+      ].map(([l,v])=>`<div class="kpi-card"><div class="kpi-label">${l}</div><div class="kpi-num">${v}</div></div>`).join('')}
+    </div>
+
+    <div class="section-row">
+      <div>
+        <div class="card" style="margin-bottom:14px">
+          <div class="card-title">트래픽라이트 분포</div>
+          <canvas id="chartDist" height="180"></canvas>
+        </div>
+      </div>
+      <div>
+        ${renderRank('리퍼럴 Top 5',
+          members.map(m=>({name:m.name,val:weekly.filter(r=>r.member_name===m.name).reduce((s,r)=>s+(r.given_t1||0)+(r.given_t2||0),0)})).sort((a,b)=>b.val-a.val).slice(0,5).filter(x=>x.val>0).map(x=>({name:x.name,val:x.val+'건'}))
+        )}
+      </div>
+    </div>
+
+    <div class="section-row">
+      ${renderRank('비지터 초대 Top 5',
+        members.map(m=>({name:m.name,val:weekly.filter(r=>r.member_name===m.name).reduce((s,r)=>s+(r.visitors||0),0)})).sort((a,b)=>b.val-a.val).slice(0,5).filter(x=>x.val>0).map(x=>({name:x.name,val:x.val+'명'}))
+      )}
+      ${renderRank('감사장 금액 Top 5',
+        members.map(m=>({name:m.name,val:weekly.filter(r=>r.member_name===m.name).reduce((s,r)=>s+(Number(r.tyfcb)||0),0)})).sort((a,b)=>b.val-a.val).slice(0,5).filter(x=>x.val>0).map(x=>({name:x.name,val:fmtAmt(x.val)}))
+      )}
+    </div>
+  `;
+
+  new Chart(document.getElementById('chartDist'), {
+    type: 'doughnut',
+    data: {
+      labels: ['Green','Amber','Red','Gray'],
+      datasets: [{ data:[green,amber,red,gray], backgroundColor:['#16a34a','#ca8a04','#CC0000','#9ca3af'], borderWidth:0 }],
+    },
+    options: { responsive:true, plugins:{ legend:{ position:'bottom', labels:{ font:{family:'Noto Sans KR',size:12} } } } },
+  });
+})();
+
+async function saveImage() {
+  const btn = document.getElementById('imgBtn');
+  btn.disabled = true; btn.textContent = '저장 중...';
+  try {
+    const canvas = await html2canvas(document.getElementById('wrap'), { scale:2, useCORS:true, backgroundColor:'#f0f2f5' });
+    const link = document.createElement('a');
+    link.download = `BNI-STAR-챕터현황-${new Date().toISOString().slice(0,10)}.png`;
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+  } finally {
+    btn.disabled = false; btn.textContent = '📸 이미지 저장';
+  }
+}
+</script>
+</body>
+</html>

@@ -2,6 +2,34 @@
    BNI STAR Portal — Dashboard  (weekly_records 기반)
    ============================================================ */
 
+function copyShareLink() {
+  const url = location.origin + '/portal/dashboard-share.html';
+  navigator.clipboard.writeText(url).then(() => showToastDB('링크가 복사되었습니다!'));
+}
+
+async function saveAsImage() {
+  const btn = event.target;
+  btn.disabled = true; btn.textContent = '저장 중...';
+  try {
+    const el = document.getElementById('portal-body') || document.body;
+    const canvas = await html2canvas(el, { scale: 2, useCORS: true, backgroundColor: '#f0f2f5' });
+    const link = document.createElement('a');
+    link.download = `BNI-STAR-대시보드-${new Date().toISOString().slice(0,10)}.png`;
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+  } finally {
+    btn.disabled = false; btn.textContent = '📸 이미지 저장';
+  }
+}
+
+function showToastDB(msg) {
+  const t = document.createElement('div');
+  t.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1a1f2e;color:#fff;padding:10px 20px;border-radius:20px;font-size:13px;z-index:999;animation:fadeIn .2s';
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 2500);
+}
+
 document.addEventListener('DOMContentLoaded', async () => {
   const layout = renderPortalLayout({ title: '대시보드' });
   if (!layout) return;
@@ -90,7 +118,11 @@ function buildDashboard(session, el, members, weekly) {
         <h1>안녕하세요, ${session.memberName || ''}님 👋</h1>
         <p>${new Date().toLocaleDateString('ko-KR', {year:'numeric',month:'long',day:'numeric'})} · 최근 4주 기준</p>
       </div>
-      ${isLeader ? `<a href="/portal/traffic-light.html" class="btn btn-primary btn-sm">트래픽라이트 →</a>` : ''}
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn btn-outline btn-sm" onclick="copyShareLink()">🔗 공유 링크</button>
+        <button class="btn btn-outline btn-sm" onclick="saveAsImage()">📸 이미지 저장</button>
+        ${isLeader ? `<a href="/portal/traffic-light.html" class="btn btn-primary btn-sm">트래픽라이트 →</a>` : ''}
+      </div>
     </div>
 
     ${isLeader ? `

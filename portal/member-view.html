@@ -41,11 +41,13 @@
     <span class="hdr-name" id="hdrName">—</span>
     <span class="hdr-co" id="hdrCo"></span>
     <span class="ro-tag">🔒 읽기 전용</span>
+    <button onclick="saveMemberImage()" style="margin-left:8px;padding:4px 12px;font-size:12px;border:1.5px solid #e5e7eb;border-radius:20px;background:#fff;cursor:pointer;font-family:inherit" id="imgBtn">📸 이미지 저장</button>
   </div>
   <div id="root"><div style="text-align:center;padding:60px;color:#9ca3af">불러오는 중...</div></div>
   <div class="footer">BNI STAR Portal · 읽기 전용 공유 링크</div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="/js/supabase-config.js"></script>
 <script>
@@ -216,6 +218,21 @@ function genAITips(name, sc) {
 })();
 
 function showErr(msg){document.getElementById('root').innerHTML=`<div style="background:#fee2e2;border:1px solid #fca5a5;color:#7f1d1d;padding:16px;border-radius:10px">${msg}</div>`;}
+
+async function saveMemberImage() {
+  const btn = document.getElementById('imgBtn');
+  btn.disabled = true; btn.textContent = '저장 중...';
+  try {
+    const name = new URLSearchParams(location.search).get('name') || 'member';
+    const canvas = await html2canvas(document.querySelector('.wrap'), { scale: 2, useCORS: true, backgroundColor: '#f0f2f5' });
+    const link = document.createElement('a');
+    link.download = `BNI-STAR-${name}-${new Date().toISOString().slice(0,10)}.png`;
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+  } finally {
+    btn.disabled = false; btn.textContent = '📸 이미지 저장';
+  }
+}
 </script>
 </body>
 </html>
