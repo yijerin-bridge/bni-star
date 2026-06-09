@@ -330,20 +330,46 @@ function getRecentWeeks(n) {
   return weeks;
 }
 
+/* traffic-light.js와 동일한 채점 함수 */
+function _scoreAbsence(n)    { return n > 2 ? 0 : n === 2 ? 5 : n === 1 ? 10 : 15; }
+function _scoreLate(n)       { return n >= 2 ? 0 : n === 1 ? 5 : 10; }
+function _scoreRef(avg)      { return avg < 0.5 ? 0 : avg < 0.75 ? 5 : avg < 1.0 ? 10 : avg < 1.2 ? 15 : 20; }
+function _scoreTyfcb(tot)    { return tot < 25000000 ? 0 : tot < 50000000 ? 5 : tot < 100000000 ? 10 : 15; }
+function _scoreVisitor(avg)  { return avg < 0.1 ? 0 : avg < 0.2 ? 5 : avg < 0.4 ? 10 : avg < 0.6 ? 15 : 20; }
+function _scoreOno(avg)      { return avg < 1 ? 0 : avg < 2 ? 5 : 10; }
+function _scoreCeu(tot)      { return tot < 5 ? 0 : tot < 15 ? 5 : 10; }
+
 function calcMemberStats(memberName, weekly, weeks) {
-  const recs = weekly.filter(w => weeks.includes(w.week_date) && w.member_name === memberName);
-  const attendance = recs.filter(w => w.attended || w.sick || w.substitute).length;
-  const ono        = recs.reduce((s,w) => s + (w.one_on_one||0), 0);
-  const visitors   = recs.reduce((s,w) => s + (w.visitors||0), 0);
-  const referrals  = recs.reduce((s,w) => s + (w.given_t1||0) + (w.given_t2||0), 0);
-  const n = weeks.length;
-  const critAttend   = attendance >= Math.ceil(n * 0.8);
-  const critOno      = ono >= n;
-  const critReferral = referrals >= n;
-  let light = 'red';
-  if (critAttend && critOno && critReferral) light = 'green';
-  else if (critAttend && (critOno || critReferral)) light = 'yellow';
-  else if (!recs.length) light = 'new';
+  // KPI용: 주어진 weeks 범위 내 집계
+  const wRecs = weekly.filter(w => weeks.includes(w.week_date) && w.member_name === memberName);
+  const attendance = wRecs.filter(w => w.attended || w.sick || w.substitute).length;
+  const ono        = wRecs.reduce((s,w) => s + (w.one_on_one||0), 0);
+  const visitors   = wRecs.reduce((s,w) => s + (w.visitors||0), 0);
+  const referrals  = wRecs.reduce((s,w) => s + (w.given_t1||0) + (w.given_t2||0), 0);
+
+  // 트래픽라이트 색상: 전체 기록 기준 7항목 채점 (traffic-light.js와 동일)
+  const allRecs  = weekly.filter(w => w.member_name === memberName);
+  const recorded = allRecs.length;
+  if (!recorded) return { attendance, ono, visitors, referrals, light: 'gray' };
+
+  const absN   = allRecs.filter(w => w.absent).length;
+  const lateN  = allRecs.filter(w => w.late).length;
+  const totRef = allRecs.reduce((s,w) => s + (w.given_t1||0) + (w.given_t2||0), 0);
+  const totVis = allRecs.reduce((s,w) => s + (w.visitors||0), 0);
+  const totOno = allRecs.reduce((s,w) => s + (w.one_on_one||0), 0);
+  const totTyf = allRecs.reduce((s,w) => s + (Number(w.tyfcb)||0), 0);
+  const totCeu = allRecs.reduce((s,w) => s + (w.ceu||0), 0);
+
+  const total =
+    _scoreAbsence(absN) +
+    _scoreLate(lateN) +
+    _scoreRef(totRef / recorded) +
+    _scoreTyfcb(totTyf) +
+    _scoreVisitor(totVis / recorded) +
+    _scoreOno(totOno / recorded) +
+    _scoreCeu(totCeu);
+  const light = total >= 70 ? 'green' : total >= 50 ? 'yellow' : total >= 30 ? 'red' : 'gray';
+
   return { attendance, ono, visitors, referrals, light };
 }
 
