@@ -169,23 +169,42 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 });
 
+/* traffic-light.js와 동일한 7항목 채점 */
+function _sAbs(n)   { return n>2?0:n===2?5:n===1?10:15; }
+function _sLate(n)  { return n>=2?0:n===1?5:10; }
+function _sRef(avg) { return avg<0.5?0:avg<0.75?5:avg<1.0?10:avg<1.2?15:20; }
+function _sTyf(t)   { return t<25000000?0:t<50000000?5:t<100000000?10:15; }
+function _sVis(avg) { return avg<0.1?0:avg<0.2?5:avg<0.4?10:avg<0.6?15:20; }
+function _sOno(avg) { return avg<1?0:avg<2?5:10; }
+function _sCeu(t)   { return t<5?0:t<15?5:10; }
+
 function calcStats(name, weekly, weeks) {
+  // KPI 수치: 최근 N주 기록만
   const recs = weekly.filter(w => weeks.includes(w.week_date));
+  const recorded   = recs.length;
   const attendance = recs.filter(w => w.attended || w.sick || w.substitute).length;
   const ono        = recs.reduce((s,w) => s + (w.one_on_one||0), 0);
   const givenRef   = recs.reduce((s,w) => s + (w.given_t1||0) + (w.given_t2||0), 0);
   const recvRef    = recs.reduce((s,w) => s + (w.received_t1||0) + (w.received_t2||0), 0);
   const visitors   = recs.reduce((s,w) => s + (w.visitors||0), 0);
   const tyfcb      = recs.reduce((s,w) => s + (Number(w.tyfcb)||0), 0);
-  const n = recs.length; // 기록된 주수만 분모로
-  if (!n) return { attendance, ono, givenRef, recvRef, visitors, tyfcb, light: 'new', recorded: 0 };
-  const critA = attendance >= Math.ceil(n * 0.8);
-  const critO = ono      >= n;
-  const critR = givenRef >= n;
-  let light = 'red';
-  if (critA && critO && critR) light = 'green';
-  else if (critA && (critO || critR)) light = 'amber';
-  return { attendance, ono, givenRef, recvRef, visitors, tyfcb, light, recorded: n };
+
+  // light: 전체 기록 기준 7항목 채점 (traffic-light.js, dashboard.js와 동일)
+  const allRecs = weekly; // 이미 member_name 필터링된 상태로 전달됨
+  const ar = allRecs.length;
+  if (!ar) return { attendance, ono, givenRef, recvRef, visitors, tyfcb, light: 'gray', recorded };
+
+  const absN   = allRecs.filter(w => w.absent).length;
+  const lateN  = allRecs.filter(w => w.late).length;
+  const totRef = allRecs.reduce((s,w) => s + (w.given_t1||0) + (w.given_t2||0), 0);
+  const totVis = allRecs.reduce((s,w) => s + (w.visitors||0), 0);
+  const totOno = allRecs.reduce((s,w) => s + (w.one_on_one||0), 0);
+  const totTyf = allRecs.reduce((s,w) => s + (Number(w.tyfcb)||0), 0);
+  const totCeu = allRecs.reduce((s,w) => s + (w.ceu||0), 0);
+  const total  = _sAbs(absN)+_sLate(lateN)+_sRef(totRef/ar)+_sTyf(totTyf)+_sVis(totVis/ar)+_sOno(totOno/ar)+_sCeu(totCeu);
+  const light  = total>=70?'green':total>=50?'amber':total>=30?'red':'gray';
+
+  return { attendance, ono, givenRef, recvRef, visitors, tyfcb, light, recorded };
 }
 
 function toLocalDate(d) {

@@ -198,12 +198,12 @@ function renderPersonalCard(session, stats, weeks) {
       <div style="display:flex;align-items:center;gap:8px">
         <span style="font-size:20px">${lightEmoji}</span>
         <span style="font-size:15px;font-weight:700;color:${accentColor}">${lightLabel}</span>
-        <span style="font-size:11px;color:#9ca3af">최근 ${weeks}주</span>
+        <span style="font-size:11px;color:#9ca3af">기록 ${stats.recorded}주 기준</span>
       </div>
       <a href="/portal/my-performance.html" class="btn btn-outline btn-sm">상세 보기 →</a>
     </div>
     <div class="kpi-grid" style="grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:10px">
-      ${myKpiCard('출석', stats.attendance + '/' + weeks + '회')}
+      ${myKpiCard('출석', stats.attendance + '/' + stats.recorded + '회')}
       ${myKpiCard('비지터 초대', stats.visitors + '명')}
       ${myKpiCard('1:1 미팅', stats.ono + '회')}
       ${myKpiCard('리퍼럴', stats.referrals + '건')}
@@ -377,7 +377,7 @@ function calcMemberStats(memberName, weekly, weeks) {
     _scoreCeu(totCeu);
   const light = total >= 70 ? 'green' : total >= 50 ? 'amber' : total >= 30 ? 'red' : 'gray';
 
-  return { attendance, ono, visitors, referrals, tyfcb: totTyf, light };
+  return { attendance, ono, visitors, referrals, tyfcb: totTyf, light, recorded: wRecs.length };
 }
 
 function topN(members, statsMap, field, n, unit) {
