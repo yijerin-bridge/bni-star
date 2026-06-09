@@ -257,14 +257,20 @@ function renderDetail(preselect = null) {
         <option value="">-- 선택 --</option>
         ${names.map(n=>`<option value="${n}" ${n===preselect?'selected':''}>${n}</option>`).join('')}
       </select>
-      <button id="shareBtn" class="btn btn-outline btn-sm" style="margin-left:auto;display:none">🔗 공유 링크 복사</button>
+      <div style="margin-left:auto;display:flex;gap:8px">
+        <button id="shareBtn" class="btn btn-outline btn-sm" style="display:none">🔗 공유 링크 복사</button>
+        <button id="imgSaveBtn" class="btn btn-outline btn-sm" style="display:none">📸 이미지 저장</button>
+      </div>
     </div>
     <div id="det-body"></div>
   `;
   el.querySelector('#det-member').addEventListener('change', e => {
     renderMemberDetail(e.target.value);
-    const btn = document.getElementById('shareBtn');
-    if (btn) btn.style.display = e.target.value ? '' : 'none';
+    const show = !!e.target.value;
+    const shareBtn = document.getElementById('shareBtn');
+    const imgBtn   = document.getElementById('imgSaveBtn');
+    if (shareBtn) shareBtn.style.display = show ? '' : 'none';
+    if (imgBtn)   imgBtn.style.display   = show ? '' : 'none';
   });
   el.querySelector('#shareBtn').addEventListener('click', () => {
     const name = document.getElementById('det-member').value;
@@ -272,10 +278,28 @@ function renderDetail(preselect = null) {
     const url = `${location.origin}/portal/member-view.html?name=${encodeURIComponent(name)}`;
     navigator.clipboard.writeText(url).then(() => showToast('공유 링크 복사됨!')).catch(() => prompt('링크를 복사하세요:', url));
   });
+  el.querySelector('#imgSaveBtn').addEventListener('click', async () => {
+    const name = document.getElementById('det-member').value;
+    if (!name) return;
+    const btn = document.getElementById('imgSaveBtn');
+    btn.disabled = true; btn.textContent = '저장 중...';
+    try {
+      const target = document.getElementById('det-body');
+      const canvas = await html2canvas(target, { scale: 2, useCORS: true, backgroundColor: '#f0f2f5' });
+      const link = document.createElement('a');
+      link.download = `BNI-STAR-${name}-${new Date().toISOString().slice(0,10)}.png`;
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+    } finally {
+      btn.disabled = false; btn.textContent = '📸 이미지 저장';
+    }
+  });
   if (preselect) {
     renderMemberDetail(preselect);
-    const btn = document.getElementById('shareBtn');
-    if (btn) btn.style.display = '';
+    const shareBtn = document.getElementById('shareBtn');
+    const imgBtn   = document.getElementById('imgSaveBtn');
+    if (shareBtn) shareBtn.style.display = '';
+    if (imgBtn)   imgBtn.style.display   = '';
   }
 }
 
