@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
@@ -96,7 +96,7 @@ function calcMemberScore(recs, pastWeeks) {
   const s1=scoreAbsence(absN),s2=scoreLate(lateN),s3=scoreReferral(totRef/W);
   const s4=scoreTyfcb(totTyf),s5=scoreVisitor(totVis/W),s6=scoreOno(totOno/W),s7=scoreCeu(totCeu);
   const total=s1+s2+s3+s4+s5+s6+s7;
-  return {total,light:total>=70?'green':total>=50?'yellow':total>=30?'red':'gray',
+  return {total,light:total>=70?'green':total>=50?'amber':total>=30?'red':'gray',
     breakdown:{absence:s1,late:s2,referral:s3,tyfcb:s4,visitor:s5,ono:s6,ceu:s7},
     stats:{n,absN,lateN,totRef,totVis,totOno,totTyf,totCeu,
       avgRef:(totRef/W).toFixed(2),avgVis:(totVis/W).toFixed(2),avgOno:(totOno/W).toFixed(2)}};
@@ -106,12 +106,12 @@ function genAITips(name, sc) {
   const tips = [];
   const lMsg = {
     green:'모든 항목 기준 충족 — 챕터의 모범입니다!',
-    yellow:'Green까지 한 걸음! 아래 항목을 집중하면 달성 가능합니다.',
+    amber:'Green까지 한 걸음! 아래 항목을 집중하면 달성 가능합니다.',
     red:'활동 강화가 필요합니다. 트래픽라이트위원·원투원코디·멘토링코디와 면담을 통해 실천 계획을 세워보세요.',
     gray:`${name}님의 BNI 활동이 저조합니다. 지금 바로 리퍼럴·1:1·비지터 활동을 시작해 보세요!`,
   };
-  const lType={green:'positive',yellow:'warning',red:'critical',gray:'critical'};
-  const lIcon={green:'✅',yellow:'⚠️',red:'🚨',gray:'🔔'};
+  const lType={green:'positive',amber:'warning',red:'critical',gray:'critical'};
+  const lIcon={green:'✅',amber:'⚠️',red:'🚨',gray:'🔔'};
   tips.push({type:lType[sc.light],icon:lIcon[sc.light],text:`현재 ${sc.total}점 · ${lMsg[sc.light]}`});
   if(sc.breakdown.absence<15) tips.push({type:'action',icon:'📅',text:`결석 ${sc.stats.absN}회 (${15-sc.breakdown.absence}점 손실) — 매주 참석 최우선. 불가피하면 대리인을 보내세요.`});
   if(sc.breakdown.late<10)    tips.push({type:'action',icon:'⏰',text:`지각/조퇴 ${sc.stats.lateN}회 — 10분 전 도착 습관화로 ${10-sc.breakdown.late}점 회복 가능합니다.`});
@@ -154,8 +154,8 @@ function genAITips(name, sc) {
   const elapsed  = memWeeks.filter(w => w <= TODAY).length;
   const recorded = new Set((recs||[]).map(r=>r.week_date)).size;
   const sc       = calcMemberScore(recs||[], Math.max(elapsed, recorded));
-  const lEmoji   = {green:'🟢',yellow:'🟡',red:'🔴',gray:'⚫'}[sc.light]||'⚫';
-  const lColor   = {green:'#16a34a',yellow:'#ca8a04',red:'#CC0000',gray:'#9ca3af'}[sc.light];
+  const lEmoji   = {green:'🟢',amber:'🟡',red:'🔴',gray:'⚫'}[sc.light]||'⚫';
+  const lColor   = {green:'#16a34a',amber:'#ca8a04',red:'#CC0000',gray:'#9ca3af'}[sc.light];
   const isNew    = member?.joined_date && member.joined_date > CHAPTER_LAUNCH;
 
   const scoreItems = [

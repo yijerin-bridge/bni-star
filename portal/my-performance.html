@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
@@ -41,8 +41,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   const stats4 = calcStats(myName, weekly, weeks4);
 
-  const lc    = { green:'#16a34a', yellow:'#ca8a04', red:'#CC0000', new:'#9ca3af' }[stats4.light] || '#9ca3af';
-  const lbl   = { green:'Green 🟢', yellow:'Yellow 🟡', red:'Red 🔴', new:'활동 저조 ⚫' }[stats4.light] || '—';
+  const lc    = { green:'#16a34a', amber:'#ca8a04', red:'#CC0000', new:'#9ca3af' }[stats4.light] || '#9ca3af';
+  const lbl   = { green:'Green 🟢', amber:'Amber 🟡', red:'Red 🔴', new:'활동 저조 ⚫' }[stats4.light] || '—';
 
   bodyEl.innerHTML = `
     <div class="page-header">
@@ -183,7 +183,7 @@ function calcStats(name, weekly, weeks) {
   const critR = givenRef >= n;
   let light = 'red';
   if (critA && critO && critR) light = 'green';
-  else if (critA && (critO || critR)) light = 'yellow';
+  else if (critA && (critO || critR)) light = 'amber';
   else if (!recs.length) light = 'new';
   return { attendance, ono, givenRef, recvRef, visitors, tyfcb, light };
 }

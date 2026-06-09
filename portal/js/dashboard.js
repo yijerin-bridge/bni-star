@@ -1,4 +1,4 @@
-/* ============================================================
+﻿/* ============================================================
    BNI STAR Portal — Dashboard  (weekly_records 기반)
    ============================================================ */
 
@@ -39,11 +39,11 @@ function buildDashboard(session, el, members, weekly) {
 
   const allStats  = Object.values(statsMap);
   const greenCnt  = allStats.filter(s => s.light === 'green').length;
-  const yellowCnt = allStats.filter(s => s.light === 'yellow').length;
+  const amberCnt = allStats.filter(s => s.light === 'amber').length;
   const redCnt    = allStats.filter(s => s.light === 'red').length;
   const prevAllStats = Object.values(statsPrevMap);
   const prevGreen  = prevAllStats.filter(s => s.light === 'green').length;
-  const prevYellow = prevAllStats.filter(s => s.light === 'yellow').length;
+  const prevAmber = prevAllStats.filter(s => s.light === 'amber').length;
   const prevRed    = prevAllStats.filter(s => s.light === 'red').length;
 
   const totalMembers = members.length;
@@ -104,7 +104,7 @@ function buildDashboard(session, el, members, weekly) {
         <div class="card-title">트래픽라이트 현황</div>
         <div class="tl-row">
           <div class="tl-pill green">🟢 Green <span class="tl-num">${greenCnt}</span><span class="tl-cmp ${greenCnt>=prevGreen?'up':'down'}">${cmpArrow(greenCnt,prevGreen)}</span></div>
-          <div class="tl-pill yellow">🟡 Yellow <span class="tl-num">${yellowCnt}</span><span class="tl-cmp ${yellowCnt<=prevYellow?'up':'down'}">${cmpArrow(yellowCnt,prevYellow,true)}</span></div>
+          <div class="tl-pill amber">🟡 Amber <span class="tl-num">${amberCnt}</span><span class="tl-cmp ${amberCnt<=prevAmber?'up':'down'}">${cmpArrow(amberCnt,prevAmber,true)}</span></div>
           <div class="tl-pill red">🔴 Red <span class="tl-num">${redCnt}</span><span class="tl-cmp ${redCnt<=prevRed?'up':'down'}">${cmpArrow(redCnt,prevRed,true)}</span></div>
         </div>
         <canvas id="chartDist" height="160"></canvas>
@@ -139,7 +139,7 @@ function buildDashboard(session, el, members, weekly) {
   `;
 
   if (isLeader) {
-    renderDistChart(greenCnt, yellowCnt, redCnt);
+    renderDistChart(greenCnt, amberCnt, redCnt);
     renderWeeklyChart(weekly, weeks);
     renderMonthlyChart(weekly);
     renderAIDirector(allStats, members, totalMembers);
@@ -182,9 +182,9 @@ function deltaStr(curr, prev) {
 
 /* ── Personal Card ── */
 function renderPersonalCard(session, stats, weeks) {
-  const lightEmoji = { green:'🟢', yellow:'🟡', red:'🔴' }[stats.light] || '⚪';
-  const lightLabel = { green:'Green', yellow:'Yellow', red:'Red' }[stats.light] || '활동 저조';
-  const accentColor = { green:'#16a34a', yellow:'#ca8a04', red:'#CC0000' }[stats.light] || '#e5e7eb';
+  const lightEmoji = { green:'🟢', amber:'🟡', red:'🔴' }[stats.light] || '⚪';
+  const lightLabel = { green:'Green', amber:'Amber', red:'Red' }[stats.light] || '활동 저조';
+  const accentColor = { green:'#16a34a', amber:'#ca8a04', red:'#CC0000' }[stats.light] || '#e5e7eb';
   return `
   <div class="card" style="border-left:4px solid ${accentColor};margin-bottom:16px">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
@@ -267,7 +267,7 @@ function renderDistChart(g, y, r) {
   new Chart(ctx, {
     type: 'doughnut',
     data: {
-      labels: ['Green','Yellow','Red'],
+      labels: ['Green','Amber','Red'],
       datasets: [{ data: [g,y,r], backgroundColor: ['#16a34a','#ca8a04','#CC0000'], borderWidth: 0 }],
     },
     options: { responsive: true, plugins: { legend: { position: 'bottom', labels: { font: { family:'Noto Sans KR', size:12 } } } } },
@@ -368,7 +368,7 @@ function calcMemberStats(memberName, weekly, weeks) {
     _scoreVisitor(totVis / recorded) +
     _scoreOno(totOno / recorded) +
     _scoreCeu(totCeu);
-  const light = total >= 70 ? 'green' : total >= 50 ? 'yellow' : total >= 30 ? 'red' : 'gray';
+  const light = total >= 70 ? 'green' : total >= 50 ? 'amber' : total >= 30 ? 'red' : 'gray';
 
   return { attendance, ono, visitors, referrals, light };
 }
@@ -401,17 +401,17 @@ function renderAIDirector(allStats, members, total) {
   if (!el || !allStats.length) return;
 
   const green  = allStats.filter(s => s.light === 'green').length;
-  const yellow = allStats.filter(s => s.light === 'yellow').length;
+  const amber = allStats.filter(s => s.light === 'amber').length;
   const red    = allStats.filter(s => s.light === 'red').length;
   const newM   = allStats.filter(s => s.light === 'new').length;
-  const health = total ? Math.round((green * 100 + yellow * 50) / total) : 0;
+  const health = total ? Math.round((green * 100 + amber * 50) / total) : 0;
 
   const points = [];
 
   if (health >= 80)
     points.push({ type:'positive', text:`챕터 건강 점수 ${health}점 — Green 멤버 ${green}명(${Math.round(green/total*100)}%)이 활발히 활동 중입니다.` });
   else if (health >= 60)
-    points.push({ type:'warning',  text:`챕터 건강 점수 ${health}점 — Yellow·Red 멤버 개별 면담을 통한 개선이 필요합니다.` });
+    points.push({ type:'warning',  text:`챕터 건강 점수 ${health}점 — Amber·Red 멤버 개별 면담을 통한 개선이 필요합니다.` });
   else
     points.push({ type:'critical', text:`챕터 건강 점수 ${health}점으로 위험 수준입니다. 멤버십위원회의 즉각적인 개입이 필요합니다.` });
 

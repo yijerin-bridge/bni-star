@@ -1,4 +1,4 @@
-/* ============================================================
+﻿/* ============================================================
    BNI STAR — Traffic Light v3 (주간 기반 채점)
    챕터 런칭: 2026-05-13 / 24주 / 매주 수요일
    ============================================================ */
@@ -98,7 +98,7 @@ function calcMemberScore(recs, pastWeeks) {
   const s6 = scoreOno(totOno / totalWeeks);
   const s7 = scoreCeu(totCeu);
   const total = s1+s2+s3+s4+s5+s6+s7;
-  const light = total>=70?'green':total>=50?'yellow':total>=30?'red':'gray';
+  const light = total>=70?'green':total>=50?'amber':total>=30?'red':'gray';
 
   return { total, light,
     breakdown:{absence:s1,late:s2,referral:s3,tyfcb:s4,visitor:s5,ono:s6,ceu:s7},
@@ -169,12 +169,12 @@ function renderOverview() {
     const sc        = calcMemberScore(recs, recorded || 1);
     return { ...m, ...sc, recs };
   }).sort((a,b) => {
-    const ord = { gray:0, red:1, yellow:2, green:3 };
+    const ord = { gray:0, red:1, amber:2, green:3 };
     return (ord[b.light]??0) - (ord[a.light]??0) || b.total - a.total;
   });
 
   const green  = memberScores.filter(m=>m.light==='green').length;
-  const yellow = memberScores.filter(m=>m.light==='yellow').length;
+  const amber = memberScores.filter(m=>m.light==='amber').length;
   const red    = memberScores.filter(m=>m.light==='red').length;
   const gray   = memberScores.filter(m=>m.light==='gray').length;
   const pastWeeks = WEEKS_ALL.filter(w => w <= TODAY).length;
@@ -197,21 +197,21 @@ function renderOverview() {
     <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:16px">
       <span style="font-size:13px;color:#9ca3af">챕터 런칭 후 ${pastWeeks}주차 · 24주 중</span>
       <span class="score-badge green">🟢 ${green}명</span>
-      <span class="score-badge yellow">🟡 ${yellow}명</span>
+      <span class="score-badge amber">🟡 ${amber}명</span>
       <span class="score-badge red">🔴 ${red}명</span>
       <span class="score-badge gray">⚫ ${gray}명</span>
     </div>
 
     <div class="member-score-grid">
       ${memberScores.map(m => {
-        const lEmoji = {green:'🟢',yellow:'🟡',red:'🔴',gray:'⚫'}[m.light]||'⚫';
+        const lEmoji = {green:'🟢',amber:'🟡',red:'🔴',gray:'⚫'}[m.light]||'⚫';
         // 바 = 월별 누적 점수 추세
         const months = [...new Set(m.recs.map(r => r.week_date.slice(0,7)))].sort();
         const wBars = months.map(mo => {
           const recsUpTo = m.recs.filter(r => r.week_date.slice(0,7) <= mo);
           const sc = calcMemberScore(recsUpTo, recsUpTo.length || 1);
           const h = Math.max(4, Math.round(sc.total / 100 * 28));
-          const col = {green:'#16a34a', yellow:'#ca8a04', red:'#CC0000', gray:'#9ca3af'}[sc.light] || '#9ca3af';
+          const col = {green:'#16a34a', amber:'#ca8a04', red:'#CC0000', gray:'#9ca3af'}[sc.light] || '#9ca3af';
           return `<div class="ms-spark-bar" style="height:${h}px;background:${col};border-radius:2px" title="${mo}: ${sc.total}점 (${sc.light})"></div>`;
         });
         return `
@@ -291,8 +291,8 @@ function renderMemberDetail(name) {
   const elapsed   = memWeeks.filter(w => w <= TODAY).length;
   const recorded  = new Set(recs.map(r => r.week_date)).size;
   const sc        = calcMemberScore(recs, recorded || 1);
-  const lEmoji = {green:'🟢',yellow:'🟡',red:'🔴',gray:'⚫'}[sc.light]||'⚫';
-  const lightColor = {green:'#16a34a',yellow:'#ca8a04',red:'#CC0000',gray:'#9ca3af'}[sc.light]||'#9ca3af';
+  const lEmoji = {green:'🟢',amber:'🟡',red:'🔴',gray:'⚫'}[sc.light]||'⚫';
+  const lightColor = {green:'#16a34a',amber:'#ca8a04',red:'#CC0000',gray:'#9ca3af'}[sc.light]||'#9ca3af';
 
   el.innerHTML = `
     <!-- 점수 분해 카드 -->
@@ -1633,7 +1633,7 @@ function renderCriteria() {
         <div style="font-weight:700;margin-bottom:8px">트래픽라이트 기준 (합계 100점)</div>
         <div style="display:flex;gap:12px;flex-wrap:wrap;font-size:13px">
           <span class="score-badge green">🟢 70점 이상</span>
-          <span class="score-badge yellow">🟡 50~69점</span>
+          <span class="score-badge amber">🟡 50~69점</span>
           <span class="score-badge red">🔴 30~49점</span>
           <span class="score-badge gray">⚫ 30점 미만</span>
         </div>
@@ -1649,14 +1649,14 @@ function genAIOverview(memberScores) {
   if (!memberScores.length) return [];
   const total = memberScores.length;
   const green  = memberScores.filter(m=>m.light==='green').length;
-  const yellow = memberScores.filter(m=>m.light==='yellow').length;
+  const amber = memberScores.filter(m=>m.light==='amber').length;
   const red    = memberScores.filter(m=>m.light==='red').length;
   const gray   = memberScores.filter(m=>m.light==='gray').length;
-  const health = Math.round((green*100+yellow*60+red*30)/total);
+  const health = Math.round((green*100+amber*60+red*30)/total);
   const tips   = [];
 
   if (health >= 80)      tips.push({type:'positive',icon:'✅',text:`챕터 건강 점수 ${health}점 — Green 멤버 ${green}명(${Math.round(green/total*100)}%)이 기준을 충족하고 있습니다.`});
-  else if (health >= 60) tips.push({type:'warning', icon:'⚠️',text:`챕터 건강 점수 ${health}점 — 개선이 필요한 멤버가 많습니다. Yellow/Red 멤버 집중 면담을 권장합니다.`});
+  else if (health >= 60) tips.push({type:'warning', icon:'⚠️',text:`챕터 건강 점수 ${health}점 — 개선이 필요한 멤버가 많습니다. Amber/Red 멤버 집중 면담을 권장합니다.`});
   else                   tips.push({type:'critical',icon:'🚨',text:`챕터 건강 점수 ${health}점으로 위험 수준입니다. 멤버십위원회의 즉각 개입이 필요합니다.`});
 
   if (red > 0) {
@@ -1677,13 +1677,13 @@ function genAIMember(name, recs, sc) {
   // 전체 상태 메시지 — 데이터 부족 표현 제거, 활동 중심으로
   const lMsg = {
     green:  '모든 항목 기준 충족 — 챕터의 모범이 되고 있습니다! 이 활동을 유지해 주세요.',
-    yellow: 'Green까지 한 걸음 남았습니다. 아래 항목만 집중하면 달성 가능합니다.',
+    amber: 'Green까지 한 걸음 남았습니다. 아래 항목만 집중하면 달성 가능합니다.',
     red:    '활동 강화가 필요합니다. 트래픽라이트위원·원투원코디·멘토링코디와 면담을 통해 실천 계획을 세워보세요.',
     gray:   `${name}님의 BNI 활동이 저조합니다. 지금 바로 리퍼럴·1:1·비지터 활동을 시작해 보세요!`,
   };
   tips.push({
-    type: {green:'positive', yellow:'warning', red:'critical', gray:'critical'}[sc.light] || 'warning',
-    icon: {green:'✅', yellow:'⚠️', red:'🚨', gray:'🔔'}[sc.light],
+    type: {green:'positive', amber:'warning', red:'critical', gray:'critical'}[sc.light] || 'warning',
+    icon: {green:'✅', amber:'⚠️', red:'🚨', gray:'🔔'}[sc.light],
     text: `현재 ${sc.total}점 · ${lMsg[sc.light]}`,
   });
 

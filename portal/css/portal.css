@@ -1,4 +1,4 @@
-/* ============================================================
+﻿/* ============================================================
    BNI STAR Portal — Global Styles
    ============================================================ */
 
@@ -12,7 +12,7 @@
   --navy-lt:   #2f3750;
   --blue:      #2563eb;
   --green:     #16a34a;
-  --yellow:    #ca8a04;
+  --amber:    #ca8a04;
   --bg:        #f0f2f5;
   --card:      #ffffff;
   --border:    #e5e7eb;
@@ -143,7 +143,7 @@ input, select, textarea { font-family: inherit; font-size: inherit; }
   padding: 6px 14px; border-radius: 20px; font-size: 13px; font-weight: 600;
 }
 .tl-pill.green  { background: #dcfce7; color: #166534; }
-.tl-pill.yellow { background: #fef9c3; color: #713f12; }
+.tl-pill.amber { background: #fef9c3; color: #713f12; }
 .tl-pill.red    { background: #fee2e2; color: #7f1d1d; }
 .tl-cmp { font-size: 11px; font-weight: 400; margin-left: 4px; }
 .tl-cmp.up   { color: var(--green); }
