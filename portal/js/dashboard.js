@@ -39,12 +39,14 @@ function buildDashboard(session, el, members, weekly) {
 
   const allStats  = Object.values(statsMap);
   const greenCnt  = allStats.filter(s => s.light === 'green').length;
-  const amberCnt = allStats.filter(s => s.light === 'amber').length;
+  const amberCnt  = allStats.filter(s => s.light === 'amber').length;
   const redCnt    = allStats.filter(s => s.light === 'red').length;
+  const grayCnt   = allStats.filter(s => s.light === 'gray').length;
   const prevAllStats = Object.values(statsPrevMap);
   const prevGreen  = prevAllStats.filter(s => s.light === 'green').length;
-  const prevAmber = prevAllStats.filter(s => s.light === 'amber').length;
+  const prevAmber  = prevAllStats.filter(s => s.light === 'amber').length;
   const prevRed    = prevAllStats.filter(s => s.light === 'red').length;
+  const prevGray   = prevAllStats.filter(s => s.light === 'gray').length;
 
   const totalMembers = members.length;
   const w4Recs    = weekly.filter(w => weeks4.includes(w.week_date));
@@ -106,6 +108,7 @@ function buildDashboard(session, el, members, weekly) {
           <div class="tl-pill green">🟢 Green <span class="tl-num">${greenCnt}</span><span class="tl-cmp ${greenCnt>=prevGreen?'up':'down'}">${cmpArrow(greenCnt,prevGreen)}</span></div>
           <div class="tl-pill amber">🟡 Amber <span class="tl-num">${amberCnt}</span><span class="tl-cmp ${amberCnt<=prevAmber?'up':'down'}">${cmpArrow(amberCnt,prevAmber,true)}</span></div>
           <div class="tl-pill red">🔴 Red <span class="tl-num">${redCnt}</span><span class="tl-cmp ${redCnt<=prevRed?'up':'down'}">${cmpArrow(redCnt,prevRed,true)}</span></div>
+          <div class="tl-pill" style="background:#f3f4f6;color:#374151">⚫ Gray <span class="tl-num">${grayCnt}</span><span class="tl-cmp ${grayCnt<=prevGray?'up':'down'}">${cmpArrow(grayCnt,prevGray,true)}</span></div>
         </div>
         <canvas id="chartDist" height="160"></canvas>
       </div>
@@ -118,8 +121,12 @@ function buildDashboard(session, el, members, weekly) {
     </div>
 
     <div class="section-row">
-      ${renderRankCard('리퍼럴 Top 5',   topN(members, statsMap, 'referrals', 5, '건'))}
-      ${renderRankCard('1:1 Top 5',      topN(members, statsMap, 'ono',       5, '회'))}
+      ${renderRankCard('리퍼럴 Top 5',     topN(members, statsMap, 'referrals', 5, '건'))}
+      ${renderRankCard('1:1 Top 5',        topN(members, statsMap, 'ono',       5, '회'))}
+    </div>
+    <div class="section-row">
+      ${renderRankCard('비지터 초대 Top 5', topN(members, statsMap, 'visitors',  5, '명'))}
+      ${renderRankCard('감사장 금액 Top 5', topN(members, statsMap, 'tyfcb',     5, v => fmtAmt(v)))}
     </div>
     ` : ''}
 
@@ -139,7 +146,7 @@ function buildDashboard(session, el, members, weekly) {
   `;
 
   if (isLeader) {
-    renderDistChart(greenCnt, amberCnt, redCnt);
+    renderDistChart(greenCnt, amberCnt, redCnt, grayCnt);
     renderWeeklyChart(weekly, weeks);
     renderMonthlyChart(weekly);
     renderAIDirector(allStats, members, totalMembers);
@@ -261,14 +268,14 @@ async function loadRecentMeetings() {
 }
 
 /* ── Charts ── */
-function renderDistChart(g, y, r) {
+function renderDistChart(g, a, r, gray) {
   const ctx = document.getElementById('chartDist');
   if (!ctx) return;
   new Chart(ctx, {
     type: 'doughnut',
     data: {
-      labels: ['Green','Amber','Red'],
-      datasets: [{ data: [g,y,r], backgroundColor: ['#16a34a','#ca8a04','#CC0000'], borderWidth: 0 }],
+      labels: ['Green','Amber','Red','Gray'],
+      datasets: [{ data: [g,a,r,gray], backgroundColor: ['#16a34a','#ca8a04','#CC0000','#9ca3af'], borderWidth: 0 }],
     },
     options: { responsive: true, plugins: { legend: { position: 'bottom', labels: { font: { family:'Noto Sans KR', size:12 } } } } },
   });
@@ -370,7 +377,7 @@ function calcMemberStats(memberName, weekly, weeks) {
     _scoreCeu(totCeu);
   const light = total >= 70 ? 'green' : total >= 50 ? 'amber' : total >= 30 ? 'red' : 'gray';
 
-  return { attendance, ono, visitors, referrals, light };
+  return { attendance, ono, visitors, referrals, tyfcb: totTyf, light };
 }
 
 function topN(members, statsMap, field, n, unit) {
@@ -379,7 +386,7 @@ function topN(members, statsMap, field, n, unit) {
     .sort((a,b) => b.val - a.val)
     .slice(0, n)
     .filter(x => x.val > 0)
-    .map(x => ({ name: x.name, val: x.val + unit }));
+    .map(x => ({ name: x.name, val: typeof unit === 'function' ? unit(x.val) : x.val + unit }));
 }
 
 function cmpArrow(curr, prev, invert = false) {
