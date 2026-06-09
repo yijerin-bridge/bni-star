@@ -149,7 +149,7 @@ function buildDashboard(session, el, members, weekly) {
     renderDistChart(greenCnt, amberCnt, redCnt, grayCnt);
     renderWeeklyChart(weekly, weeks);
     renderMonthlyChart(weekly);
-    renderAIDirector(allStats, members, totalMembers);
+    renderAIDirector(allStats, members, totalMembers, statsMap);
   }
 
   loadRecentMeetings();
@@ -403,33 +403,64 @@ function fmtAmt(v) {
 }
 
 /* ── AI 챕터 디렉터 ── */
-function renderAIDirector(allStats, members, total) {
+function renderAIDirector(allStats, members, total, statsMap) {
   const el = document.getElementById('aiDirectorCard');
   if (!el || !allStats.length) return;
 
-  const green  = allStats.filter(s => s.light === 'green').length;
-  const amber = allStats.filter(s => s.light === 'amber').length;
-  const red    = allStats.filter(s => s.light === 'red').length;
-  const newM   = allStats.filter(s => s.light === 'new').length;
-  const health = total ? Math.round((green * 100 + amber * 50) / total) : 0;
+  const green      = allStats.filter(s => s.light === 'green').length;
+  const amber      = allStats.filter(s => s.light === 'amber').length;
+  const red        = allStats.filter(s => s.light === 'red').length;
+  const gray       = allStats.filter(s => s.light === 'gray').length;
+  const greenPct   = total ? Math.round(green/total*100) : 0;
+  const redGrayPct = total ? Math.round((red+gray)/total*100) : 0;
 
   const points = [];
 
-  if (red > 0)
-    points.push({ type:'action', text:`🔴 Red 멤버 ${red}명(${Math.round(red/total*100)}%) — 멤버십위원회 1:1 면담을 즉시 진행하세요.` });
+  // 구성 비율 전반 평가
+  if (greenPct >= 60)
+    points.push({ type:'positive', text:`Green ${green}명(${greenPct}%) · Amber ${amber}명 · Red ${red}명 · Gray ${gray}명 — 챕터 절반 이상이 기준을 충족하고 있습니다.` });
+  else if (greenPct >= 35)
+    points.push({ type:'warning',  text:`Green ${green}명(${greenPct}%) · Amber ${amber}명 · Red ${red}명 · Gray ${gray}명 — Green 비율을 높이는 것이 챕터의 당면 과제입니다.` });
+  else
+    points.push({ type:'critical', text:`Green ${green}명(${greenPct}%)에 불과합니다. Red+Gray가 ${redGrayPct}%로 챕터 전반의 활동 강화가 시급합니다.` });
 
-  if (newM > 0)
-    points.push({ type:'warning', text:`⚫ 활동 저조 멤버 ${newM}명 — 면담 및 활동 독려를 검토해 주세요.` });
+  // Amber → Green 전환 독려
+  if (amber > 0) {
+    const amberNames = members.filter(m => statsMap[m.name]?.light === 'amber').slice(0,3).map(m=>m.name);
+    points.push({ type:'warning', text:`🟡 Amber ${amber}명(${amberNames.join(', ')}${amber>3?' 외':''}) — Green까지 한 항목 차이입니다. 개별 면담으로 전환을 지원하세요.` });
+  }
 
+  // Red 즉시 면담
+  if (red > 0) {
+    const redNames = members.filter(m => statsMap[m.name]?.light === 'red').slice(0,3).map(m=>m.name);
+    points.push({ type:'action', text:`🔴 Red ${red}명(${redNames.join(', ')}${red>3?' 외':''}) — 멤버십위원회 즉시 면담을 권장합니다.` });
+  }
+
+  // Gray 저조
+  if (gray > 0) {
+    const grayNames = members.filter(m => statsMap[m.name]?.light === 'gray').slice(0,3).map(m=>m.name);
+    points.push({ type:'warning', text:`⚫ Gray ${gray}명(${grayNames.join(', ')}${gray>3?' 외':''}) — 적극적인 활동 독려와 멘토 연결을 검토하세요.` });
+  }
+
+  // 리퍼럴 평균
   const totalRefs = allStats.reduce((s,m) => s + (m.referrals||0), 0);
   const avgRefs   = total ? (totalRefs / total).toFixed(1) : 0;
   if (parseFloat(avgRefs) < 1)
     points.push({ type:'action', text:`4주 평균 리퍼럴 멤버당 ${avgRefs}건 — 목표(주 1건) 미달입니다.` });
 
-  const topIdx    = allStats.reduce((best,s,i,arr) => s.referrals > arr[best].referrals ? i : best, 0);
-  const topMember = members[topIdx];
-  if (topMember && allStats[topIdx]?.referrals > 0)
-    points.push({ type:'positive', text:`리퍼럴 MVP: ${topMember.name}님(${allStats[topIdx].referrals}건) — 미팅에서 공개 인정으로 챕터 문화를 강화하세요.` });
+  // 종합 최고 활동자 (referrals + ono + visitors 합산)
+  const ranked = members.map(m => {
+    const s = statsMap[m.name] || {};
+    return { name: m.name, score: (s.referrals||0)*3 + (s.ono||0) + (s.visitors||0)*2, referrals: s.referrals||0 };
+  }).sort((a,b) => b.score - a.score);
+  const topAll = ranked[0];
+  const topRef = ranked.reduce((best,m) => m.referrals > best.referrals ? m : best, ranked[0]);
+
+  if (topAll?.score > 0)
+    points.push({ type:'positive', text:`종합 최고 활동자: ${topAll.name}님 — 리퍼럴·1:1·비지터 전반에서 챕터 최상위입니다. 미팅에서 공개 인정하세요.` });
+
+  if (topRef && topRef.name !== topAll?.name && topRef.referrals > 0)
+    points.push({ type:'positive', text:`리퍼럴 MVP: ${topRef.name}님(${topRef.referrals}건) — 적극적인 소개 활동의 모범입니다.` });
 
   if (!points.length) { el.style.display = 'none'; return; }
 

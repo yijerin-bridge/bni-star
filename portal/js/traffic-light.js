@@ -1647,22 +1647,50 @@ function renderCriteria() {
 ═══════════════════════════════════════════════ */
 function genAIOverview(memberScores) {
   if (!memberScores.length) return [];
-  const total = memberScores.length;
+  const total  = memberScores.length;
   const green  = memberScores.filter(m=>m.light==='green').length;
-  const amber = memberScores.filter(m=>m.light==='amber').length;
+  const amber  = memberScores.filter(m=>m.light==='amber').length;
   const red    = memberScores.filter(m=>m.light==='red').length;
   const gray   = memberScores.filter(m=>m.light==='gray').length;
-  const health = Math.round((green*100+amber*60+red*30)/total);
-  const tips   = [];
+  const greenPct   = Math.round(green/total*100);
+  const redGrayPct = Math.round((red+gray)/total*100);
+  const tips = [];
 
+  // 구성 비율 전반 평가
+  if (greenPct >= 60)
+    tips.push({type:'positive',icon:'✅',text:`Green ${green}명(${greenPct}%) · Amber ${amber}명 · Red ${red}명 · Gray ${gray}명 — 챕터 절반 이상이 기준을 충족하고 있습니다.`});
+  else if (greenPct >= 35)
+    tips.push({type:'warning',icon:'⚠️',text:`Green ${green}명(${greenPct}%) · Amber ${amber}명 · Red ${red}명 · Gray ${gray}명 — Green 비율을 높이는 것이 챕터의 당면 과제입니다.`});
+  else
+    tips.push({type:'critical',icon:'🚨',text:`Green ${green}명(${greenPct}%)에 불과합니다. Red+Gray가 ${redGrayPct}%로 챕터 전반의 활동 강화가 시급합니다.`});
+
+  // Amber → Green 전환 독려
+  if (amber > 0) {
+    const amberNames = memberScores.filter(m=>m.light==='amber').sort((a,b)=>b.total-a.total).slice(0,3).map(m=>m.name);
+    tips.push({type:'warning',icon:'🟡',text:`Amber ${amber}명(${amberNames.join(', ')}${amber>3?' 외':''}) — Green까지 한 항목 차이입니다. 개별 면담으로 전환을 지원하세요.`});
+  }
+
+  // Red 즉시 면담
   if (red > 0) {
     const redNames = memberScores.filter(m=>m.light==='red').sort((a,b)=>a.total-b.total).slice(0,3).map(m=>m.name);
-    tips.push({type:'action',icon:'👉',text:`🔴 Red 멤버 ${red}명 — 즉시 면담 권장: ${redNames.join(', ')}${red>3?' 외':''}`});
+    tips.push({type:'action',icon:'👉',text:`🔴 Red ${red}명(${redNames.join(', ')}${red>3?' 외':''}) — 멤버십위원회 즉시 면담을 권장합니다.`});
   }
-  if (gray > 0) tips.push({type:'warning',icon:'⚠️',text:`⚫ 저조 멤버 ${gray}명 — 활동 독려 및 면담을 검토해 주세요.`});
 
-  const topM = memberScores.find(m=>m.light==='green'&&m.recs.length>0);
-  if (topM) tips.push({type:'positive',icon:'🏆',text:`최고 점수: ${topM.name}님 ${topM.total}점 — 멤버십 모범 사례로 공유해 챕터 문화를 강화하세요.`});
+  // Gray 저조 멤버
+  if (gray > 0) {
+    const grayNames = memberScores.filter(m=>m.light==='gray').slice(0,3).map(m=>m.name);
+    tips.push({type:'warning',icon:'⚫',text:`Gray ${gray}명(${grayNames.join(', ')}${gray>3?' 외':''}) — 적극적인 활동 독려와 멘토 연결을 검토하세요.`});
+  }
+
+  // 종합 최고 점수자
+  const topScorer = [...memberScores].sort((a,b)=>b.total-a.total)[0];
+  if (topScorer?.total > 0)
+    tips.push({type:'positive',icon:'🏆',text:`이번 주 최고 점수: ${topScorer.name}님 ${topScorer.total}점(${topScorer.light}) — 미팅에서 공개 인정으로 챕터 문화를 강화하세요.`});
+
+  // 리퍼럴 MVP (최고 점수자와 다를 경우만)
+  const topRef = [...memberScores].sort((a,b)=>(b.stats?.totRef||0)-(a.stats?.totRef||0))[0];
+  if (topRef && topRef.name !== topScorer?.name && (topRef.stats?.totRef||0) > 0)
+    tips.push({type:'positive',icon:'🤝',text:`리퍼럴 MVP: ${topRef.name}님(${topRef.stats.totRef}건) — 적극적인 소개 활동의 모범입니다.`});
 
   return tips;
 }
