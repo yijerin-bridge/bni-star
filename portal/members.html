@@ -170,11 +170,12 @@ async function loadRolesView(el, members) {
           <input type="date" id="arStart" class="form-input" value="${new Date().toISOString().slice(0,10)}">
         </div>
         <div style="display:flex;gap:10px;justify-content:flex-end">
-          <button class="btn btn-outline" onclick="this.closest('[style*=\'position:fixed\']').remove()">취소</button>
+          <button class="btn btn-outline" id="cancelAssign">취소</button>
           <button class="btn btn-primary" id="confirmAssign">배정</button>
         </div>
       </div>`;
     document.body.appendChild(form);
+    form.querySelector('#cancelAssign').addEventListener('click', () => form.remove());
     form.querySelector('#confirmAssign').addEventListener('click', async () => {
       const member_id  = Number(form.querySelector('#arMember').value);
       const role_id    = Number(form.querySelector('#arRole').value);
@@ -203,11 +204,12 @@ function showAddMemberForm() {
       <div class="form-group"><label class="form-label">이메일</label><input type="email" id="nm_email" class="form-input"></div>
       <div class="form-group"><label class="form-label">가입일</label><input type="date" id="nm_joined" class="form-input" value="${new Date().toISOString().slice(0,10)}"></div>
       <div style="display:flex;gap:10px;justify-content:flex-end">
-        <button class="btn btn-outline" onclick="this.closest('[style*=\'position:fixed\']').remove()">취소</button>
+        <button class="btn btn-outline" id="cancelAddMember">취소</button>
         <button class="btn btn-primary" id="confirmAddMember">추가</button>
       </div>
     </div>`;
   document.body.appendChild(form);
+  form.querySelector('#cancelAddMember').addEventListener('click', () => form.remove());
   form.querySelector('#confirmAddMember').addEventListener('click', async () => {
     const name    = form.querySelector('#nm_name').value.trim();
     if (!name) return;
@@ -244,11 +246,12 @@ window.editMember = async (id) => {
       <div class="form-group"><label class="form-label">이메일</label><input type="email" id="em_email" class="form-input" value="${m.email||''}"></div>
       <div class="form-group"><label class="form-label">입회일</label><input type="date" id="em_joined" class="form-input" value="${m.joined_date||''}"></div>
       <div style="display:flex;gap:10px;justify-content:flex-end">
-        <button class="btn btn-outline" onclick="this.closest('[style*=\'position:fixed\']').remove()">취소</button>
+        <button class="btn btn-outline" id="cancelEditMember">취소</button>
         <button class="btn btn-primary" id="confirmEditMember">저장</button>
       </div>
     </div>`;
   document.body.appendChild(form);
+  form.querySelector('#cancelEditMember').addEventListener('click', () => form.remove());
   form.querySelector('#confirmEditMember').addEventListener('click', async () => {
     const payload = {
       name:        form.querySelector('#em_name').value.trim(),
