@@ -1655,10 +1655,6 @@ function genAIOverview(memberScores) {
   const health = Math.round((green*100+amber*60+red*30)/total);
   const tips   = [];
 
-  if (health >= 80)      tips.push({type:'positive',icon:'✅',text:`챕터 건강 점수 ${health}점 — Green 멤버 ${green}명(${Math.round(green/total*100)}%)이 기준을 충족하고 있습니다.`});
-  else if (health >= 60) tips.push({type:'warning', icon:'⚠️',text:`챕터 건강 점수 ${health}점 — 개선이 필요한 멤버가 많습니다. Amber/Red 멤버 집중 면담을 권장합니다.`});
-  else                   tips.push({type:'critical',icon:'🚨',text:`챕터 건강 점수 ${health}점으로 위험 수준입니다. 멤버십위원회의 즉각 개입이 필요합니다.`});
-
   if (red > 0) {
     const redNames = memberScores.filter(m=>m.light==='red').sort((a,b)=>a.total-b.total).slice(0,3).map(m=>m.name);
     tips.push({type:'action',icon:'👉',text:`🔴 Red 멤버 ${red}명 — 즉시 면담 권장: ${redNames.join(', ')}${red>3?' 외':''}`});

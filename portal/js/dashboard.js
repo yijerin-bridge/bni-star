@@ -415,13 +415,6 @@ function renderAIDirector(allStats, members, total) {
 
   const points = [];
 
-  if (health >= 80)
-    points.push({ type:'positive', text:`챕터 건강 점수 ${health}점 — Green 멤버 ${green}명(${Math.round(green/total*100)}%)이 활발히 활동 중입니다.` });
-  else if (health >= 60)
-    points.push({ type:'warning',  text:`챕터 건강 점수 ${health}점 — Amber·Red 멤버 개별 면담을 통한 개선이 필요합니다.` });
-  else
-    points.push({ type:'critical', text:`챕터 건강 점수 ${health}점으로 위험 수준입니다. 멤버십위원회의 즉각적인 개입이 필요합니다.` });
-
   if (red > 0)
     points.push({ type:'action', text:`🔴 Red 멤버 ${red}명(${Math.round(red/total*100)}%) — 멤버십위원회 1:1 면담을 즉시 진행하세요.` });
 
