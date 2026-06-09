@@ -55,8 +55,8 @@ function buildDashboard(session, el, members, weekly) {
   const attendCount = r => (r.attended || r.sick || r.substitute) ? 1 : 0;
 
   const attendRecs    = w4Recs.filter(attendCount);
-  const attendPct     = (totalMembers * weeks4.length) ? Math.round(attendRecs.length / (totalMembers * weeks4.length) * 100) : 0;
-  const prevAttendPct = (totalMembers * weeksPrev.length) ? Math.round(wPrevRecs.filter(attendCount).length / (totalMembers * weeksPrev.length) * 100) : 0;
+  const attendPct     = w4Recs.length     ? Math.round(attendRecs.length                    / w4Recs.length     * 100) : 0;
+  const prevAttendPct = wPrevRecs.length  ? Math.round(wPrevRecs.filter(attendCount).length / wPrevRecs.length  * 100) : 0;
 
   const ref4Cnt     = w4Recs.reduce((s,w) => s + (w.given_t1||0) + (w.given_t2||0), 0);
   const refPrevCnt  = wPrevRecs.reduce((s,w) => s + (w.given_t1||0) + (w.given_t2||0), 0);
