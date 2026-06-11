@@ -326,7 +326,8 @@ function renderMemberDetail(name) {
   const memWeeks = getMemberWeeks(member?.joined_date);  // 가입일 기준 24주+
   const isNew    = member?.joined_date && member.joined_date > CHAPTER_LAUNCH;
 
-  const recs      = allWeeklyRecs.filter(r => r.member_name === name && r.week_date >= WIN6.start && r.week_date <= WIN6.end);
+  const allRecs   = allWeeklyRecs.filter(r => r.member_name === name);  // 테이블 표시용 전체
+  const recs      = allRecs.filter(r => r.week_date >= WIN6.start && r.week_date <= WIN6.end); // 채점용 윈도우
   const denom     = windowDenom(member?.joined_date);
   const recorded  = new Set(recs.map(r => r.week_date)).size;
   const sc        = calcMemberScore(recs, denom);
@@ -435,7 +436,7 @@ function renderMemberDetail(name) {
       ${aiFb.map(t=>`<div class="ai-tip ${t.type}" style="margin-bottom:6px"><span>${t.icon}</span><span>${t.text}</span></div>`).join('')}`;
   }
 
-  renderWeekTable(name, recs, memWeeks);
+  renderWeekTable(name, allRecs, memWeeks);
 
   // VP 리포트 붙여넣기
   document.getElementById('vpParseBtn')?.addEventListener('click', () => {
