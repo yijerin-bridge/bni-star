@@ -160,11 +160,17 @@ function genAITips(name, sc) {
   const member  = members?.[0];
   document.getElementById('hdrCo').textContent = member?.company || '';
 
-  const win6    = get6MonthWindow();
+  const win6     = get6MonthWindow();
   const effStart = [win6.start, CHAPTER_LAUNCH, member?.joined_date || CHAPTER_LAUNCH].sort().reverse()[0];
-  const winRecs  = (recs||[]).filter(r => r.week_date >= win6.start && r.week_date <= win6.end);
+  const isShort  = effStart > win6.start;
+  const allRecs  = recs || [];
+  const extraRecs = allRecs.filter(r => r.week_date > win6.end);
+  const hasExtra  = extraRecs.length > 0;
+  const isPreview = hasExtra || isShort;
+  const previewEnd = hasExtra ? TODAY : win6.end;
+  const winRecs  = allRecs.filter(r => r.week_date >= effStart && r.week_date <= previewEnd);
   const memWeeks = getMemberWeeks(member?.joined_date);
-  const denom    = Math.max(WEEKS_ALL.filter(w => w >= effStart && w <= win6.end).length, new Set(winRecs.map(r=>r.week_date)).size, 1);
+  const denom    = Math.max(WEEKS_ALL.filter(w => w >= effStart && w <= previewEnd).length, new Set(winRecs.map(r=>r.week_date)).size, 1);
   const sc       = calcMemberScore(winRecs, denom);
   const lEmoji   = {green:'🟢',amber:'🟡',red:'🔴',gray:'⚫'}[sc.light]||'⚫';
   const lColor   = {green:'#16a34a',amber:'#ca8a04',red:'#CC0000',gray:'#9ca3af'}[sc.light];
@@ -189,7 +195,10 @@ function genAITips(name, sc) {
       <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;flex-wrap:wrap">
         <span style="font-size:34px;font-weight:900">${sc.total}</span>
         <span style="font-size:22px">${lEmoji}</span>
-        <span style="font-size:12px;color:#6b7280">분모 ${Math.max(elapsed,recorded)}주${isNew?` · 가입 ${member.joined_date}`:''}</span>
+        <span style="font-size:12px;color:#6b7280">
+          ${effStart} ~ ${previewEnd} · ${denom}주 기준
+          ${isPreview ? '<span style="background:#fef9c3;color:#713f12;font-size:11px;padding:2px 7px;border-radius:10px;margin-left:4px">예상 점수</span>' : ''}
+        </span>
       </div>
       <div class="score-grid">
         ${scoreItems.map(([label,score,max,detail,crit])=>`
