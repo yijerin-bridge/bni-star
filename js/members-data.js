@@ -279,17 +279,6 @@ const MEMBERS_DEFAULT = [
     testimonials: []
   },
   {
-    id: 32, name: "이복순", company: "동네언니", category: "뷰티/패션",
-    specialty: "의류",
-    headline: "",
-    targetCustomer: "",
-    description: "",
-    phone: "010-7255-5334", email: "", address: "경기 수원시 권선구 세지로12번길 9-31",
-    instagram: "", kakao: "", website: "",
-    color: "#8E44AD", featured: false, photoUrl: "",
-    testimonials: []
-  },
-  {
     id: 33, name: "장지원", company: "온초심", category: "식품/외식",
     specialty: "한정식",
     headline: "상견례는 온초심에서 하세요~!",
@@ -329,17 +318,6 @@ const MEMBERS_DEFAULT = [
     targetCustomer: "",
     description: "",
     phone: "010-9178-5274", email: "", address: "",
-    instagram: "", kakao: "", website: "",
-    color: "#566573", featured: false, photoUrl: "",
-    testimonials: []
-  },
-  {
-    id: 37, name: "성영모", company: "강남여성병원", category: "의료/건강",
-    specialty: "산부인과",
-    headline: "",
-    targetCustomer: "",
-    description: "",
-    phone: "010-2013-6530", email: "", address: "경기 수원시 팔달구 중부대로 96",
     instagram: "", kakao: "", website: "",
     color: "#566573", featured: false, photoUrl: "",
     testimonials: []
