@@ -438,7 +438,7 @@ function renderMemberDetail(name) {
   `;
 
   // AI 피드백
-  const aiFb = genAIMember(name, recs, sc);
+  const aiFb = genAIMember(name, previewRecs, sc);
   const aiEl = document.getElementById('det-ai');
   if (aiFb.length) {
     aiEl.style.display='block';
