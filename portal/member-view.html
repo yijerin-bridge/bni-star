@@ -66,6 +66,14 @@ function getAllWeeks() {
 }
 const WEEKS_ALL = getAllWeeks();
 
+function get6MonthWindow() {
+  const t = new Date();
+  const end   = new Date(t.getFullYear(), t.getMonth(), 0);
+  const start = new Date(t.getFullYear(), t.getMonth() - 6, 1);
+  const fmt = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  return { start: fmt(start), end: fmt(end) };
+}
+
 function getMemberWeeks(joinedDate) {
   const joinStr = joinedDate || CHAPTER_LAUNCH;
   const firstWeek = WEEKS_ALL.find(w => w >= joinStr) || WEEKS_ALL[0];
@@ -152,10 +160,12 @@ function genAITips(name, sc) {
   const member  = members?.[0];
   document.getElementById('hdrCo').textContent = member?.company || '';
 
+  const win6    = get6MonthWindow();
+  const effStart = [win6.start, CHAPTER_LAUNCH, member?.joined_date || CHAPTER_LAUNCH].sort().reverse()[0];
+  const winRecs  = (recs||[]).filter(r => r.week_date >= win6.start && r.week_date <= win6.end);
   const memWeeks = getMemberWeeks(member?.joined_date);
-  const elapsed  = memWeeks.filter(w => w <= TODAY).length;
-  const recorded = new Set((recs||[]).map(r=>r.week_date)).size;
-  const sc       = calcMemberScore(recs||[], Math.max(elapsed, recorded));
+  const denom    = Math.max(WEEKS_ALL.filter(w => w >= effStart && w <= win6.end).length, new Set(winRecs.map(r=>r.week_date)).size, 1);
+  const sc       = calcMemberScore(winRecs, denom);
   const lEmoji   = {green:'🟢',amber:'🟡',red:'🔴',gray:'⚫'}[sc.light]||'⚫';
   const lColor   = {green:'#16a34a',amber:'#ca8a04',red:'#CC0000',gray:'#9ca3af'}[sc.light];
   const isNew    = member?.joined_date && member.joined_date > CHAPTER_LAUNCH;

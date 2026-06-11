@@ -62,6 +62,22 @@ function getMemberWeeks(joinedDate) {
 const WEEKS_ALL  = getAllWeeks();
 const WEEKS_24   = getLast24Weeks(WEEKS_ALL); // 채점 기준 (최근 24주)
 
+// 현재 월 기준 직전 6개월 윈도우 (채점 범위)
+function get6MonthWindow() {
+  const t = new Date();
+  const end   = new Date(t.getFullYear(), t.getMonth(), 0);      // 전월 말일
+  const start = new Date(t.getFullYear(), t.getMonth() - 6, 1);  // 6개월 전 1일
+  const fmt = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  return { start: fmt(start), end: fmt(end) };
+}
+const WIN6 = get6MonthWindow(); // 페이지 로드 시 한 번 계산
+
+// 윈도우 내 실제 회의 주수 (분모)
+function windowDenom(memberJoinDate) {
+  const effStart = [WIN6.start, CHAPTER_LAUNCH, memberJoinDate || CHAPTER_LAUNCH].sort().reverse()[0];
+  return Math.max(WEEKS_ALL.filter(w => w >= effStart && w <= WIN6.end).length, 1);
+}
+
 /* ── 채점 함수 (사용자 지정 기준) ── */
 function scoreAbsence(n)      { return n > 2 ? 0 : n === 2 ? 5 : n === 1 ? 10 : 15; }
 function scoreLate(n)         { return n >= 2 ? 0 : n === 1 ? 5 : 10; }
@@ -160,14 +176,13 @@ async function initTrafficLight(session, bodyEl) {
 function renderOverview() {
   const el = document.getElementById('tl-overview');
 
-  // 멤버별 점수 계산
+  // 멤버별 점수 계산 (직전 6개월 윈도우)
   const memberScores = allMembers.map(m => {
-    const recs      = allWeeklyRecs.filter(r => r.member_name === m.name);
-    const memWeeks  = getMemberWeeks(m.joined_date);
-    const elapsed   = memWeeks.filter(w => w <= TODAY).length;
-    const recorded  = new Set(recs.map(r => r.week_date)).size;
-    const sc        = calcMemberScore(recs, recorded || 1);
-    return { ...m, ...sc, recs };
+    const allRecs  = allWeeklyRecs.filter(r => r.member_name === m.name);
+    const recs     = allRecs.filter(r => r.week_date >= WIN6.start && r.week_date <= WIN6.end);
+    const denom    = windowDenom(m.joined_date);
+    const sc       = calcMemberScore(recs, denom);
+    return { ...m, ...sc, recs: allRecs };
   }).sort((a,b) => {
     const ord = { gray:0, red:1, amber:2, green:3 };
     return (ord[b.light]??0) - (ord[a.light]??0) || b.total - a.total;
@@ -311,10 +326,10 @@ function renderMemberDetail(name) {
   const memWeeks = getMemberWeeks(member?.joined_date);  // 가입일 기준 24주+
   const isNew    = member?.joined_date && member.joined_date > CHAPTER_LAUNCH;
 
-  const recs      = allWeeklyRecs.filter(r => r.member_name === name);
-  const elapsed   = memWeeks.filter(w => w <= TODAY).length;
+  const recs      = allWeeklyRecs.filter(r => r.member_name === name && r.week_date >= WIN6.start && r.week_date <= WIN6.end);
+  const denom     = windowDenom(member?.joined_date);
   const recorded  = new Set(recs.map(r => r.week_date)).size;
-  const sc        = calcMemberScore(recs, recorded || 1);
+  const sc        = calcMemberScore(recs, denom);
   const lEmoji = {green:'🟢',amber:'🟡',red:'🔴',gray:'⚫'}[sc.light]||'⚫';
   const lightColor = {green:'#16a34a',amber:'#ca8a04',red:'#CC0000',gray:'#9ca3af'}[sc.light]||'#9ca3af';
 
@@ -325,10 +340,8 @@ function renderMemberDetail(name) {
         <span style="font-size:28px;font-weight:900">${sc.total}</span>
         <span style="font-size:20px">${lEmoji}</span>
         <span style="font-size:13px;color:#6b7280">
-          기록 ${recorded}주 기준 ·
-          ${isNew
-            ? `가입 ${member.joined_date}`
-            : `챕터 ${elapsed}주 경과`}
+          ${WIN6.start} ~ ${WIN6.end} · ${denom}주 기준
+          ${denom < 26 ? '<span style="background:#fef9c3;color:#713f12;font-size:11px;padding:2px 7px;border-radius:10px;margin-left:4px">예상 점수</span>' : ''}
         </span>
       </div>
       <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px">

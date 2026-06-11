@@ -92,6 +92,14 @@ function scoreVisitor(avg)  { return avg<0.1?0:avg<0.2?5:avg<0.4?10:avg<0.6?15:2
 function scoreOno(avg)      { return avg<1?0:avg<2?5:10; }
 function scoreCeu(t)        { return t<5?0:t<15?5:10; }
 
+function get6MonthWindow() {
+  const t = new Date();
+  const end   = new Date(t.getFullYear(), t.getMonth(), 0);
+  const start = new Date(t.getFullYear(), t.getMonth() - 6, 1);
+  const fmt = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  return { start: fmt(start), end: fmt(end) };
+}
+
 function calcLight(recs) {
   const n = recs.length; if (!n) return 'gray';
   const absN = recs.filter(r=>r.absent).length;
@@ -126,9 +134,10 @@ function renderRank(title, list) {
   const weeks4  = getRecentWeeks(4);
   const w4      = weekly.filter(w => weeks4.includes(w.week_date));
 
-  // 트래픽라이트 색상
+  // 트래픽라이트 색상 (직전 6개월 윈도우)
+  const win6 = get6MonthWindow();
   const lightMap = {};
-  members.forEach(m => { lightMap[m.name] = calcLight(weekly.filter(r => r.member_name === m.name)); });
+  members.forEach(m => { lightMap[m.name] = calcLight(weekly.filter(r => r.member_name === m.name && r.week_date >= win6.start && r.week_date <= win6.end)); });
 
   const green = Object.values(lightMap).filter(l=>l==='green').length;
   const amber = Object.values(lightMap).filter(l=>l==='amber').length;

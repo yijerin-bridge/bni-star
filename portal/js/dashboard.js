@@ -369,6 +369,14 @@ function getRecentWeeks(n) {
   return weeks;
 }
 
+function _get6MonthWindow() {
+  const t = new Date();
+  const end   = new Date(t.getFullYear(), t.getMonth(), 0);
+  const start = new Date(t.getFullYear(), t.getMonth() - 6, 1);
+  const fmt = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  return { start: fmt(start), end: fmt(end) };
+}
+
 /* traffic-light.js와 동일한 채점 함수 */
 function _scoreAbsence(n)    { return n > 2 ? 0 : n === 2 ? 5 : n === 1 ? 10 : 15; }
 function _scoreLate(n)       { return n >= 2 ? 0 : n === 1 ? 5 : 10; }
@@ -386,8 +394,9 @@ function calcMemberStats(memberName, weekly, weeks) {
   const visitors   = wRecs.reduce((s,w) => s + (w.visitors||0), 0);
   const referrals  = wRecs.reduce((s,w) => s + (w.given_t1||0) + (w.given_t2||0), 0);
 
-  // 트래픽라이트 색상: 전체 기록 기준 7항목 채점 (traffic-light.js와 동일)
-  const allRecs  = weekly.filter(w => w.member_name === memberName);
+  // 트래픽라이트 색상: 직전 6개월 윈도우 기준 7항목 채점 (traffic-light.js와 동일)
+  const win6    = _get6MonthWindow();
+  const allRecs = weekly.filter(w => w.member_name === memberName && w.week_date >= win6.start && w.week_date <= win6.end);
   const recorded = allRecs.length;
   if (!recorded) return { attendance, ono, visitors, referrals, light: 'gray' };
 

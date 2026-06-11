@@ -189,8 +189,9 @@ function calcStats(name, weekly, weeks) {
   const visitors   = recs.reduce((s,w) => s + (w.visitors||0), 0);
   const tyfcb      = recs.reduce((s,w) => s + (Number(w.tyfcb)||0), 0);
 
-  // light: 전체 기록 기준 7항목 채점 (traffic-light.js, dashboard.js와 동일)
-  const allRecs = weekly; // 이미 member_name 필터링된 상태로 전달됨
+  // light: 직전 6개월 윈도우 기준 7항목 채점
+  const win6    = _get6MonthWindow();
+  const allRecs = weekly.filter(w => w.week_date >= win6.start && w.week_date <= win6.end);
   const ar = allRecs.length;
   if (!ar) return { attendance, ono, givenRef, recvRef, visitors, tyfcb, light: 'gray', recorded };
 
@@ -205,6 +206,14 @@ function calcStats(name, weekly, weeks) {
   const light  = total>=70?'green':total>=50?'amber':total>=30?'red':'gray';
 
   return { attendance, ono, givenRef, recvRef, visitors, tyfcb, light, recorded };
+}
+
+function _get6MonthWindow() {
+  const t = new Date();
+  const end   = new Date(t.getFullYear(), t.getMonth(), 0);
+  const start = new Date(t.getFullYear(), t.getMonth() - 6, 1);
+  const fmt = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  return { start: fmt(start), end: fmt(end) };
 }
 
 function toLocalDate(d) {
