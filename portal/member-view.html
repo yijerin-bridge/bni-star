@@ -115,31 +115,37 @@ function calcMemberScore(recs, pastWeeks) {
 function genAITips(name, sc) {
   const tips = [];
   const lMsg = {
-    green:'모든 항목 기준 충족 — 챕터의 모범입니다!',
-    amber:'Green까지 한 걸음! 아래 항목을 집중하면 달성 가능합니다.',
-    red:'활동 강화가 필요합니다. 트래픽라이트위원·원투원코디·멘토링코디와 면담을 통해 실천 계획을 세워보세요.',
-    gray:`${name}님의 BNI 활동이 저조합니다. 지금 바로 리퍼럴·1:1·비지터 활동을 시작해 보세요!`,
+    green:  '모든 항목 기준 충족 — 챕터의 모범이 되고 있습니다! 이 활동을 유지해 주세요.',
+    amber:  'Green까지 한 걸음 남았습니다. 아래 항목만 집중하면 달성 가능합니다.',
+    red:    '활동 강화가 필요합니다. 트래픽라이트위원·원투원코디·멘토링코디와 면담을 통해 실천 계획을 세워보세요.',
+    gray:   `${name}님의 BNI 활동이 저조합니다. 지금 바로 리퍼럴·1:1·비지터 활동을 시작해 보세요!`,
   };
-  const lType={green:'positive',amber:'warning',red:'critical',gray:'critical'};
-  const lIcon={green:'✅',amber:'⚠️',red:'🚨',gray:'🔔'};
-  tips.push({type:lType[sc.light],icon:lIcon[sc.light],text:`현재 ${sc.total}점 · ${lMsg[sc.light]}`});
-  if(sc.breakdown.absence<15) tips.push({type:'action',icon:'📅',text:`결석 ${sc.stats.absN}회 (${15-sc.breakdown.absence}점 손실) — 매주 참석 최우선. 불가피하면 대리인을 보내세요.`});
-  if(sc.breakdown.late<10)    tips.push({type:'action',icon:'⏰',text:`지각/조퇴 ${sc.stats.lateN}회 — 10분 전 도착 습관화로 ${10-sc.breakdown.late}점 회복 가능합니다.`});
-  if(sc.breakdown.referral<20){
-    const avg=parseFloat(sc.stats.avgRef)||0;
-    const next=avg<0.5?'주 1건':avg<1.0?'주 1건 이상':'주 1.2건';
-    tips.push({type:'action',icon:'🤝',text:`리퍼럴 주평균 ${sc.stats.avgRef}건 → 목표 ${next}. 1:1 미팅에서 "소개해 줄 분 있으세요?"라고 물어보세요. 어렵다면 원투원코디에게 도움 요청하세요.`});
+  tips.push({
+    type: {green:'positive',amber:'warning',red:'critical',gray:'critical'}[sc.light]||'warning',
+    icon: {green:'✅',amber:'⚠️',red:'🚨',gray:'🔔'}[sc.light],
+    text: `현재 ${sc.total}점 · ${lMsg[sc.light]}`,
+  });
+  if (sc.breakdown.absence < 15)
+    tips.push({type:'action',icon:'📅',text:`결석 ${sc.stats.absN}회 (${15-sc.breakdown.absence}점 손실) — 매주 미팅 참석을 최우선으로 잡아주세요. 불가피하면 대리인을 보내세요. 계속될 경우 멘토링코디와 상담을 권장합니다.`});
+  if (sc.breakdown.late < 10)
+    tips.push({type:'action',icon:'⏰',text:`지각/조퇴 ${sc.stats.lateN}회 — 미팅 10분 전 도착을 습관화하면 ${10-sc.breakdown.late}점 바로 회복됩니다.`});
+  if (sc.breakdown.referral < 20) {
+    const avg = parseFloat(sc.stats.avgRef)||0;
+    const next = avg<0.5?'주 1건':avg<1.0?'주 1건 이상':'주 1.2건';
+    tips.push({type:'action',icon:'🤝',text:`리퍼럴 주평균 ${sc.stats.avgRef}건 → 목표 ${next}. 1:1 상대 중 지금 바로 소개해 줄 수 있는 분을 떠올려 보세요. 어렵다면 원투원코디에게 도움을 요청하세요.`});
   }
-  if(sc.breakdown.visitor<20){
-    const avg=parseFloat(sc.stats.avgVis)||0;
-    tips.push({type:'action',icon:'🙋',text:`비지터 주평균 ${sc.stats.avgVis}명 — ${avg===0?'아직 비지터 초대가 없습니다. 지금 바로 주변 1명에게 연락해 보세요!':'목표는 주 0.6명. 꾸준히 초대해 보세요.'}`});
+  if (sc.breakdown.visitor < 20) {
+    const avg = parseFloat(sc.stats.avgVis)||0;
+    tips.push({type:'action',icon:'🙋',text:`비지터 주평균 ${sc.stats.avgVis}명 — ${avg===0?'아직 비지터 초대가 없습니다. 지금 바로 주변 1명에게 연락해 보세요!':'비지터 초대를 꾸준히 늘려가세요. 목표는 주 0.6명입니다.'}`});
   }
-  if(sc.breakdown.ono<10){
-    const avg=parseFloat(sc.stats.avgOno)||0;
-    tips.push({type:'action',icon:'☕',text:`1:1 주평균 ${sc.stats.avgOno}회 — ${avg===0?'아직 1:1 기록이 없습니다. 이번 주 첫 1:1을 잡아보세요!':'목표는 주 2회. 미팅 후 바로 다음 약속을 잡는 습관을 만들어보세요.'}`});
+  if (sc.breakdown.ono < 10) {
+    const avg = parseFloat(sc.stats.avgOno)||0;
+    tips.push({type:'action',icon:'☕',text:`1:1 주평균 ${sc.stats.avgOno}회 — ${avg===0?'아직 1:1 미팅 기록이 없습니다. 이번 주 첫 1:1을 잡아보세요!':'목표는 주 2회입니다. 미팅 후 바로 다음 약속을 잡는 습관을 만들어보세요.'}`});
   }
-  if(sc.breakdown.tyfcb<15)  tips.push({type:'action',icon:'💰',text:`감사장 누적 ${fmtComma(sc.stats.totTyf)}원 — 리퍼럴 성사 시 즉시 기록하세요. 빠진 건이 있는지 확인해 보세요.`});
-  if(sc.breakdown.ceu<10)    tips.push({type:'action',icon:'📚',text:`CEU 누적 ${sc.stats.totCeu}점 — 교육 세션 참여 시 빠짐없이 기록. 목표까지 ${Math.max(0,15-sc.stats.totCeu)}점 남았습니다.`});
+  if (sc.breakdown.tyfcb < 15)
+    tips.push({type:'action',icon:'💰',text:`감사장 누적 ${fmtComma(sc.stats.totTyf)}원 — 받은 리퍼럴이 성사될 때마다 즉시 감사장을 기록하세요. 빠진 건이 있는지 확인해 보세요.`});
+  if (sc.breakdown.ceu < 10)
+    tips.push({type:'action',icon:'📚',text:`CEU 누적 ${sc.stats.totCeu}점 — 교육 세션 참여 시 빠짐없이 기록해 주세요. 목표 15점까지 ${Math.max(0,15-sc.stats.totCeu)}점 남았습니다.`});
   return tips;
 }
 
