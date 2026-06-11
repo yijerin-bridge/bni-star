@@ -2,6 +2,20 @@
    BNI STAR Portal — Dashboard  (weekly_records 기반)
    ============================================================ */
 
+const _CHAPTER_LAUNCH = '2026-05-13';
+const _TODAY = new Date().toISOString().slice(0, 10);
+
+function _getAllWeeks() {
+  const start = new Date(_CHAPTER_LAUNCH + 'T00:00:00Z');
+  const minEnd = new Date(start); minEnd.setUTCDate(minEnd.getUTCDate() + 23 * 7);
+  const target = new Date(_TODAY + 'T00:00:00Z');
+  const end = target > minEnd ? target : minEnd;
+  const weeks = []; let d = new Date(start);
+  while (d <= end) { weeks.push(d.toISOString().slice(0, 10)); d.setUTCDate(d.getUTCDate() + 7); }
+  return weeks;
+}
+const _WEEKS_ALL = _getAllWeeks();
+
 function copyShareLink() {
   const url = location.origin + '/portal/dashboard-share.html';
   navigator.clipboard.writeText(url).then(() => showToastDB('링크가 복사되었습니다!'));
@@ -61,8 +75,8 @@ function buildDashboard(session, el, members, weekly) {
   const statsMap     = {};
   const statsPrevMap = {};
   members.forEach(m => {
-    statsMap[m.name]     = calcMemberStats(m.name, weekly, weeks4);
-    statsPrevMap[m.name] = calcMemberStats(m.name, weekly, weeksPrev);
+    statsMap[m.name]     = calcMemberStats(m.name, weekly, weeks4, m.joined_date);
+    statsPrevMap[m.name] = calcMemberStats(m.name, weekly, weeksPrev, m.joined_date);
   });
 
   const allStats  = Object.values(statsMap);
@@ -109,8 +123,9 @@ function buildDashboard(session, el, members, weekly) {
   const convRate     = visitorCnt  > 0 ? Math.round(newMemberCnt  / visitorCnt  * 100) : 0;
   const convRatePrev = visitorPrev > 0 ? Math.round(newMemberPrev / visitorPrev * 100) : 0;
 
-  const myName  = session.memberName;
-  const myStats = myName ? calcMemberStats(myName, weekly, weeks4) : null;
+  const myName   = session.memberName;
+  const myMember = members.find(m => m.name === myName);
+  const myStats  = myName ? calcMemberStats(myName, weekly, weeks4, myMember?.joined_date) : null;
 
   el.innerHTML = `
     <div class="page-header">
@@ -386,7 +401,7 @@ function _scoreVisitor(avg)  { return avg < 0.1 ? 0 : avg < 0.2 ? 5 : avg < 0.4 
 function _scoreOno(avg)      { return avg < 1 ? 0 : avg < 2 ? 5 : 10; }
 function _scoreCeu(tot)      { return tot < 5 ? 0 : tot < 15 ? 5 : 10; }
 
-function calcMemberStats(memberName, weekly, weeks) {
+function calcMemberStats(memberName, weekly, weeks, joinedDate) {
   // KPI용: 주어진 weeks 범위 내 집계
   const wRecs = weekly.filter(w => weeks.includes(w.week_date) && w.member_name === memberName);
   const attendance = wRecs.filter(w => w.attended || w.sick || w.substitute).length;
@@ -394,27 +409,31 @@ function calcMemberStats(memberName, weekly, weeks) {
   const visitors   = wRecs.reduce((s,w) => s + (w.visitors||0), 0);
   const referrals  = wRecs.reduce((s,w) => s + (w.given_t1||0) + (w.given_t2||0), 0);
 
-  // 트래픽라이트 색상: 직전 6개월 윈도우 기준 7항목 채점 (traffic-light.js와 동일)
-  const win6    = _get6MonthWindow();
-  const allRecs = weekly.filter(w => w.member_name === memberName && w.week_date >= win6.start && w.week_date <= win6.end);
-  const recorded = allRecs.length;
-  if (!recorded) return { attendance, ono, visitors, referrals, light: 'gray' };
+  // 트래픽라이트 색상: traffic-light.js와 동일한 effStart + 예상점수 로직
+  const win6     = _get6MonthWindow();
+  const effStart = [win6.start, _CHAPTER_LAUNCH, joinedDate || _CHAPTER_LAUNCH].sort().reverse()[0];
+  const allRecs  = weekly.filter(w => w.member_name === memberName);
+  const extraRecs = allRecs.filter(w => w.week_date > win6.end);
+  const previewEnd = extraRecs.length > 0 ? _TODAY : win6.end;
+  const winRecs  = allRecs.filter(w => w.week_date >= effStart && w.week_date <= previewEnd);
+  if (!winRecs.length) return { attendance, ono, visitors, referrals, light: 'gray' };
 
-  const absN   = allRecs.filter(w => w.absent).length;
-  const lateN  = allRecs.filter(w => w.late).length;
-  const totRef = allRecs.reduce((s,w) => s + (w.given_t1||0) + (w.given_t2||0), 0);
-  const totVis = allRecs.reduce((s,w) => s + (w.visitors||0), 0);
-  const totOno = allRecs.reduce((s,w) => s + (w.one_on_one||0), 0);
-  const totTyf = allRecs.reduce((s,w) => s + (Number(w.tyfcb)||0), 0);
-  const totCeu = allRecs.reduce((s,w) => s + (w.ceu||0), 0);
+  const denom  = Math.max(_WEEKS_ALL.filter(w => w >= effStart && w <= previewEnd).length, new Set(winRecs.map(r=>r.week_date)).size, 1);
+  const absN   = winRecs.filter(w => w.absent).length;
+  const lateN  = winRecs.filter(w => w.late).length;
+  const totRef = winRecs.reduce((s,w) => s + (w.given_t1||0) + (w.given_t2||0), 0);
+  const totVis = winRecs.reduce((s,w) => s + (w.visitors||0), 0);
+  const totOno = winRecs.reduce((s,w) => s + (w.one_on_one||0), 0);
+  const totTyf = winRecs.reduce((s,w) => s + (Number(w.tyfcb)||0), 0);
+  const totCeu = winRecs.reduce((s,w) => s + (w.ceu||0), 0);
 
   const total =
     _scoreAbsence(absN) +
     _scoreLate(lateN) +
-    _scoreRef(totRef / recorded) +
+    _scoreRef(totRef / denom) +
     _scoreTyfcb(totTyf) +
-    _scoreVisitor(totVis / recorded) +
-    _scoreOno(totOno / recorded) +
+    _scoreVisitor(totVis / denom) +
+    _scoreOno(totOno / denom) +
     _scoreCeu(totCeu);
   const light = total >= 70 ? 'green' : total >= 50 ? 'amber' : total >= 30 ? 'red' : 'gray';
 

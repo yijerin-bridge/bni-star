@@ -39,7 +39,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   const weeks12 = getRecentWeeks(12);
   const weeks4  = weeks12.slice(0, 4);
 
-  const stats4 = calcStats(myName, weekly, weeks4);
+  const stats4 = calcStats(myName, weekly, weeks4, me?.joined_date);
 
   const lc    = { green:'#16a34a', amber:'#ca8a04', red:'#CC0000', new:'#9ca3af' }[stats4.light] || '#9ca3af';
   const lbl   = { green:'Green 🟢', amber:'Amber 🟡', red:'Red 🔴', new:'활동 저조 ⚫' }[stats4.light] || '—';
@@ -178,7 +178,7 @@ function _sVis(avg) { return avg<0.1?0:avg<0.2?5:avg<0.4?10:avg<0.6?15:20; }
 function _sOno(avg) { return avg<1?0:avg<2?5:10; }
 function _sCeu(t)   { return t<5?0:t<15?5:10; }
 
-function calcStats(name, weekly, weeks) {
+function calcStats(name, weekly, weeks, joinedDate) {
   // KPI 수치: 최근 N주 기록만
   const recs = weekly.filter(w => weeks.includes(w.week_date));
   const recorded   = recs.length;
@@ -189,20 +189,24 @@ function calcStats(name, weekly, weeks) {
   const visitors   = recs.reduce((s,w) => s + (w.visitors||0), 0);
   const tyfcb      = recs.reduce((s,w) => s + (Number(w.tyfcb)||0), 0);
 
-  // light: 직전 6개월 윈도우 기준 7항목 채점
-  const win6    = _get6MonthWindow();
-  const allRecs = weekly.filter(w => w.week_date >= win6.start && w.week_date <= win6.end);
-  const ar = allRecs.length;
-  if (!ar) return { attendance, ono, givenRef, recvRef, visitors, tyfcb, light: 'gray', recorded };
+  // light: traffic-light.js와 동일한 effStart + 예상점수 로직
+  const win6     = _get6MonthWindow();
+  const effStart = [win6.start, '2026-05-13', joinedDate || '2026-05-13'].sort().reverse()[0];
+  const extraRecs = weekly.filter(w => w.week_date > win6.end);
+  const previewEnd = extraRecs.length > 0 ? new Date().toISOString().slice(0,10) : win6.end;
+  const winRecs  = weekly.filter(w => w.week_date >= effStart && w.week_date <= previewEnd);
+  if (!winRecs.length) return { attendance, ono, givenRef, recvRef, visitors, tyfcb, light: 'gray', recorded };
 
-  const absN   = allRecs.filter(w => w.absent).length;
-  const lateN  = allRecs.filter(w => w.late).length;
-  const totRef = allRecs.reduce((s,w) => s + (w.given_t1||0) + (w.given_t2||0), 0);
-  const totVis = allRecs.reduce((s,w) => s + (w.visitors||0), 0);
-  const totOno = allRecs.reduce((s,w) => s + (w.one_on_one||0), 0);
-  const totTyf = allRecs.reduce((s,w) => s + (Number(w.tyfcb)||0), 0);
-  const totCeu = allRecs.reduce((s,w) => s + (w.ceu||0), 0);
-  const total  = _sAbs(absN)+_sLate(lateN)+_sRef(totRef/ar)+_sTyf(totTyf)+_sVis(totVis/ar)+_sOno(totOno/ar)+_sCeu(totCeu);
+  const allWed   = getRecentWeeks(52).filter(w => w >= effStart && w <= previewEnd);
+  const denom    = Math.max(allWed.length, new Set(winRecs.map(r=>r.week_date)).size, 1);
+  const absN   = winRecs.filter(w => w.absent).length;
+  const lateN  = winRecs.filter(w => w.late).length;
+  const totRef = winRecs.reduce((s,w) => s + (w.given_t1||0) + (w.given_t2||0), 0);
+  const totVis = winRecs.reduce((s,w) => s + (w.visitors||0), 0);
+  const totOno = winRecs.reduce((s,w) => s + (w.one_on_one||0), 0);
+  const totTyf = winRecs.reduce((s,w) => s + (Number(w.tyfcb)||0), 0);
+  const totCeu = winRecs.reduce((s,w) => s + (w.ceu||0), 0);
+  const total  = _sAbs(absN)+_sLate(lateN)+_sRef(totRef/denom)+_sTyf(totTyf)+_sVis(totVis/denom)+_sOno(totOno/denom)+_sCeu(totCeu);
   const light  = total>=70?'green':total>=50?'amber':total>=30?'red':'gray';
 
   return { attendance, ono, givenRef, recvRef, visitors, tyfcb, light, recorded };
