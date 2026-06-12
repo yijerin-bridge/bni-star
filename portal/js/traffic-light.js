@@ -337,7 +337,8 @@ function renderMemberDetail(name) {
   const hasExtra  = extraRecs.length > 0;
   const isPreview = hasExtra || isShort;
 
-  const previewEnd   = hasExtra ? TODAY : WIN6.end;
+  const lastExtraDate = hasExtra ? extraRecs.map(r => r.week_date).sort().reverse()[0] : WIN6.end;
+  const previewEnd   = hasExtra ? (lastExtraDate > TODAY ? lastExtraDate : TODAY) : WIN6.end;
   const previewRecs  = allRecs.filter(r => r.week_date >= effStart && r.week_date <= previewEnd);
   const previewDenom = Math.max(WEEKS_ALL.filter(w => w >= effStart && w <= previewEnd).length, new Set(previewRecs.map(r=>r.week_date)).size, 1);
   const denom        = previewDenom;
