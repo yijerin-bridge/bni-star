@@ -176,13 +176,17 @@ async function initTrafficLight(session, bodyEl) {
 function renderOverview() {
   const el = document.getElementById('tl-overview');
 
-  // 멤버별 점수 계산 (유효 시작일~WIN6.end, 6개월 미만이면 예상 점수)
+  // 멤버별 점수 계산 — renderMemberDetail과 동일한 effStart + 예상점수 로직
   const memberScores = allMembers.map(m => {
-    const allRecs  = allWeeklyRecs.filter(r => r.member_name === m.name);
-    const effStart = [WIN6.start, CHAPTER_LAUNCH, m.joined_date || CHAPTER_LAUNCH].sort().reverse()[0];
-    const recs     = allRecs.filter(r => r.week_date >= effStart && r.week_date <= WIN6.end);
-    const denom    = Math.max(WEEKS_ALL.filter(w => w >= effStart && w <= WIN6.end).length, 1);
-    const sc       = calcMemberScore(recs, denom);
+    const allRecs   = allWeeklyRecs.filter(r => r.member_name === m.name);
+    const effStart  = [WIN6.start, CHAPTER_LAUNCH, m.joined_date || CHAPTER_LAUNCH].sort().reverse()[0];
+    const extraRecs = allRecs.filter(r => r.week_date > WIN6.end);
+    const hasExtra  = extraRecs.length > 0;
+    const lastExtra = hasExtra ? extraRecs.map(r => r.week_date).sort().reverse()[0] : WIN6.end;
+    const previewEnd = hasExtra ? (lastExtra > TODAY ? lastExtra : TODAY) : WIN6.end;
+    const recs      = allRecs.filter(r => r.week_date >= effStart && r.week_date <= previewEnd);
+    const denom     = Math.max(WEEKS_ALL.filter(w => w >= effStart && w <= previewEnd).length, new Set(recs.map(r=>r.week_date)).size, 1);
+    const sc        = calcMemberScore(recs, denom);
     return { ...m, ...sc, recs: allRecs };
   }).sort((a,b) => {
     const ord = { gray:0, red:1, amber:2, green:3 };
