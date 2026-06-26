@@ -1746,6 +1746,20 @@ function genAIOverview(memberScores) {
   if (topRef && topRef.name !== topScorer?.name && (topRef.stats?.totRef||0) > 0)
     tips.push({type:'positive',icon:'🤝',text:`리퍼럴 MVP: ${topRef.name}님(${topRef.stats.totRef}건) — 적극적인 소개 활동의 모범입니다.`});
 
+  // 전월대비 활동 향상 (리퍼럴+비지터+1:1 합산 건수 비교)
+  const prevMonth = WIN6.end.slice(0,7);
+  const currMonth = TODAY.slice(0,7);
+  if (prevMonth !== currMonth) {
+    const act = r => (r.given_t1||0)+(r.given_t2||0)+(r.visitors||0)+(r.one_on_one||0);
+    const improved = memberScores.map(m => {
+      const prev = m.recs.filter(r=>r.week_date.startsWith(prevMonth)).reduce((s,r)=>s+act(r),0);
+      const curr = m.recs.filter(r=>r.week_date.startsWith(currMonth)).reduce((s,r)=>s+act(r),0);
+      return { name: m.name, diff: curr - prev, curr };
+    }).filter(m => m.diff > 0).sort((a,b) => b.diff - a.diff);
+    if (improved.length > 0)
+      tips.push({type:'positive',icon:'📈',text:`전월대비 활동 가장 많이 늘어난 멤버: ${improved[0].name}님 (+${improved[0].diff}건 · 리퍼럴·비지터·1:1 합산)`});
+  }
+
   return tips;
 }
 

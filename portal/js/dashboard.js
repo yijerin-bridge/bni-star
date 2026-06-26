@@ -437,7 +437,7 @@ function calcMemberStats(memberName, weekly, weeks, joinedDate) {
     _scoreCeu(totCeu);
   const light = total >= 70 ? 'green' : total >= 50 ? 'amber' : total >= 30 ? 'red' : 'gray';
 
-  return { attendance, ono, visitors, referrals, tyfcb: totTyf, light, recorded: wRecs.length };
+  return { attendance, ono, visitors, referrals, tyfcb: totTyf, light, total, recorded: wRecs.length };
 }
 
 function topN(members, statsMap, field, n, unit) {
