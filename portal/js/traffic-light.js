@@ -1755,8 +1755,12 @@ function genAIOverview(memberScores) {
       const prevSc = calcMemberScore(prevRecs, prevDenom);
       return { name: m.name, prev: prevSc.total, now: m.total, diff: m.total - prevSc.total };
     }).filter(m => m.diff > 0).sort((a,b) => b.diff - a.diff);
-    if (improved.length > 0)
-      tips.push({type:'positive',icon:'📈',text:`전월대비 점수 가장 많이 오른 멤버: ${improved[0].name}님 (${improved[0].prev}점 → ${improved[0].now}점, +${improved[0].diff}점)`});
+    if (improved.length > 0) {
+      const topDiff = improved[0].diff;
+      const topMembers = improved.filter(m => m.diff === topDiff);
+      const nameStr = topMembers.map(m => `${m.name}님(${m.prev}→${m.now}점)`).join(', ');
+      tips.push({type:'positive',icon:'📈',text:`전월대비 점수 가장 많이 오른 멤버: ${nameStr} (+${topDiff}점)`});
+    }
   }
 
   return tips;
