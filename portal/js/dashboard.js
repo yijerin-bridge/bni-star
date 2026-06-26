@@ -196,7 +196,7 @@ function buildDashboard(session, el, members, weekly) {
     renderDistChart(greenCnt, amberCnt, redCnt, grayCnt);
     renderWeeklyChart(weekly, weeks);
     renderMonthlyChart(weekly);
-    renderAIDirector(allStats, members, totalMembers, statsMap);
+    renderAIDirector(allStats, members, totalMembers, statsMap, weekly);
   }
 
   loadRecentMeetings();
@@ -463,7 +463,7 @@ function fmtAmt(v) {
 }
 
 /* ── AI 챕터 디렉터 ── */
-function renderAIDirector(allStats, members, total, statsMap) {
+function renderAIDirector(allStats, members, total, statsMap, weekly) {
   const el = document.getElementById('aiDirectorCard');
   if (!el || !allStats.length) return;
 
@@ -521,6 +521,33 @@ function renderAIDirector(allStats, members, total, statsMap) {
 
   if (topRef && topRef.name !== topAll?.name && topRef.referrals > 0)
     points.push({ type:'positive', text:`리퍼럴 MVP: ${topRef.name}님(${topRef.referrals}건) — 적극적인 소개 활동의 모범입니다.` });
+
+  // 전월대비 점수 향상
+  if (weekly) {
+    const win6 = _get6MonthWindow();
+    const calcScore = (recs, denom) => {
+      if (!recs.length) return 0;
+      const W = Math.max(denom, 1);
+      return _scoreAbsence(recs.filter(r=>r.absent).length)
+           + _scoreLate(recs.filter(r=>r.late).length)
+           + _scoreRef(recs.reduce((s,r)=>s+(r.given_t1||0)+(r.given_t2||0),0)/W)
+           + _scoreTyfcb(recs.reduce((s,r)=>s+(Number(r.tyfcb)||0),0))
+           + _scoreVisitor(recs.reduce((s,r)=>s+(r.visitors||0),0)/W)
+           + _scoreOno(recs.reduce((s,r)=>s+(r.one_on_one||0),0)/W)
+           + _scoreCeu(recs.reduce((s,r)=>s+(r.ceu||0),0));
+    };
+    const improved = members.map(m => {
+      const allRecs  = weekly.filter(w => w.member_name === m.name);
+      const effStart = [win6.start, _CHAPTER_LAUNCH, m.joined_date || _CHAPTER_LAUNCH].sort().reverse()[0];
+      const prevRecs = allRecs.filter(r => r.week_date >= effStart && r.week_date <= win6.end);
+      const prevDenom = Math.max(_WEEKS_ALL.filter(w => w >= effStart && w <= win6.end).length, 1);
+      const nowRecs  = allRecs.filter(r => r.week_date >= effStart);
+      const nowDenom = Math.max(_WEEKS_ALL.filter(w => w >= effStart && w <= _TODAY).length, nowRecs.length, 1);
+      return { name: m.name, diff: calcScore(nowRecs, nowDenom) - calcScore(prevRecs, prevDenom) };
+    }).filter(m => m.diff > 0).sort((a,b) => b.diff - a.diff);
+    if (improved.length > 0)
+      points.push({ type:'positive', text:`📈 이번달 점수 가장 많이 오른 멤버: ${improved[0].name}님 (+${improved[0].diff}점)` });
+  }
 
   if (!points.length) { el.style.display = 'none'; return; }
 
