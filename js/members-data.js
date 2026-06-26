@@ -323,6 +323,28 @@ const MEMBERS_DEFAULT = [
     testimonials: []
   },
   {
+    id: 39, name: "김성택", company: "구운정", category: "식품/외식",
+    specialty: "식품/외식",
+    headline: "",
+    targetCustomer: "",
+    description: "",
+    phone: "010-4221-5604", email: "", address: "",
+    instagram: "", kakao: "", website: "",
+    color: "#1D8348", featured: false, photoUrl: "",
+    testimonials: []
+  },
+  {
+    id: 40, name: "채수근", company: "대한유통", category: "제조/유통",
+    specialty: "유통",
+    headline: "",
+    targetCustomer: "",
+    description: "",
+    phone: "", email: "", address: "",
+    instagram: "", kakao: "", website: "",
+    color: "#546E7A", featured: false, photoUrl: "",
+    testimonials: []
+  },
+  {
     id: 38, name: "박준홍", company: "스토리오브시스템", category: "IT/디지털",
     specialty: "소프트웨어개발",
     headline: "",
