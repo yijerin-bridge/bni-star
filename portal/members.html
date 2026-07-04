@@ -112,45 +112,96 @@ async function loadRolesView(el, members) {
     .eq('is_current', true).order('created_at');
   const { data: roles } = await getSb().from('roles').select('*').order('tier').order('name');
 
-  const assigned = new Set((memberRoles||[]).map(mr => mr.member_id));
-  const unassigned = members.filter(m => !assigned.has(m.id));
+  // role_id → assigned member info
+  const roleMap = {};
+  (memberRoles||[]).forEach(mr => {
+    roleMap[mr.role_id] = { name: mr.members?.name||'', company: mr.members?.company||'', mrId: mr.id, memberId: mr.member_id };
+  });
+
+  // Group roles by tier
+  const tiers = {};
+  (roles||[]).forEach(r => {
+    if (!tiers[r.tier]) tiers[r.tier] = [];
+    tiers[r.tier].push(r);
+  });
+  const tierKeys = Object.keys(tiers).sort((a,b) => Number(a)-Number(b));
 
   el.innerHTML = `
-    <div class="section-row">
-      <div class="card">
-        <div class="card-title">현재 역할 배정</div>
-        ${(memberRoles||[]).length === 0
-          ? '<div style="color:#9ca3af;font-size:13px">배정된 역할이 없습니다</div>'
-          : `<table class="data-table">
-              <thead><tr><th>멤버</th><th>역할</th><th>임기 시작</th><th></th></tr></thead>
-              <tbody>${(memberRoles||[]).map(mr => `
-                <tr>
-                  <td>${mr.members?.name||''} <span style="color:#9ca3af;font-size:11px">${mr.members?.company||''}</span></td>
-                  <td><span class="badge badge-${mr.roles?.role_type}">${mr.roles?.name||''}</span></td>
-                  <td>${mr.term_start||''}</td>
-                  <td><button class="btn btn-outline btn-sm" onclick="endRole(${mr.id})">종료</button></td>
-                </tr>`).join('')}
-              </tbody>
-            </table>`}
-        <button class="btn btn-secondary btn-sm" style="margin-top:12px" onclick="showAssignRoleForm()">+ 역할 배정</button>
-      </div>
-      <div class="card">
-        <div class="card-title">역할 미배정 멤버 (${unassigned.length}명)</div>
-        ${unassigned.map(m => `<div style="padding:6px 0;font-size:13px;border-bottom:1px solid #f3f4f6">${m.name} <span style="color:#9ca3af">${m.company||''}</span></div>`).join('')||'<div style="color:#9ca3af;font-size:13px">없음</div>'}
-      </div>
-    </div>`;
+    <style>
+      .org-header { display:flex;align-items:center;gap:10px;margin-bottom:24px; }
+      .org-badge { background:#1e3a5f;color:#fff;padding:5px 14px;border-radius:20px;font-size:13px;font-weight:700; }
+      .org-tier { display:flex;flex-wrap:wrap;gap:12px;justify-content:center;margin-bottom:0; }
+      .org-connector { display:flex;justify-content:center;margin:4px 0; }
+      .org-connector-line { width:2px;height:22px;background:#d1d5db; }
+      .role-card { background:#fff;border:2px solid #e5e7eb;border-radius:12px;padding:14px 18px;min-width:110px;max-width:160px;text-align:center;cursor:pointer;transition:border-color .15s,box-shadow .15s;box-shadow:0 1px 4px rgba(0,0,0,.06); }
+      .role-card:hover { border-color:#1e3a5f;box-shadow:0 4px 12px rgba(30,58,95,.15); }
+      .role-card.filled { border-color:#bfdbfe;background:#eff6ff; }
+      .role-card.filled:hover { border-color:#1e3a5f; }
+      .rc-title { font-size:11px;font-weight:700;color:#6b7280;margin-bottom:8px;letter-spacing:.4px;text-transform:uppercase; }
+      .rc-name { font-size:15px;font-weight:700;color:#1e3a5f; }
+      .rc-co { font-size:11px;color:#9ca3af;margin-top:3px; }
+      .rc-empty { font-size:12px;color:#d1d5db;padding:4px 0; }
+    </style>
+    <div class="org-header">
+      <span class="org-badge">1기 2026.05~</span>
+      <button class="btn btn-outline btn-sm" onclick="showAddRoleAssign()">+ 역할 배정</button>
+    </div>
+    ${tierKeys.length === 0
+      ? '<div style="color:#9ca3af;font-size:13px;text-align:center;padding:40px">역할 데이터가 없습니다.</div>'
+      : tierKeys.map((tier, ti) => `
+        ${ti > 0 ? '<div class="org-connector"><div class="org-connector-line"></div></div>' : ''}
+        <div class="org-tier">
+          ${tiers[tier].map(r => {
+            const asgn = roleMap[r.id];
+            return `<div class="role-card ${asgn?'filled':''}" onclick="editRoleCard(${r.id},'${r.name.replace(/'/g,"\\'")}')">
+              <div class="rc-title">${r.name}</div>
+              ${asgn
+                ? `<div class="rc-name">${asgn.name}</div><div class="rc-co">${asgn.company}</div>`
+                : `<div class="rc-empty">미배정</div>`}
+            </div>`;
+          }).join('')}
+        </div>`).join('')}
+  `;
 
-  window.endRole = async (mrId) => {
-    if (!confirm('이 역할 임기를 종료하시겠습니까?')) return;
-    const { error } = await getSb().from('member_roles').update({ is_current: false, term_end: new Date().toISOString().slice(0,10) }).eq('id', mrId);
-    if (error) alert('오류: ' + error.message);
-    else location.reload();
+  window.editRoleCard = (roleId, roleName) => {
+    const cur = roleMap[roleId];
+    const overlay = document.createElement('div');
+    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:200;display:flex;align-items:center;justify-content:center';
+    overlay.innerHTML = `
+      <div style="background:#fff;border-radius:14px;padding:28px;width:100%;max-width:360px;margin:24px">
+        <h2 style="font-size:16px;font-weight:700;margin-bottom:6px">${roleName}</h2>
+        <p style="font-size:12px;color:#9ca3af;margin-bottom:20px">담당자를 변경하거나 미배정으로 설정하세요</p>
+        <div class="form-group">
+          <select id="erMember" class="form-input">
+            <option value="">미배정</option>
+            ${members.map(m => `<option value="${m.id}"${cur?.memberId===m.id?' selected':''}>${m.name} · ${m.company||''}</option>`).join('')}
+          </select>
+        </div>
+        <div style="display:flex;gap:10px;justify-content:flex-end">
+          <button class="btn btn-outline" id="erCancel">취소</button>
+          <button class="btn btn-primary" id="erSave">저장</button>
+        </div>
+      </div>`;
+    document.body.appendChild(overlay);
+    overlay.querySelector('#erCancel').addEventListener('click', () => overlay.remove());
+    overlay.querySelector('#erSave').addEventListener('click', async () => {
+      const memberId = Number(overlay.querySelector('#erMember').value) || null;
+      if (cur?.mrId) {
+        await getSb().from('member_roles').update({ is_current: false, term_end: new Date().toISOString().slice(0,10) }).eq('id', cur.mrId);
+      }
+      if (memberId) {
+        const { error } = await getSb().from('member_roles').insert({ member_id: memberId, role_id: roleId, term_start: '2026-05-13', is_current: true });
+        if (error) { alert('오류: ' + error.message); return; }
+      }
+      overlay.remove();
+      location.reload();
+    });
   };
 
-  window.showAssignRoleForm = () => {
-    const form = document.createElement('div');
-    form.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;display:flex;align-items:center;justify-content:center';
-    form.innerHTML = `
+  window.showAddRoleAssign = () => {
+    const overlay = document.createElement('div');
+    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:200;display:flex;align-items:center;justify-content:center;overflow-y:auto';
+    overlay.innerHTML = `
       <div style="background:#fff;border-radius:14px;padding:28px;width:100%;max-width:420px;margin:24px">
         <h2 style="font-size:16px;font-weight:700;margin-bottom:20px">역할 배정</h2>
         <div class="form-group">
@@ -165,25 +216,27 @@ async function loadRolesView(el, members) {
             ${(roles||[]).map(r => `<option value="${r.id}">[T${r.tier}] ${r.name}</option>`).join('')}
           </select>
         </div>
-        <div class="form-group">
-          <label class="form-label">임기 시작</label>
-          <input type="date" id="arStart" class="form-input" value="${new Date().toISOString().slice(0,10)}">
-        </div>
         <div style="display:flex;gap:10px;justify-content:flex-end">
-          <button class="btn btn-outline" id="cancelAssign">취소</button>
-          <button class="btn btn-primary" id="confirmAssign">배정</button>
+          <button class="btn btn-outline" id="arCancel">취소</button>
+          <button class="btn btn-primary" id="arConfirm">배정</button>
         </div>
       </div>`;
-    document.body.appendChild(form);
-    form.querySelector('#cancelAssign').addEventListener('click', () => form.remove());
-    form.querySelector('#confirmAssign').addEventListener('click', async () => {
-      const member_id  = Number(form.querySelector('#arMember').value);
-      const role_id    = Number(form.querySelector('#arRole').value);
-      const term_start = form.querySelector('#arStart').value;
-      const { error } = await getSb().from('member_roles').insert({ member_id, role_id, term_start, is_current: true });
+    document.body.appendChild(overlay);
+    overlay.querySelector('#arCancel').addEventListener('click', () => overlay.remove());
+    overlay.querySelector('#arConfirm').addEventListener('click', async () => {
+      const member_id = Number(overlay.querySelector('#arMember').value);
+      const role_id   = Number(overlay.querySelector('#arRole').value);
+      const { error } = await getSb().from('member_roles').insert({ member_id, role_id, term_start: '2026-05-13', is_current: true });
       if (error) alert('오류: ' + error.message);
-      else { form.remove(); location.reload(); }
+      else { overlay.remove(); location.reload(); }
     });
+  };
+
+  window.endRole = async (mrId) => {
+    if (!confirm('이 역할 임기를 종료하시겠습니까?')) return;
+    const { error } = await getSb().from('member_roles').update({ is_current: false, term_end: new Date().toISOString().slice(0,10) }).eq('id', mrId);
+    if (error) alert('오류: ' + error.message);
+    else location.reload();
   };
 }
 
