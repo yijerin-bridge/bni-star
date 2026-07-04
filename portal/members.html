@@ -62,7 +62,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 async function loadView(view) {
   const el = document.getElementById('membersContent');
   let q = getSb().from('members').select('*');
-  if (view === 'active') q = q.eq('is_active', true);
+  if (view === 'active' || view === 'roles') q = q.eq('is_active', true);
   q = q.order('name');
   const { data, error } = await q;
   if (error) { el.innerHTML = `<div class="alert-banner crit">오류: ${error.message}</div>`; return; }
