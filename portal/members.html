@@ -118,9 +118,9 @@ async function loadRolesView(el, members) {
     roleMap[mr.role_id] = { name: mr.members?.name||'', company: mr.members?.company||'', mrId: mr.id, memberId: mr.member_id };
   });
 
-  // 일반멤버 role_type은 조직도에서 제외, 해당 배정자도 사이드바로
-  const orgRoles = (roles||[]).filter(r => r.role_type !== 'member');
-  const generalRoleIds = new Set((roles||[]).filter(r => r.role_type === 'member').map(r => r.id));
+  // role_type=member 또는 이름이 '일반멤버'인 역할은 조직도에서 제외
+  const orgRoles = (roles||[]).filter(r => r.role_type !== 'member' && r.name !== '일반멤버');
+  const generalRoleIds = new Set((roles||[]).filter(r => r.role_type === 'member' || r.name === '일반멤버').map(r => r.id));
 
   // Group org roles by tier, sorted by DB id within each tier
   const tiers = {};
