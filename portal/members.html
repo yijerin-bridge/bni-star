@@ -118,27 +118,24 @@ async function loadRolesView(el, members) {
     roleMap[mr.role_id] = { name: mr.members?.name||'', company: mr.members?.company||'', mrId: mr.id, memberId: mr.member_id };
   });
 
-  // Group roles by tier, sorted by priority within tier
-  const ROLE_ORDER = ['회장','의장','부회장','부의장','서기','재무','ST','멤버십위원장','교육위원장','비지터코디','원투원코디','이벤트코디'];
-  const roleSort = (a, b) => {
-    const ai = ROLE_ORDER.findIndex(k => a.name.includes(k));
-    const bi = ROLE_ORDER.findIndex(k => b.name.includes(k));
-    if (ai === -1 && bi === -1) return a.name.localeCompare(b.name, 'ko');
-    if (ai === -1) return 1;
-    if (bi === -1) return -1;
-    return ai - bi;
-  };
+  // 일반멤버 role_type은 조직도에서 제외, 해당 배정자도 사이드바로
+  const orgRoles = (roles||[]).filter(r => r.role_type !== 'member');
+  const generalRoleIds = new Set((roles||[]).filter(r => r.role_type === 'member').map(r => r.id));
+
+  // Group org roles by tier, sorted by DB id within each tier
   const tiers = {};
-  (roles||[]).forEach(r => {
+  orgRoles.forEach(r => {
     if (!tiers[r.tier]) tiers[r.tier] = [];
     tiers[r.tier].push(r);
   });
-  Object.values(tiers).forEach(arr => arr.sort(roleSort));
+  Object.values(tiers).forEach(arr => arr.sort((a, b) => a.id - b.id));
   const tierKeys = Object.keys(tiers).sort((a,b) => Number(a)-Number(b));
 
-  // Members with no role assigned
-  const assignedMemberIds = new Set((memberRoles||[]).map(mr => mr.member_id));
-  const generalMembers = members.filter(m => !assignedMemberIds.has(m.id));
+  // Members with no org role (unassigned or assigned only to 일반멤버 type)
+  const orgAssignedIds = new Set(
+    (memberRoles||[]).filter(mr => !generalRoleIds.has(mr.role_id)).map(mr => mr.member_id)
+  );
+  const generalMembers = members.filter(m => !orgAssignedIds.has(m.id));
 
   el.innerHTML = `
     <style>
