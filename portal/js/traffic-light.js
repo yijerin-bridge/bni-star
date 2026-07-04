@@ -1787,7 +1787,7 @@ function genAIMember(name, recs, sc) {
     tips.push({type:'action', icon:'📅', text:`결석 ${sc.stats.absN}회 (${15-sc.breakdown.absence}점 손실) — 매주 미팅 참석을 최우선으로 잡아주세요. 불가피하면 대리인을 보내세요. 계속될 경우 멘토링코디와 상담을 권장합니다.`});
 
   if (sc.breakdown.late < 10)
-    tips.push({type:'action', icon:'⏰', text:`지각/조퇴 ${sc.stats.lateN}회 — 미팅 10분 전 도착을 습관화하면 ${10-sc.breakdown.late}점 바로 회복됩니다.`});
+    tips.push({type:'action', icon:'⏰', text:`지각/조퇴 ${sc.stats.lateN}회 — 지각·조퇴 횟수만큼 6개월 출결 점수(10점 만점)에서 감점됩니다. 앞으로 지각하지 않으면 추가 감점을 막을 수 있어요.`});
 
   if (sc.breakdown.referral < 20) {
     const avg = parseFloat(sc.stats.avgRef) || 0;
@@ -1819,7 +1819,7 @@ function genAIMember(name, recs, sc) {
       { gap: 15 - sc.breakdown.absence,  label:'출석',     icon:'📅', action:'다음 미팅부터 빠지지 마세요. 불가피하면 반드시 대리인을 보내세요.' },
       { gap: 15 - sc.breakdown.tyfcb,    label:'감사장',   icon:'💰', action:'받은 리퍼럴 중 성사된 건이 있다면 지금 바로 감사장을 기록하세요.' },
       { gap: 10 - sc.breakdown.ono,      label:'1:1',     icon:'☕', action:'이번 주 1:1 미팅 1회를 먼저 캘린더에 잡으세요.' },
-      { gap: 10 - sc.breakdown.late,     label:'지각',     icon:'⏰', action:'미팅 10분 전 도착을 습관화하면 바로 점수가 오릅니다.' },
+      { gap: 10 - sc.breakdown.late,     label:'지각',     icon:'⏰', action:'지각·조퇴할 때마다 감점됩니다. 앞으로 지각하지 않으면 추가 감점을 막을 수 있어요.' },
       { gap: 10 - sc.breakdown.ceu,      label:'교육(CEU)',icon:'📚', action:'다음 교육 세션에 참여하고 CEU를 기록하세요.' },
     ].filter(c => c.gap > 0).sort((a,b) => b.gap - a.gap);
 
