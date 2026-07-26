@@ -23,4 +23,5 @@ INSERT INTO roles (name, tier, role_type, description) VALUES
   ('이벤트 코디네이터',         2, 'leader',     '리더팀 — 이벤트'),
   ('PR 홍보 코디네이터',        2, 'leader',     '리더팀 — PR/홍보'),
   ('121코디네이터',             2, 'leader',     '리더팀 — 1:1 미팅'),
+  ('글로벌 코디네이터',         2, 'leader',     '리더팀 — 글로벌'),
   ('일반멤버',                  3, 'member',     '일반 멤버');
