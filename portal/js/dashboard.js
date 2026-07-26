@@ -500,19 +500,11 @@ function renderAIDirector(allStats, members, total, statsMap, weekly) {
   if (parseFloat(avgRefs) < 1)
     points.push({ type:'action', text:`4주 평균 리퍼럴 멤버당 ${avgRefs}건 — 목표(주 1건) 미달입니다.` });
 
-  // 종합 최고 활동자 (referrals + ono + visitors 합산)
-  const ranked = members.map(m => {
-    const s = statsMap[m.name] || {};
-    return { name: m.name, score: (s.referrals||0)*3 + (s.ono||0) + (s.visitors||0)*2, referrals: s.referrals||0 };
-  }).sort((a,b) => b.score - a.score);
-  const topAll = ranked[0];
-  const topRef = ranked.reduce((best,m) => m.referrals > best.referrals ? m : best, ranked[0]);
-
-  if (topAll?.score > 0)
-    points.push({ type:'positive', text:`종합 최고 활동자: ${topAll.name}님 — 리퍼럴·1:1·비지터 전반에서 챕터 최상위입니다. 미팅에서 공개 인정하세요.` });
-
-  if (topRef && topRef.name !== topAll?.name && topRef.referrals > 0)
-    points.push({ type:'positive', text:`리퍼럴 MVP: ${topRef.name}님(${topRef.referrals}건) — 적극적인 소개 활동의 모범입니다.` });
+  // 트래픽라이트 점수 기준 최고 점수자
+  const topScorer = members.map(m => ({ name: m.name, total: statsMap[m.name]?.total || 0 }))
+    .sort((a,b) => b.total - a.total)[0];
+  if (topScorer?.total > 0)
+    points.push({ type:'positive', text:`트래픽라이트 최고 점수: ${topScorer.name}님 ${topScorer.total}점 — 미팅에서 공개 인정으로 챕터 문화를 강화하세요.` });
 
   // 전월대비 점수 향상
   if (weekly) {
