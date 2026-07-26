@@ -398,7 +398,7 @@ function renderMemberDetail(name) {
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
         <div>
           <div class="card-title" style="margin:0">📋 VP 리포트 붙여넣기</div>
-          <div style="font-size:11px;color:#9ca3af;margin-top:2px">BNI Connect → 개인 부의장 리포트 → 날짜 행부터 전체 선택 후 Ctrl+C</div>
+          <div style="font-size:11px;color:#9ca3af;margin-top:2px">BNI Connect → 개인 부의장 리포트 → 날짜 행부터 전체 선택 후 Ctrl+C · 신규추천(스폰서)은 VP 리포트에 없으므로 별도 수동 입력 필요</div>
         </div>
         <button class="btn btn-outline btn-sm" id="togglePaste" onclick="
           const a=document.getElementById('pasteSection');
@@ -918,6 +918,11 @@ function showVPPreview(text, memberName) {
 
   document.getElementById('vpSaveBtn')?.addEventListener('click', async () => {
     const mem  = allMembers.find(m => m.name === memberName);
+    // VP 리포트에 sponsored 컬럼이 생기면 r.sponsored가 채워지고 자동 반영됨
+    // 현재는 없으므로 기존 DB 값을 보존
+    const existingMap = Object.fromEntries(
+      allWeeklyRecs.filter(r => r.member_name === memberName).map(r => [r.week_date, r])
+    );
     const dbRows = rows.map(r => ({
       member_id:   mem?.id || null,
       member_name: memberName,
@@ -933,6 +938,7 @@ function showVPPreview(text, memberName) {
       one_on_one:  r.one_on_one,
       tyfcb:       r.tyfcb,
       ceu:         r.ceu,
+      sponsored:   r.sponsored != null ? r.sponsored : (existingMap[r.week_date]?.sponsored || 0),
       is_estimated: false,
     }));
 
