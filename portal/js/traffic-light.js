@@ -560,6 +560,14 @@ function openWeekEdit(weekDate, memberName) {
         <input type="number" id="ed-t2" class="form-input" value="${rec?.given_t2||0}" min="0">
       </div>
       <div class="form-group">
+        <label class="form-label">받은T1 (리퍼럴)</label>
+        <input type="number" id="ed-rt1" class="form-input" value="${rec?.received_t1||0}" min="0">
+      </div>
+      <div class="form-group">
+        <label class="form-label">받은T2 (소개)</label>
+        <input type="number" id="ed-rt2" class="form-input" value="${rec?.received_t2||0}" min="0">
+      </div>
+      <div class="form-group">
         <label class="form-label">비지터</label>
         <input type="number" id="ed-vis" class="form-input" value="${rec?.visitors||0}" min="0">
       </div>
@@ -613,6 +621,8 @@ function openWeekEdit(weekDate, memberName) {
       sick:        av === 'sick',
       given_t1:    Number(document.getElementById('ed-t1').value)||0,
       given_t2:    Number(document.getElementById('ed-t2').value)||0,
+      received_t1: Number(document.getElementById('ed-rt1').value)||0,
+      received_t2: Number(document.getElementById('ed-rt2').value)||0,
       visitors:    Number(document.getElementById('ed-vis').value)||0,
       one_on_one:  Number(document.getElementById('ed-ono').value)||0,
       tyfcb:       Number(document.getElementById('ed-tyf').value)||0,
