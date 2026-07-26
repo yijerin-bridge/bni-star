@@ -437,7 +437,7 @@ function renderMemberDetail(name) {
               <th>준T1</th><th>준T2</th>
               <th>받은T1</th><th>받은T2</th>
               <th>비지터</th><th>1:1</th>
-              <th>감사장</th><th>CEU</th>
+              <th>감사장</th><th>CEU</th><th>스폰서</th>
               <th></th>
             </tr>
           </thead>
@@ -491,7 +491,7 @@ function renderWeekTable(name, recs, weeksList = WEEKS_ALL) {
       <td>${r?.given_t1??'—'}</td><td>${r?.given_t2??'—'}</td>
       <td>${r?.received_t1??'—'}</td><td>${r?.received_t2??'—'}</td>
       <td>${r?.visitors??'—'}</td><td>${r?.one_on_one??'—'}</td>
-      <td>${r ? fmtComma(r.tyfcb||0) : '—'}</td><td>${r?.ceu??'—'}</td>
+      <td>${r ? fmtComma(r.tyfcb||0) : '—'}</td><td>${r?.ceu??'—'}</td><td>${r?.sponsored||'—'}</td>
       <td><button class="btn btn-outline btn-sm" onclick="openWeekEdit('${w}','${name}')">${r?'수정':'입력'}</button></td>
     </tr>`;
   };
