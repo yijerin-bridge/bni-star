@@ -110,8 +110,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const { session, bodyEl } = layout;
 
   if (!canAccessTraffic(session)) {
-    bodyEl.innerHTML = `<div class="alert-banner crit" style="margin-top:24px">
-      접근 권한이 없습니다. 부의장 또는 멤버십위원회 트래픽라이트 담당만 이용할 수 있습니다.</div>`;
+    initTrafficLightPersonal(session, bodyEl);
     return;
   }
 

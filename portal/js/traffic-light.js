@@ -83,6 +83,7 @@ function windowDenom(memberJoinDate) {
 
 /* ── 전역 데이터 ── */
 let allMembers = [], allWeeklyRecs = [];
+let TL_READONLY = false; // true = 일반 멤버 개인 뷰 (수정 불가)
 
 async function loadAll() {
   const [memRes, recRes] = await Promise.all([
@@ -128,6 +129,33 @@ async function initTrafficLight(session, bodyEl) {
   await loadAll();
   renderOverview();
 }
+
+/* ── 개인 전용 뷰 (일반 멤버 — 읽기 전용) ── */
+async function initTrafficLightPersonal(session, bodyEl) {
+  TL_READONLY = true;
+  const myName = session.memberName;
+  bodyEl.innerHTML = `
+    <div class="page-header">
+      <div><h1>내 트래픽라이트</h1><p>본인 활동 현황 — 읽기 전용</p></div>
+    </div>
+    <div style="text-align:center;padding:48px;color:#9ca3af">불러오는 중...</div>
+  `;
+  await loadAll();
+  const matched = allMembers.find(m => m.name === myName);
+  bodyEl.innerHTML = `
+    <div class="page-header">
+      <div><h1>내 트래픽라이트</h1><p>본인 활동 현황 — 읽기 전용</p></div>
+    </div>
+    <div id="det-body"></div>
+  `;
+  if (!matched) {
+    document.getElementById('det-body').innerHTML =
+      `<div class="empty-state"><div class="es-icon">🔍</div><p>등록된 멤버 이름(${myName})과 일치하는 데이터가 없습니다.</p></div>`;
+    return;
+  }
+  renderMemberDetail(myName);
+}
+window.initTrafficLightPersonal = initTrafficLightPersonal;
 
 /* ═══════════════════════════════════════════════
    탭 1: 전체 현황
@@ -348,7 +376,7 @@ function renderMemberDetail(name) {
     <div id="det-ai" class="card" style="margin-bottom:16px;display:none"></div>
 
     <!-- VP 리포트 붙여넣기 -->
-    <div class="card" style="margin-bottom:16px">
+    <div class="card" style="margin-bottom:16px;${TL_READONLY ? 'display:none' : ''}"
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
         <div>
           <div class="card-title" style="margin:0">📋 VP 리포트 붙여넣기</div>
@@ -392,7 +420,7 @@ function renderMemberDetail(name) {
               <th>받은T1</th><th>받은T2</th>
               <th>비지터</th><th>1:1</th>
               <th>감사장</th><th>CEU</th><th>스폰서</th>
-              <th></th>
+              ${TL_READONLY ? '' : '<th></th>'}
             </tr>
           </thead>
           <tbody id="week-tbody"></tbody>
@@ -446,7 +474,7 @@ function renderWeekTable(name, recs, weeksList = WEEKS_ALL) {
       <td>${r?.received_t1??'—'}</td><td>${r?.received_t2??'—'}</td>
       <td>${r?.visitors??'—'}</td><td>${r?.one_on_one??'—'}</td>
       <td>${r ? fmtComma(r.tyfcb||0) : '—'}</td><td>${r?.ceu??'—'}</td><td>${r?.sponsored||'—'}</td>
-      <td><button class="btn btn-outline btn-sm" onclick="openWeekEdit('${w}','${name}')">${r?'수정':'입력'}</button></td>
+      ${TL_READONLY ? '' : `<td><button class="btn btn-outline btn-sm" onclick="openWeekEdit('${w}','${name}')">${r?'수정':'입력'}</button></td>`}
     </tr>`;
   };
 

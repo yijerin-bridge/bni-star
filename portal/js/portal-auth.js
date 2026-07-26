@@ -81,9 +81,11 @@ function getNavItems(session) {
     { href: '/portal/my-performance.html', icon: '📊', label: '내 성과',       always: true },
     { href: '/portal/meetings.html',       icon: '📋', label: '회의록',        always: true },
   ];
-  if (canAccessTraffic(session)) {
-    items.push({ href: '/portal/traffic-light.html', icon: '🚦', label: '트래픽라이트', always: false });
-  }
+  items.push({
+    href: '/portal/traffic-light.html', icon: '🚦',
+    label: canAccessTraffic(session) ? '트래픽라이트' : '내 트래픽라이트',
+    always: false,
+  });
   items.push({ href: '/portal/handover.html', icon: '🤝', label: '인수인계', always: true });
   items.push({ href: '/portal/history.html',  icon: '📜', label: '챕터 히스토리', always: true });
   if (t === 'board') {
