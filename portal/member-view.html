@@ -84,32 +84,36 @@ function getMemberWeeks(joinedDate) {
   return ext.slice(startIdx);
 }
 
-function scoreAbsence(n) { return n>2?0:n===2?5:n===1?10:15; }
-function scoreLate(n)    { return n>=2?0:n===1?5:10; }
-function scoreReferral(a){ return a<0.5?0:a<0.75?5:a<1.0?10:a<1.2?15:20; }
-function scoreTyfcb(t)   { return t<25000000?0:t<50000000?5:t<100000000?10:15; }
-function scoreVisitor(a) { return a<0.1?0:a<0.2?5:a<0.4?10:a<0.6?15:20; }
-function scoreOno(a)     { return a<1?0:a<2?5:10; }
-function scoreCeu(t)     { return t<5?0:t<15?5:10; }
-function fmtComma(v)     { return (Number(v)||0).toLocaleString('ko-KR'); }
+const ANNUAL_MEMBERSHIP = 1600000;
+function scoreAttendance(recs) { if(!recs.length)return 0; const rate=recs.filter(r=>!r.absent).length/recs.length; return rate>=0.95?10:rate>=0.88?5:0; }
+function scoreReferral(a) { return a<0.25?0:a<0.5?5:a<0.75?10:a<1.0?15:a<1.25?20:25; }
+function scoreTyfcb(t)    { const m=t/ANNUAL_MEMBERSHIP; return m<=0?0:m<2?1:m<5?2:m<15?3:m<30?4:5; }
+function scoreVisitor(t)  { return t>=5?25:t>=4?20:t>=3?15:t>=2?10:t>=1?5:0; }
+function scoreOno(a)      { return a<0.25?0:a<0.5?5:a<0.75?10:a<1.0?15:20; }
+function scoreCeu(a)      { return a<=0?0:a<0.5?5:10; }
+function scoreSponsored(n){ return n>=1?5:0; }
+function fmtComma(v)      { return (Number(v)||0).toLocaleString('ko-KR'); }
 
 function calcMemberScore(recs, pastWeeks) {
   const n = recs.length;
-  if (!n) return {total:0,light:'gray',breakdown:{absence:0,late:0,referral:0,tyfcb:0,visitor:0,ono:0,ceu:0},stats:{n:0,absN:0,lateN:0,totRef:0,totVis:0,totOno:0,totTyf:0,totCeu:0,avgRef:'0.00',avgVis:'0.00',avgOno:'0.00'}};
+  if (!n) return {total:0,light:'gray',breakdown:{attendance:0,referral:0,tyfcb:0,visitor:0,ono:0,ceu:0,sponsored:0},stats:{n:0,absN:0,lateN:0,totRef:0,totVis:0,totOno:0,totTyf:0,totCeu:0,totSponsored:0,attendRate:1,avgRef:'0.00',avgOno:'0.00',avgCeu:'0.00',tyfcbMult:'0.0'}};
   const absN=recs.filter(r=>r.absent).length, lateN=recs.filter(r=>r.late).length;
   const totRef=recs.reduce((s,r)=>s+(r.given_t1||0)+(r.given_t2||0),0);
   const totVis=recs.reduce((s,r)=>s+(r.visitors||0),0);
   const totOno=recs.reduce((s,r)=>s+(r.one_on_one||0),0);
   const totTyf=recs.reduce((s,r)=>s+(Number(r.tyfcb)||0),0);
   const totCeu=recs.reduce((s,r)=>s+(r.ceu||0),0);
+  const totSponsored=recs.reduce((s,r)=>s+(r.sponsored||0),0);
   const W=Math.max(pastWeeks!=null?pastWeeks:n,1);
-  const s1=scoreAbsence(absN),s2=scoreLate(lateN),s3=scoreReferral(totRef/W);
-  const s4=scoreTyfcb(totTyf),s5=scoreVisitor(totVis/W),s6=scoreOno(totOno/W),s7=scoreCeu(totCeu);
+  const attendRate=recs.filter(r=>!r.absent).length/n;
+  const s1=scoreAttendance(recs),s2=scoreReferral(totRef/W);
+  const s3=scoreTyfcb(totTyf),s4=scoreVisitor(totVis),s5=scoreOno(totOno/W),s6=scoreCeu(totCeu/W),s7=scoreSponsored(totSponsored);
   const total=s1+s2+s3+s4+s5+s6+s7;
   return {total,light:total>=70?'green':total>=50?'amber':total>=30?'red':'gray',
-    breakdown:{absence:s1,late:s2,referral:s3,tyfcb:s4,visitor:s5,ono:s6,ceu:s7},
-    stats:{n,absN,lateN,totRef,totVis,totOno,totTyf,totCeu,
-      avgRef:(totRef/W).toFixed(2),avgVis:(totVis/W).toFixed(2),avgOno:(totOno/W).toFixed(2)}};
+    breakdown:{attendance:s1,referral:s2,tyfcb:s3,visitor:s4,ono:s5,ceu:s6,sponsored:s7},
+    stats:{n,absN,lateN,totRef,totVis,totOno,totTyf,totCeu,totSponsored,attendRate,
+      avgRef:(totRef/W).toFixed(2),avgOno:(totOno/W).toFixed(2),
+      avgCeu:(totCeu/W).toFixed(2),tyfcbMult:(totTyf/ANNUAL_MEMBERSHIP).toFixed(1)}};
 }
 
 function genAITips(name, sc) {
@@ -125,27 +129,33 @@ function genAITips(name, sc) {
     icon: {green:'✅',amber:'⚠️',red:'🚨',gray:'🔔'}[sc.light],
     text: `현재 ${sc.total}점 · ${lMsg[sc.light]}`,
   });
-  if (sc.breakdown.absence < 15)
-    tips.push({type:'action',icon:'📅',text:`결석 ${sc.stats.absN}회 (${15-sc.breakdown.absence}점 손실) — 매주 미팅 참석을 최우선으로 잡아주세요. 불가피하면 대리인을 보내세요. 계속될 경우 멘토링코디와 상담을 권장합니다.`});
-  if (sc.breakdown.late < 10)
-    tips.push({type:'action',icon:'⏰',text:`지각/조퇴 ${sc.stats.lateN}회 — 지각·조퇴 횟수만큼 6개월 출결 점수(10점 만점)에서 감점됩니다. 앞으로 지각하지 않으면 추가 감점을 막을 수 있어요.`});
-  if (sc.breakdown.referral < 20) {
+  if (sc.breakdown.attendance < 10) {
+    const rate = Math.round((sc.stats.attendRate??1)*100);
+    tips.push({type:'action',icon:'📅',text:`출석률 ${rate}% (결석 ${sc.stats.absN}회) — 출석률 95% 이상이면 만점(10점)입니다. 불가피한 결석엔 반드시 대리인을 보내세요.`});
+  }
+  if (sc.breakdown.referral < 25) {
     const avg = parseFloat(sc.stats.avgRef)||0;
-    const next = avg<0.5?'주 1건':avg<1.0?'주 1건 이상':'주 1.2건';
-    tips.push({type:'action',icon:'🤝',text:`리퍼럴 주평균 ${sc.stats.avgRef}건 → 목표 ${next}. 1:1 상대 중 지금 바로 소개해 줄 수 있는 분을 떠올려 보세요. 어렵다면 원투원코디에게 도움을 요청하세요.`});
+    const next = avg<0.25?'주 0.25건':avg<0.5?'주 0.5건':avg<0.75?'주 0.75건':avg<1.0?'주 1건':'주 1.25건';
+    tips.push({type:'action',icon:'🤝',text:`리퍼럴 주평균 ${sc.stats.avgRef}건 → 목표 ${next}. 1:1 상대 중 지금 바로 소개해 줄 수 있는 분을 떠올려 보세요.`});
   }
-  if (sc.breakdown.visitor < 20) {
-    const avg = parseFloat(sc.stats.avgVis)||0;
-    tips.push({type:'action',icon:'🙋',text:`비지터 주평균 ${sc.stats.avgVis}명 — ${avg===0?'아직 비지터 초대가 없습니다. 지금 바로 주변 1명에게 연락해 보세요!':'비지터 초대를 꾸준히 늘려가세요. 목표는 주 0.6명입니다.'}`});
+  if (sc.breakdown.visitor < 25) {
+    const tot = sc.stats.totVis||0;
+    const nextLevel = tot<1?'1명':tot<2?'2명':tot<3?'3명':tot<4?'4명':'5명';
+    tips.push({type:'action',icon:'🙋',text:`비지터 6개월 총 ${tot}명 — ${tot===0?'아직 비지터 초대가 없습니다. 지금 바로 주변 1명에게 연락해 보세요!':`다음 목표 ${nextLevel}명입니다. 꾸준히 초대를 이어가세요.`}`});
   }
-  if (sc.breakdown.ono < 10) {
+  if (sc.breakdown.ono < 20) {
     const avg = parseFloat(sc.stats.avgOno)||0;
-    tips.push({type:'action',icon:'☕',text:`1:1 주평균 ${sc.stats.avgOno}회 — ${avg===0?'아직 1:1 미팅 기록이 없습니다. 이번 주 첫 1:1을 잡아보세요!':'목표는 주 2회입니다. 미팅 후 바로 다음 약속을 잡는 습관을 만들어보세요.'}`});
+    const next = avg<0.25?'주 0.25회':avg<0.5?'주 0.5회':avg<0.75?'주 0.75회':'주 1회';
+    tips.push({type:'action',icon:'☕',text:`1:1 주평균 ${sc.stats.avgOno}회 — ${avg===0?'아직 1:1 미팅 기록이 없습니다. 이번 주 첫 1:1을 잡아보세요!':`목표는 주 1회(20점 만점)입니다. 목표 ${next} 달성을 위해 미팅 후 바로 다음 약속을 잡으세요.`}`});
   }
-  if (sc.breakdown.tyfcb < 15)
-    tips.push({type:'action',icon:'💰',text:`감사장 누적 ${fmtComma(sc.stats.totTyf)}원 — 받은 리퍼럴이 성사될 때마다 즉시 감사장을 기록하세요. 빠진 건이 있는지 확인해 보세요.`});
+  if (sc.breakdown.tyfcb < 5) {
+    const mult = parseFloat(sc.stats.tyfcbMult)||0;
+    tips.push({type:'action',icon:'💰',text:`TYFCB ${sc.stats.tyfcbMult}배 (${fmtComma(sc.stats.totTyf)}원) — 받은 리퍼럴이 성사될 때마다 즉시 감사장을 기록하세요. ${mult===0?'아직 감사장 기록이 없습니다.':'30배(5점) 달성을 목표로 하세요.'}`});
+  }
   if (sc.breakdown.ceu < 10)
-    tips.push({type:'action',icon:'📚',text:`CEU 누적 ${sc.stats.totCeu}점 — 교육 세션 참여 시 빠짐없이 기록해 주세요. 목표 15점까지 ${Math.max(0,15-sc.stats.totCeu)}점 남았습니다.`});
+    tips.push({type:'action',icon:'📚',text:`CEU 주평균 ${sc.stats.avgCeu}/주 — 교육 세션 참여 시 빠짐없이 기록해 주세요. 주당 0.5 이상이면 만점(10점)입니다.`});
+  if (sc.breakdown.sponsored < 5)
+    tips.push({type:'action',icon:'🤲',text:`스폰서 ${sc.stats.totSponsored||0}명 — 신규 멤버를 가입 추천하면 5점이 추가됩니다. 주변에 BNI에 맞는 분이 있다면 소개해 보세요.`});
   return tips;
 }
 
@@ -183,13 +193,13 @@ function genAITips(name, sc) {
   const isNew    = member?.joined_date && member.joined_date > CHAPTER_LAUNCH;
 
   const scoreItems = [
-    ['결석',     sc.breakdown.absence,  15, `${sc.stats.absN||0}번`,               '0번=15 / 1번=10 / 2번=5 / 3번+=0'],
-    ['지각/조퇴',sc.breakdown.late,     10, `${sc.stats.lateN||0}번`,              '0번=10 / 1번=5 / 2번+=0'],
-    ['리퍼럴',   sc.breakdown.referral, 20, `주평균 ${sc.stats.avgRef||'0.00'}건`,  '주평균 1.2+건=20 / 1.0+=15 / 0.75+=10 / 0.5+=5'],
-    ['감사장',   sc.breakdown.tyfcb,    15, fmtComma(sc.stats.totTyf||0)+'원',     '1억+=15 / 5천만+=10 / 2500만+=5'],
-    ['비지터',   sc.breakdown.visitor,  20, `주평균 ${sc.stats.avgVis||'0.00'}명`,  '주평균 0.6+명=20 / 0.4+=15 / 0.2+=10 / 0.1+=5'],
-    ['1:1',      sc.breakdown.ono,      10, `주평균 ${sc.stats.avgOno||'0.00'}회`,  '주평균 2+회=10 / 1+=5'],
-    ['교육',     sc.breakdown.ceu,      10, `누적 ${sc.stats.totCeu||0}점`,         '누적 15+점=10 / 5+=5'],
+    ['출석',          sc.breakdown.attendance, 10, `출석률 ${Math.round((sc.stats.attendRate??1)*100)}% (결석 ${sc.stats.absN||0}회)`,   '95%+=10 / 88%+=5 / 미만=0'],
+    ['리퍼럴',        sc.breakdown.referral,   25, `주평균 ${sc.stats.avgRef||'0.00'}건`,                                               '1.25+건=25 / 1.0+=20 / 0.75+=15 / 0.5+=10 / 0.25+=5'],
+    ['비지터',        sc.breakdown.visitor,    25, `6개월 총 ${sc.stats.totVis||0}명`,                                                  '5명+=25 / 4명=20 / 3명=15 / 2명=10 / 1명=5'],
+    ['1:1',          sc.breakdown.ono,        20, `주평균 ${sc.stats.avgOno||'0.00'}회`,                                               '1.0+회=20 / 0.75+=15 / 0.5+=10 / 0.25+=5'],
+    ['교육(CEU)',     sc.breakdown.ceu,        10, `주평균 ${sc.stats.avgCeu||'0.00'}/주`,                                              '0.5+/주=10 / 0초과=5 / 0=0'],
+    ['감사장(TYFCB)', sc.breakdown.tyfcb,       5, `${sc.stats.tyfcbMult||'0.0'}배 · ${fmtComma(sc.stats.totTyf||0)}원`,              '30배+=5 / 15배+=4 / 5배+=3 / 2배+=2 / 0초과=1'],
+    ['스폰서',        sc.breakdown.sponsored,   5, `${sc.stats.totSponsored||0}명 신규 추천`,                                          '1명 이상=5 / 0명=0'],
   ];
 
   const tips = genAITips(nm, sc);

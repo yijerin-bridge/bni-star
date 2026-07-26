@@ -79,47 +79,52 @@ function windowDenom(memberJoinDate) {
 }
 
 /* ── 채점 함수 (사용자 지정 기준) ── */
-function scoreAbsence(n)      { return n > 2 ? 0 : n === 2 ? 5 : n === 1 ? 10 : 15; }
-function scoreLate(n)         { return n >= 2 ? 0 : n === 1 ? 5 : 10; }
-function scoreReferral(avg)   { return avg < 0.5 ? 0 : avg < 0.75 ? 5 : avg < 1.0 ? 10 : avg < 1.2 ? 15 : 20; }
-function scoreTyfcb(total)    { return total < 25000000 ? 0 : total < 50000000 ? 5 : total < 100000000 ? 10 : 15; }
-function scoreVisitor(avg)    { return avg < 0.1 ? 0 : avg < 0.2 ? 5 : avg < 0.4 ? 10 : avg < 0.6 ? 15 : 20; }
-function scoreOno(avg)        { return avg < 1 ? 0 : avg < 2 ? 5 : 10; }
-function scoreCeu(total)      { return total < 5 ? 0 : total < 15 ? 5 : 10; }
+const ANNUAL_MEMBERSHIP = 1600000; // 연간 멤버십 비용 (원)
 
-// pastWeeks: 가입일부터 오늘까지 실제 경과 주수 (분모)
+function scoreAttendance(recs) { if (!recs.length) return 0; const rate = recs.filter(r => !r.absent).length / recs.length; return rate >= 0.95 ? 10 : rate >= 0.88 ? 5 : 0; }
+function scoreReferral(avg)    { return avg < 0.25 ? 0 : avg < 0.5 ? 5 : avg < 0.75 ? 10 : avg < 1.0 ? 15 : avg < 1.25 ? 20 : 25; }
+function scoreTyfcb(total)     { const m = total / ANNUAL_MEMBERSHIP; return m <= 0 ? 0 : m < 2 ? 1 : m < 5 ? 2 : m < 15 ? 3 : m < 30 ? 4 : 5; }
+function scoreVisitor(total)   { return total >= 5 ? 25 : total >= 4 ? 20 : total >= 3 ? 15 : total >= 2 ? 10 : total >= 1 ? 5 : 0; }
+function scoreOno(avg)         { return avg < 0.25 ? 0 : avg < 0.5 ? 5 : avg < 0.75 ? 10 : avg < 1.0 ? 15 : 20; }
+function scoreCeu(avg)         { return avg <= 0 ? 0 : avg < 0.5 ? 5 : 10; }
+function scoreSponsored(n)     { return n >= 1 ? 5 : 0; }
+
+// pastWeeks: 실제 경과 주수 (분모) — 리퍼럴·1:1·CEU 주평균 계산에 사용
 function calcMemberScore(recs, pastWeeks) {
   const n = recs.length;
   const empty = { total:0, light:'gray',
-    breakdown:{absence:0,late:0,referral:0,tyfcb:0,visitor:0,ono:0,ceu:0},
+    breakdown:{attendance:0,referral:0,tyfcb:0,visitor:0,ono:0,ceu:0,sponsored:0},
     stats:{n:0} };
   if (!n) return empty;
 
-  const absN   = recs.filter(r => r.absent).length;
-  const lateN  = recs.filter(r => r.late).length;
-  const totRef = recs.reduce((s,r) => s + (r.given_t1||0) + (r.given_t2||0), 0);
-  const totVis = recs.reduce((s,r) => s + (r.visitors||0), 0);
-  const totOno = recs.reduce((s,r) => s + (r.one_on_one||0), 0);
-  const totTyf = recs.reduce((s,r) => s + (Number(r.tyfcb)||0), 0);
-  const totCeu = recs.reduce((s,r) => s + (r.ceu||0), 0);
+  const absN         = recs.filter(r => r.absent).length;
+  const lateN        = recs.filter(r => r.late).length;
+  const totRef       = recs.reduce((s,r) => s + (r.given_t1||0) + (r.given_t2||0), 0);
+  const totVis       = recs.reduce((s,r) => s + (r.visitors||0), 0);
+  const totOno       = recs.reduce((s,r) => s + (r.one_on_one||0), 0);
+  const totTyf       = recs.reduce((s,r) => s + (Number(r.tyfcb)||0), 0);
+  const totCeu       = recs.reduce((s,r) => s + (r.ceu||0), 0);
+  const totSponsored = recs.reduce((s,r) => s + (r.sponsored||0), 0);
 
-  // 분모 = 실제 경과 주수 (레코드 수 아님) → 월별·주별 데이터 모두 정확
   const totalWeeks = Math.max(pastWeeks != null ? pastWeeks : n, 1);
+  const attendRate = recs.filter(r => !r.absent).length / n;
 
-  const s1 = scoreAbsence(absN);
-  const s2 = scoreLate(lateN);
-  const s3 = scoreReferral(totRef / totalWeeks);
-  const s4 = scoreTyfcb(totTyf);
-  const s5 = scoreVisitor(totVis / totalWeeks);
-  const s6 = scoreOno(totOno / totalWeeks);
-  const s7 = scoreCeu(totCeu);
+  const s1 = scoreAttendance(recs);
+  const s2 = scoreReferral(totRef / totalWeeks);
+  const s3 = scoreTyfcb(totTyf);
+  const s4 = scoreVisitor(totVis);
+  const s5 = scoreOno(totOno / totalWeeks);
+  const s6 = scoreCeu(totCeu / totalWeeks);
+  const s7 = scoreSponsored(totSponsored);
   const total = s1+s2+s3+s4+s5+s6+s7;
   const light = total>=70?'green':total>=50?'amber':total>=30?'red':'gray';
 
   return { total, light,
-    breakdown:{absence:s1,late:s2,referral:s3,tyfcb:s4,visitor:s5,ono:s6,ceu:s7},
-    stats:{n,totalWeeks,absN,lateN,totRef,totVis,totOno,totTyf,totCeu,
-           avgRef:(totRef/totalWeeks).toFixed(2), avgVis:(totVis/totalWeeks).toFixed(2), avgOno:(totOno/totalWeeks).toFixed(2)} };
+    breakdown:{attendance:s1,referral:s2,tyfcb:s3,visitor:s4,ono:s5,ceu:s6,sponsored:s7},
+    stats:{n,totalWeeks,absN,lateN,totRef,totVis,totOno,totTyf,totCeu,totSponsored,attendRate,
+           avgRef:(totRef/totalWeeks).toFixed(2), avgVis:(totVis/totalWeeks).toFixed(2),
+           avgOno:(totOno/totalWeeks).toFixed(2), avgCeu:(totCeu/totalWeeks).toFixed(2),
+           tyfcbMult:(totTyf/ANNUAL_MEMBERSHIP).toFixed(1)} };
 }
 
 /* ── 전역 데이터 ── */
@@ -249,12 +254,12 @@ function renderOverview() {
             ${[
               ['리퍼럴(T1+T2)', (m.stats.totRef||0)+'건'],
               ['1:1',           (m.stats.totOno||0)+'회'],
-              ['감사장',         fmtComma(m.stats.totTyf||0)+'원'],
               ['비지터',         (m.stats.totVis||0)+'명'],
+              ['TYFCB',         (m.stats.tyfcbMult||'0.0')+'배'],
             ].map(([label, val]) => `
               <div style="background:#f9fafb;border-radius:6px;padding:5px 7px">
                 <div style="font-size:9px;color:#9ca3af">${label}</div>
-                <div style="font-size:12px;font-weight:700;color:${val==='0건'||val==='0회'||val==='0원'||val==='0명'?'#d1d5db':'inherit'}">${val}</div>
+                <div style="font-size:12px;font-weight:700;color:${val==='0건'||val==='0회'||val==='0명'||val==='0.0배'?'#d1d5db':'inherit'}">${val}</div>
               </div>`).join('')}
           </div>
         </div>`;
@@ -363,13 +368,13 @@ function renderMemberDetail(name) {
       </div>
       <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px">
         ${[
-          ['결석',     sc.breakdown.absence,  `/15`,  `${sc.stats.absN||0}번`,              '0번=15 / 1번=10 / 2번=5 / 3번+=0'],
-          ['지각/조퇴', sc.breakdown.late,    `/10`,  `${sc.stats.lateN||0}번`,             '0번=10 / 1번=5 / 2번+=0'],
-          ['리퍼럴',   sc.breakdown.referral, `/20`,  `주평균 ${sc.stats.avgRef||'0.00'}건`, '주평균 1.2+건=20 / 1.0+건=15 / 0.75+건=10 / 0.5+건=5 / 미만=0'],
-          ['감사장',   sc.breakdown.tyfcb,    `/15`,  fmtComma(sc.stats.totTyf||0)+'원',    '1억+=15 / 5천만+=10 / 2500만+=5 / 미만=0'],
-          ['비지터',   sc.breakdown.visitor,  `/20`,  `주평균 ${sc.stats.avgVis||'0.00'}명`, '주평균 0.6+명=20 / 0.4+명=15 / 0.2+명=10 / 0.1+명=5 / 미만=0'],
-          ['1:1',     sc.breakdown.ono,      `/10`,  `주평균 ${sc.stats.avgOno||'0.00'}회`, '주평균 2+회=10 / 1+회=5 / 미만=0'],
-          ['교육',     sc.breakdown.ceu,      `/10`,  `누적 ${sc.stats.totCeu||0}점`,        '누적 15+점=10 / 5+점=5 / 미만=0'],
+          ['출석',           sc.breakdown.attendance, `/10`, `출석률 ${Math.round((sc.stats.attendRate??1)*100)}% (결석 ${sc.stats.absN||0}회)`,    '95%+=10 / 88%+=5 / 미만=0 · P·L·M·S 출석인정, A 결석'],
+          ['리퍼럴',         sc.breakdown.referral,   `/25`, `주평균 ${sc.stats.avgRef||'0.00'}건`,                                                '1.25+건=25 / 1.0+건=20 / 0.75+건=15 / 0.5+건=10 / 0.25+건=5 / 미만=0'],
+          ['비지터',         sc.breakdown.visitor,    `/25`, `6개월 총 ${sc.stats.totVis||0}명`,                                                   '5명+=25 / 4명=20 / 3명=15 / 2명=10 / 1명=5 / 0명=0'],
+          ['1:1',           sc.breakdown.ono,        `/20`, `주평균 ${sc.stats.avgOno||'0.00'}회`,                                                '1.0+회=20 / 0.75+회=15 / 0.5+회=10 / 0.25+회=5 / 미만=0'],
+          ['교육(CEU)',      sc.breakdown.ceu,        `/10`, `주평균 ${sc.stats.avgCeu||'0.00'}/주`,                                               '0.5+/주=10 / 0초과=5 / 0=0'],
+          ['감사장(TYFCB)',  sc.breakdown.tyfcb,      `/5`,  `${sc.stats.tyfcbMult||'0.0'}배 · ${fmtComma(sc.stats.totTyf||0)}원`,                '30배+=5 / 15배+=4 / 5배+=3 / 2배+=2 / 0초과=1 / 0=0'],
+          ['스폰서',         sc.breakdown.sponsored,  `/5`,  `${sc.stats.totSponsored||0}명 신규 추천`,                                            '1명 이상=5 / 0명=0'],
         ].map(([label, score, max, detail, criteria]) => `
           <div style="background:#f9fafb;border-radius:8px;padding:10px 12px;position:relative">
             <div style="display:flex;align-items:center;gap:4px;margin-bottom:2px">
@@ -1684,13 +1689,13 @@ function renderCriteria() {
       <table class="detail-table">
         <thead><tr><th style="text-align:left">항목</th><th>만점</th><th style="text-align:left">기준</th></tr></thead>
         <tbody>
-          <tr><td style="text-align:left;font-weight:600">결석</td><td>15</td><td style="text-align:left;font-size:12px">결석 0회=15점 / 1회=10점 / 2회=5점 / 3회 이상=0점</td></tr>
-          <tr><td style="text-align:left;font-weight:600">지각/조퇴</td><td>10</td><td style="text-align:left;font-size:12px">0회=10점 / 1회=5점 / 2회 이상=0점</td></tr>
-          <tr><td style="text-align:left;font-weight:600">리퍼럴(준)</td><td>20</td><td style="text-align:left;font-size:12px">주평균 1.2 이상=20 / 1.2미만=15 / 1.0미만=10 / 0.75미만=5 / 0.5미만=0</td></tr>
-          <tr><td style="text-align:left;font-weight:600">감사장 금액</td><td>15</td><td style="text-align:left;font-size:12px">누적 1억 이상=15 / 5천만 이상=10 / 2천5백만 이상=5 / 미만=0</td></tr>
-          <tr><td style="text-align:left;font-weight:600">비지터</td><td>20</td><td style="text-align:left;font-size:12px">주평균 0.6 이상=20 / 0.4 이상=15 / 0.2 이상=10 / 0.1 이상=5 / 미만=0</td></tr>
-          <tr><td style="text-align:left;font-weight:600">1:1</td><td>10</td><td style="text-align:left;font-size:12px">주평균 2 이상=10 / 1 이상=5 / 미만=0</td></tr>
-          <tr><td style="text-align:left;font-weight:600">교육(CEU)</td><td>10</td><td style="text-align:left;font-size:12px">누적 15 이상=10 / 5 이상=5 / 미만=0</td></tr>
+          <tr><td style="text-align:left;font-weight:600">출석 (Attendance)</td><td>10</td><td style="text-align:left;font-size:12px">출석률 95% 이상=10 / 88% 이상=5 / 미만=0 · 출석률=(P+L+M+S)÷(P+A+L+M+S)</td></tr>
+          <tr><td style="text-align:left;font-weight:600">리퍼럴 (Referrals Given)</td><td>25</td><td style="text-align:left;font-size:12px">주평균 1.25건 이상=25 / 1.0 이상=20 / 0.75 이상=15 / 0.5 이상=10 / 0.25 이상=5 / 미만=0</td></tr>
+          <tr><td style="text-align:left;font-weight:600">비지터 (Visitors)</td><td>25</td><td style="text-align:left;font-size:12px">6개월 총 5명 이상=25 / 4명=20 / 3명=15 / 2명=10 / 1명=5 / 0명=0</td></tr>
+          <tr><td style="text-align:left;font-weight:600">원투원 (1-2-1s)</td><td>20</td><td style="text-align:left;font-size:12px">주평균 1.0회 이상=20 / 0.75 이상=15 / 0.5 이상=10 / 0.25 이상=5 / 미만=0</td></tr>
+          <tr><td style="text-align:left;font-weight:600">교육 (CEU)</td><td>10</td><td style="text-align:left;font-size:12px">주평균 0.5 이상=10 / 0 초과=5 / 0=0</td></tr>
+          <tr><td style="text-align:left;font-weight:600">감사장 (TYFCB)</td><td>5</td><td style="text-align:left;font-size:12px">감사장÷연회비(160만원) 배수: 30배 이상=5 / 15배 이상=4 / 5배 이상=3 / 2배 이상=2 / 0초과=1 / 0=0</td></tr>
+          <tr><td style="text-align:left;font-weight:600">스폰서 (Members Sponsored)</td><td>5</td><td style="text-align:left;font-size:12px">6개월 내 신규 가입 추천: 1명 이상=5 / 0명=0</td></tr>
         </tbody>
       </table>
       <div style="margin-top:20px;padding:16px;background:#f9fafb;border-radius:10px">
@@ -1792,45 +1797,51 @@ function genAIMember(name, recs, sc) {
     text: `현재 ${sc.total}점 · ${lMsg[sc.light]}`,
   });
 
-  // 항목별 — "부족" 대신 구체적 행동 촉구
-  if (sc.breakdown.absence < 15)
-    tips.push({type:'action', icon:'📅', text:`결석 ${sc.stats.absN}회 (${15-sc.breakdown.absence}점 손실) — 매주 미팅 참석을 최우선으로 잡아주세요. 불가피하면 대리인을 보내세요. 계속될 경우 멘토링코디와 상담을 권장합니다.`});
+  // 항목별 개선 팁
+  if (sc.breakdown.attendance < 10) {
+    const rate = Math.round((sc.stats.attendRate??1)*100);
+    tips.push({type:'action', icon:'📅', text:`출석률 ${rate}% (결석 ${sc.stats.absN}회) — 출석률 95% 이상이면 만점(10점)입니다. 불가피한 결석엔 반드시 대리인을 보내세요.`});
+  }
 
-  if (sc.breakdown.late < 10)
-    tips.push({type:'action', icon:'⏰', text:`지각/조퇴 ${sc.stats.lateN}회 — 지각·조퇴 횟수만큼 6개월 출결 점수(10점 만점)에서 감점됩니다. 앞으로 지각하지 않으면 추가 감점을 막을 수 있어요.`});
-
-  if (sc.breakdown.referral < 20) {
+  if (sc.breakdown.referral < 25) {
     const avg = parseFloat(sc.stats.avgRef) || 0;
-    const next = avg < 0.5 ? '주 1건' : avg < 1.0 ? '주 1건 이상' : '주 1.2건';
-    tips.push({type:'action', icon:'🤝', text:`리퍼럴 주평균 ${sc.stats.avgRef}건 → 목표 ${next}. 1:1 상대 중 지금 바로 소개해 줄 수 있는 분을 떠올려 보세요. 어렵다면 원투원코디에게 도움을 요청하세요.`});
+    const next = avg < 0.25 ? '주 0.25건' : avg < 0.5 ? '주 0.5건' : avg < 0.75 ? '주 0.75건' : avg < 1.0 ? '주 1건' : '주 1.25건';
+    tips.push({type:'action', icon:'🤝', text:`리퍼럴 주평균 ${sc.stats.avgRef}건 → 목표 ${next}. 1:1 상대 중 지금 바로 소개해 줄 수 있는 분을 떠올려 보세요.`});
   }
 
-  if (sc.breakdown.visitor < 20) {
-    const avg = parseFloat(sc.stats.avgVis) || 0;
-    tips.push({type:'action', icon:'🙋', text:`비지터 주평균 ${sc.stats.avgVis}명 — ${avg === 0 ? '아직 비지터 초대가 없습니다. 지금 바로 주변 1명에게 연락해 보세요!' : '비지터 초대를 꾸준히 늘려가세요. 목표는 주 0.6명입니다.'}`});
+  if (sc.breakdown.visitor < 25) {
+    const tot = sc.stats.totVis || 0;
+    const nextLevel = tot < 1 ? '1명' : tot < 2 ? '2명' : tot < 3 ? '3명' : tot < 4 ? '4명' : '5명';
+    tips.push({type:'action', icon:'🙋', text:`비지터 6개월 총 ${tot}명 — ${tot === 0 ? '아직 비지터 초대가 없습니다. 지금 바로 주변 1명에게 연락해 보세요!' : `다음 목표 ${nextLevel}명입니다. 꾸준히 초대를 이어가세요.`}`});
   }
 
-  if (sc.breakdown.ono < 10) {
+  if (sc.breakdown.ono < 20) {
     const avg = parseFloat(sc.stats.avgOno) || 0;
-    tips.push({type:'action', icon:'☕', text:`1:1 주평균 ${sc.stats.avgOno}회 — ${avg === 0 ? '아직 1:1 미팅 기록이 없습니다. 이번 주 첫 1:1을 잡아보세요!' : '목표는 주 2회입니다. 미팅 후 바로 다음 약속을 잡는 습관을 만들어보세요.'}`});
+    const next = avg < 0.25 ? '주 0.25회' : avg < 0.5 ? '주 0.5회' : avg < 0.75 ? '주 0.75회' : '주 1회';
+    tips.push({type:'action', icon:'☕', text:`1:1 주평균 ${sc.stats.avgOno}회 — ${avg === 0 ? '아직 1:1 미팅 기록이 없습니다. 이번 주 첫 1:1을 잡아보세요!' : `목표는 주 1회(20점 만점)입니다. 목표 ${next} 달성을 위해 미팅 후 바로 다음 약속을 잡으세요.`}`});
   }
 
-  if (sc.breakdown.tyfcb < 15)
-    tips.push({type:'action', icon:'💰', text:`감사장 누적 ${fmtComma(sc.stats.totTyf)}원 — 받은 리퍼럴이 성사될 때마다 즉시 감사장을 기록하세요. 빠진 건이 있는지 확인해 보세요.`});
+  if (sc.breakdown.tyfcb < 5) {
+    const mult = parseFloat(sc.stats.tyfcbMult) || 0;
+    tips.push({type:'action', icon:'💰', text:`TYFCB ${sc.stats.tyfcbMult}배 (${fmtComma(sc.stats.totTyf)}원) — 받은 리퍼럴이 성사될 때마다 즉시 감사장을 기록하세요. ${mult === 0 ? '아직 감사장 기록이 없습니다.' : '30배(5점) 달성을 목표로 하세요.'}`});
+  }
 
   if (sc.breakdown.ceu < 10)
-    tips.push({type:'action', icon:'📚', text:`CEU 누적 ${sc.stats.totCeu}점 — 교육 세션 참여 시 빠짐없이 기록해 주세요. 목표 15점까지 ${Math.max(0,15-sc.stats.totCeu)}점 남았습니다.`});
+    tips.push({type:'action', icon:'📚', text:`CEU 주평균 ${sc.stats.avgCeu}/주 — 교육 세션 참여 시 빠짐없이 기록해 주세요. 주당 0.5 이상이면 만점(10점)입니다.`});
+
+  if (sc.breakdown.sponsored < 5)
+    tips.push({type:'action', icon:'🤲', text:`스폰서 ${sc.stats.totSponsored||0}명 — 신규 멤버를 가입 추천하면 5점이 추가됩니다. 주변에 BNI에 맞는 분이 있다면 소개해 보세요.`});
 
   // 지금 당장 가장 효과적인 행동 하나
   if (sc.light !== 'green') {
     const candidates = [
-      { gap: 20 - sc.breakdown.referral, label:'리퍼럴',   icon:'🤝', action:'내 1:1 상대 중 소개해 줄 수 있는 분을 떠올려 보세요. 주 1건 소개가 목표입니다.' },
-      { gap: 20 - sc.breakdown.visitor,  label:'비지터',   icon:'🙋', action:'지금 바로 주변 1명에게 연락해 다음 미팅에 초대하세요.' },
-      { gap: 15 - sc.breakdown.absence,  label:'출석',     icon:'📅', action:'다음 미팅부터 빠지지 마세요. 불가피하면 반드시 대리인을 보내세요.' },
-      { gap: 15 - sc.breakdown.tyfcb,    label:'감사장',   icon:'💰', action:'받은 리퍼럴 중 성사된 건이 있다면 지금 바로 감사장을 기록하세요.' },
-      { gap: 10 - sc.breakdown.ono,      label:'1:1',     icon:'☕', action:'이번 주 1:1 미팅 1회를 먼저 캘린더에 잡으세요.' },
-      { gap: 10 - sc.breakdown.late,     label:'지각',     icon:'⏰', action:'지각·조퇴할 때마다 감점됩니다. 앞으로 지각하지 않으면 추가 감점을 막을 수 있어요.' },
-      { gap: 10 - sc.breakdown.ceu,      label:'교육(CEU)',icon:'📚', action:'다음 교육 세션에 참여하고 CEU를 기록하세요.' },
+      { gap: 25 - sc.breakdown.referral,   label:'리퍼럴',   icon:'🤝', action:'내 1:1 상대 중 소개해 줄 수 있는 분을 떠올려 보세요. 주 1.25건이 만점 목표입니다.' },
+      { gap: 25 - sc.breakdown.visitor,    label:'비지터',   icon:'🙋', action:'지금 바로 주변 1명에게 연락해 다음 미팅에 초대하세요. 6개월 5명이 만점입니다.' },
+      { gap: 20 - sc.breakdown.ono,        label:'1:1',     icon:'☕', action:'이번 주 1:1 미팅 1회를 먼저 캘린더에 잡으세요. 주 1회가 만점입니다.' },
+      { gap: 10 - sc.breakdown.attendance, label:'출석',     icon:'📅', action:'출석률 95% 이상을 목표로 하세요. 결석 시 반드시 대리인을 보내세요.' },
+      { gap: 10 - sc.breakdown.ceu,        label:'교육(CEU)',icon:'📚', action:'다음 교육 세션에 참여하고 CEU를 기록하세요. 주당 0.5 이상이면 만점입니다.' },
+      { gap: 5  - sc.breakdown.tyfcb,      label:'감사장',   icon:'💰', action:'받은 리퍼럴 중 성사된 건이 있다면 지금 바로 감사장을 기록하세요.' },
+      { gap: 5  - sc.breakdown.sponsored,  label:'스폰서',   icon:'🤲', action:'신규 멤버를 추천 가입시키면 5점을 받을 수 있습니다.' },
     ].filter(c => c.gap > 0).sort((a,b) => b.gap - a.gap);
 
     if (candidates.length) {
