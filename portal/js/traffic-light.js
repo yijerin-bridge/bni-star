@@ -1767,20 +1767,17 @@ function genAIOverview(memberScores) {
   if (topScorer?.total > 0)
     tips.push({type:'positive',icon:'🏆',text:`이번 주 최고 점수: ${topScorer.name}님 ${topScorer.total}점(${topScorer.light}) — 미팅에서 공개 인정으로 챕터 문화를 강화하세요.`});
 
-  // 리퍼럴 MVP
+  // 리퍼럴·원투원·비지터 MVP 한 줄
   const topRef = [...memberScores].sort((a,b)=>(b.stats?.totRef||0)-(a.stats?.totRef||0))[0];
-  if (topRef && (topRef.stats?.totRef||0) > 0)
-    tips.push({type:'positive',icon:'🤝',text:`리퍼럴 MVP: ${topRef.name}님 ${topRef.stats.totRef}건`});
-
-  // 원투원 MVP
   const topOno = [...memberScores].sort((a,b)=>(b.stats?.totOno||0)-(a.stats?.totOno||0))[0];
-  if (topOno && (topOno.stats?.totOno||0) > 0)
-    tips.push({type:'positive',icon:'☕',text:`원투원 MVP: ${topOno.name}님 ${topOno.stats.totOno}회`});
-
-  // 비지터 MVP
   const topVis = [...memberScores].sort((a,b)=>(b.stats?.totVis||0)-(a.stats?.totVis||0))[0];
-  if (topVis && (topVis.stats?.totVis||0) > 0)
-    tips.push({type:'positive',icon:'🙋',text:`비지터 MVP: ${topVis.name}님 ${topVis.stats.totVis}명`});
+  const mvpParts = [
+    (topRef?.stats?.totRef||0) > 0 ? `🤝 리퍼럴 ${topRef.name}님(${topRef.stats.totRef}건)` : null,
+    (topOno?.stats?.totOno||0) > 0 ? `☕ 원투원 ${topOno.name}님(${topOno.stats.totOno}회)` : null,
+    (topVis?.stats?.totVis||0) > 0 ? `🙋 비지터 ${topVis.name}님(${topVis.stats.totVis}명)` : null,
+  ].filter(Boolean);
+  if (mvpParts.length)
+    tips.push({type:'positive',icon:'🏅',text:`이번 기간 MVP — ${mvpParts.join(' · ')} · 미팅에서 박수로 공개 인정해 주세요!`});
 
   // 전월대비 트래픽라이트 점수 향상
   if (TODAY > WIN6.end) {
