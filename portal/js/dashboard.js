@@ -392,14 +392,7 @@ function _get6MonthWindow() {
   return { start: fmt(start), end: fmt(end) };
 }
 
-/* traffic-light.js와 동일한 채점 함수 */
-function _scoreAbsence(n)    { return n > 2 ? 0 : n === 2 ? 5 : n === 1 ? 10 : 15; }
-function _scoreLate(n)       { return n >= 2 ? 0 : n === 1 ? 5 : 10; }
-function _scoreRef(avg)      { return avg < 0.5 ? 0 : avg < 0.75 ? 5 : avg < 1.0 ? 10 : avg < 1.2 ? 15 : 20; }
-function _scoreTyfcb(tot)    { return tot < 25000000 ? 0 : tot < 50000000 ? 5 : tot < 100000000 ? 10 : 15; }
-function _scoreVisitor(avg)  { return avg < 0.1 ? 0 : avg < 0.2 ? 5 : avg < 0.4 ? 10 : avg < 0.6 ? 15 : 20; }
-function _scoreOno(avg)      { return avg < 1 ? 0 : avg < 2 ? 5 : 10; }
-function _scoreCeu(tot)      { return tot < 5 ? 0 : tot < 15 ? 5 : 10; }
+/* 채점 함수 → scoring.js 참고 */
 
 function calcMemberStats(memberName, weekly, weeks, joinedDate) {
   // KPI용: 주어진 weeks 범위 내 집계
@@ -419,22 +412,21 @@ function calcMemberStats(memberName, weekly, weeks, joinedDate) {
   if (!winRecs.length) return { attendance, ono, visitors, referrals, light: 'gray' };
 
   const denom  = Math.max(_WEEKS_ALL.filter(w => w >= effStart && w <= previewEnd).length, new Set(winRecs.map(r=>r.week_date)).size, 1);
-  const absN   = winRecs.filter(w => w.absent).length;
-  const lateN  = winRecs.filter(w => w.late).length;
-  const totRef = winRecs.reduce((s,w) => s + (w.given_t1||0) + (w.given_t2||0), 0);
-  const totVis = winRecs.reduce((s,w) => s + (w.visitors||0), 0);
-  const totOno = winRecs.reduce((s,w) => s + (w.one_on_one||0), 0);
-  const totTyf = winRecs.reduce((s,w) => s + (Number(w.tyfcb)||0), 0);
-  const totCeu = winRecs.reduce((s,w) => s + (w.ceu||0), 0);
+  const totRef      = winRecs.reduce((s,w) => s + (w.given_t1||0) + (w.given_t2||0), 0);
+  const totVis      = winRecs.reduce((s,w) => s + (w.visitors||0), 0);
+  const totOno      = winRecs.reduce((s,w) => s + (w.one_on_one||0), 0);
+  const totTyf      = winRecs.reduce((s,w) => s + (Number(w.tyfcb)||0), 0);
+  const totCeu      = winRecs.reduce((s,w) => s + (w.ceu||0), 0);
+  const totSponsored= winRecs.reduce((s,w) => s + (w.sponsored||0), 0);
 
   const total =
-    _scoreAbsence(absN) +
-    _scoreLate(lateN) +
-    _scoreRef(totRef / denom) +
-    _scoreTyfcb(totTyf) +
-    _scoreVisitor(totVis / denom) +
-    _scoreOno(totOno / denom) +
-    _scoreCeu(totCeu);
+    scoreAttendance(winRecs) +
+    scoreReferral(totRef / denom) +
+    scoreTyfcb(totTyf) +
+    scoreVisitor(totVis) +
+    scoreOno(totOno / denom) +
+    scoreCeu(totCeu / denom) +
+    scoreSponsored(totSponsored);
   const light = total >= 70 ? 'green' : total >= 50 ? 'amber' : total >= 30 ? 'red' : 'gray';
 
   return { attendance, ono, visitors, referrals, tyfcb: totTyf, light, total, recorded: wRecs.length };
@@ -525,17 +517,7 @@ function renderAIDirector(allStats, members, total, statsMap, weekly) {
   // 전월대비 점수 향상
   if (weekly) {
     const win6 = _get6MonthWindow();
-    const calcScore = (recs, denom) => {
-      if (!recs.length) return 0;
-      const W = Math.max(denom, 1);
-      return _scoreAbsence(recs.filter(r=>r.absent).length)
-           + _scoreLate(recs.filter(r=>r.late).length)
-           + _scoreRef(recs.reduce((s,r)=>s+(r.given_t1||0)+(r.given_t2||0),0)/W)
-           + _scoreTyfcb(recs.reduce((s,r)=>s+(Number(r.tyfcb)||0),0))
-           + _scoreVisitor(recs.reduce((s,r)=>s+(r.visitors||0),0)/W)
-           + _scoreOno(recs.reduce((s,r)=>s+(r.one_on_one||0),0)/W)
-           + _scoreCeu(recs.reduce((s,r)=>s+(r.ceu||0),0));
-    };
+    const calcScore = (recs, denom) => calcMemberScore(recs, denom).total;
     const improved = members.map(m => {
       const allRecs  = weekly.filter(w => w.member_name === m.name);
       const effStart = [win6.start, _CHAPTER_LAUNCH, m.joined_date || _CHAPTER_LAUNCH].sort().reverse()[0];

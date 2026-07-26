@@ -50,6 +50,7 @@
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="/js/supabase-config.js"></script>
+<script src="/portal/js/scoring.js"></script>
 <script>
 /* ── 최소 유틸 (traffic-light.js 의존 제거) ── */
 const CHAPTER_LAUNCH = '2026-05-13';
@@ -84,37 +85,8 @@ function getMemberWeeks(joinedDate) {
   return ext.slice(startIdx);
 }
 
-const ANNUAL_MEMBERSHIP = 1600000;
-function scoreAttendance(recs) { if(!recs.length)return 0; const rate=recs.filter(r=>!r.absent).length/recs.length; return rate>=0.95?10:rate>=0.88?5:0; }
-function scoreReferral(a) { return a<0.25?0:a<0.5?5:a<0.75?10:a<1.0?15:a<1.25?20:25; }
-function scoreTyfcb(t)    { const m=t/ANNUAL_MEMBERSHIP; return m<=0?0:m<2?1:m<5?2:m<15?3:m<30?4:5; }
-function scoreVisitor(t)  { return t>=5?25:t>=4?20:t>=3?15:t>=2?10:t>=1?5:0; }
-function scoreOno(a)      { return a<0.25?0:a<0.5?5:a<0.75?10:a<1.0?15:20; }
-function scoreCeu(a)      { return a<=0?0:a<0.5?5:10; }
-function scoreSponsored(n){ return n>=1?5:0; }
-function fmtComma(v)      { return (Number(v)||0).toLocaleString('ko-KR'); }
-
-function calcMemberScore(recs, pastWeeks) {
-  const n = recs.length;
-  if (!n) return {total:0,light:'gray',breakdown:{attendance:0,referral:0,tyfcb:0,visitor:0,ono:0,ceu:0,sponsored:0},stats:{n:0,absN:0,lateN:0,totRef:0,totVis:0,totOno:0,totTyf:0,totCeu:0,totSponsored:0,attendRate:1,avgRef:'0.00',avgOno:'0.00',avgCeu:'0.00',tyfcbMult:'0.0'}};
-  const absN=recs.filter(r=>r.absent).length, lateN=recs.filter(r=>r.late).length;
-  const totRef=recs.reduce((s,r)=>s+(r.given_t1||0)+(r.given_t2||0),0);
-  const totVis=recs.reduce((s,r)=>s+(r.visitors||0),0);
-  const totOno=recs.reduce((s,r)=>s+(r.one_on_one||0),0);
-  const totTyf=recs.reduce((s,r)=>s+(Number(r.tyfcb)||0),0);
-  const totCeu=recs.reduce((s,r)=>s+(r.ceu||0),0);
-  const totSponsored=recs.reduce((s,r)=>s+(r.sponsored||0),0);
-  const W=Math.max(pastWeeks!=null?pastWeeks:n,1);
-  const attendRate=recs.filter(r=>!r.absent).length/n;
-  const s1=scoreAttendance(recs),s2=scoreReferral(totRef/W);
-  const s3=scoreTyfcb(totTyf),s4=scoreVisitor(totVis),s5=scoreOno(totOno/W),s6=scoreCeu(totCeu/W),s7=scoreSponsored(totSponsored);
-  const total=s1+s2+s3+s4+s5+s6+s7;
-  return {total,light:total>=70?'green':total>=50?'amber':total>=30?'red':'gray',
-    breakdown:{attendance:s1,referral:s2,tyfcb:s3,visitor:s4,ono:s5,ceu:s6,sponsored:s7},
-    stats:{n,absN,lateN,totRef,totVis,totOno,totTyf,totCeu,totSponsored,attendRate,
-      avgRef:(totRef/W).toFixed(2),avgOno:(totOno/W).toFixed(2),
-      avgCeu:(totCeu/W).toFixed(2),tyfcbMult:(totTyf/ANNUAL_MEMBERSHIP).toFixed(1)}};
-}
+/* 채점 함수·calcMemberScore → scoring.js 참고 */
+function fmtComma(v) { return (Number(v)||0).toLocaleString('ko-KR'); }
 
 function genAITips(name, sc) {
   const tips = [];
