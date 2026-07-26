@@ -588,6 +588,10 @@ function openWeekEdit(weekDate, memberName) {
         <label class="form-label">CEU 점수</label>
         <input type="number" id="ed-ceu" class="form-input" value="${rec?.ceu||0}" min="0">
       </div>
+      <div class="form-group">
+        <label class="form-label">신규추천 (스폰서)</label>
+        <input type="number" id="ed-sponsored" class="form-input" value="${rec?.sponsored||0}" min="0">
+      </div>
     </div>
 
     <div class="form-group" style="margin-bottom:16px">
@@ -632,6 +636,7 @@ function openWeekEdit(weekDate, memberName) {
       one_on_one:  Number(document.getElementById('ed-ono').value)||0,
       tyfcb:       Number(document.getElementById('ed-tyf').value)||0,
       ceu:         Number(document.getElementById('ed-ceu').value)||0,
+      sponsored:   Number(document.getElementById('ed-sponsored').value)||0,
       is_estimated: weekDate > TODAY,
       notes:       document.getElementById('ed-notes').value||null,
     };
