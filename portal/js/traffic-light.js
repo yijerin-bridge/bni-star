@@ -1830,7 +1830,7 @@ function genAIMember(name, recs, sc) {
   if (sc.breakdown.visitor < 25) {
     const tot = sc.stats.totVis || 0;
     const nextLevel = tot < 1 ? '1명' : tot < 2 ? '2명' : tot < 3 ? '3명' : tot < 4 ? '4명' : '5명';
-    tips.push({type:'action', icon:'🙋', text:`비지터 6개월 총 ${tot}명 — ${tot === 0 ? '아직 비지터 초대가 없습니다. 지금 바로 주변 1명에게 연락해 보세요!' : `다음 목표 ${nextLevel}명입니다. 꾸준히 초대를 이어가세요.`}`});
+    tips.push({type:'action', icon:'🙋', text:`비지터 6개월 총 ${tot}명 — ${tot === 0 ? '아직 비지터 초대가 없습니다. 지금 바로 주변 1명에게 연락해 보세요!' : `다음 목표 ${nextLevel}입니다. 꾸준히 초대를 이어가세요.`}`});
   }
 
   if (sc.breakdown.ono < 20) {
