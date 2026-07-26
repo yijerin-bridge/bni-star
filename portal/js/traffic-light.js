@@ -1721,10 +1721,19 @@ function genAIOverview(memberScores) {
   if (topScorer?.total > 0)
     tips.push({type:'positive',icon:'🏆',text:`이번 주 최고 점수: ${topScorer.name}님 ${topScorer.total}점(${topScorer.light}) — 미팅에서 공개 인정으로 챕터 문화를 강화하세요.`});
 
-  // 리퍼럴·원투원·비지터 MVP 한 줄
-  const topRef = [...memberScores].sort((a,b)=>(b.stats?.totRef||0)-(a.stats?.totRef||0))[0];
-  const topOno = [...memberScores].sort((a,b)=>(b.stats?.totOno||0)-(a.stats?.totOno||0))[0];
-  const topVis = [...memberScores].sort((a,b)=>(b.stats?.totVis||0)-(a.stats?.totVis||0))[0];
+  // 리퍼럴·원투원·비지터 MVP 한 줄 (동점 시 다른 부문 MVP 아닌 사람 우선 — 고루고루)
+  const _pickMvp = (field, taken) => {
+    const sorted = [...memberScores].sort((a,b)=>(b.stats?.[field]||0)-(a.stats?.[field]||0));
+    if (!sorted.length) return null;
+    const maxVal = sorted[0].stats?.[field]||0;
+    if (maxVal <= 0) return null;
+    const tied = sorted.filter(m=>(m.stats?.[field]||0)===maxVal);
+    return tied.find(m=>!taken.has(m.name)) || tied[0];
+  };
+  const _mvpTaken = new Set();
+  const topRef = _pickMvp('totRef', _mvpTaken); if (topRef) _mvpTaken.add(topRef.name);
+  const topOno = _pickMvp('totOno', _mvpTaken); if (topOno) _mvpTaken.add(topOno.name);
+  const topVis = _pickMvp('totVis', _mvpTaken); if (topVis) _mvpTaken.add(topVis.name);
   const mvpParts = [
     (topRef?.stats?.totRef||0) > 0 ? `🤝 리퍼럴 ${topRef.name}님(${topRef.stats.totRef}건)` : null,
     (topOno?.stats?.totOno||0) > 0 ? `☕ 원투원 ${topOno.name}님(${topOno.stats.totOno}회)` : null,
