@@ -1490,14 +1490,14 @@ function parsePALMS(rows) {
       const tryS = v => { if (!periodStart && v) { const d=parseDateKR(v); if(d) periodStart=d; }};
       const tryE = v => { if (!periodEnd   && v) { const d=parseDateKR(v); if(d) periodEnd=d;   }};
 
-      // 키워드 기반
+      // 키워드 기반 — 같은 행 전체 스캔 (빈 컬럼 사이에 날짜가 멀리 있는 경우 대응)
       if (cell.includes('시작')||cell.includes('기간')||cell.includes('조회')||cell.includes('from')) {
         tryS(cell.replace(/[^0-9년월일.\-\/\s]/g,''));
-        for (let k=j+1; k<Math.min(j+5,r.length); k++) tryS(String(r[k]??'').trim());
+        for (let k=0; k<r.length; k++) if (k!==j) tryS(String(r[k]??'').trim());
       }
       if (cell.includes('종료')||cell.includes('to')||cell.includes('끝')) {
         tryE(cell.replace(/[^0-9년월일.\-\/\s]/g,''));
-        for (let k=j+1; k<Math.min(j+5,r.length); k++) tryE(String(r[k]??'').trim());
+        for (let k=0; k<r.length; k++) if (k!==j) tryE(String(r[k]??'').trim());
       }
 
       // "날짜 ~ 날짜" 단일 셀 패턴
