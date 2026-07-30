@@ -779,23 +779,23 @@ window.loadWeekInput = loadWeekInput;
 /* ═══════════════════════════════════════════════
    탭 4: PALMS 파일 가져오기 (monthly → weekly 분배)
 ═══════════════════════════════════════════════ */
-function renderImport() {
+async function renderImport() {
   const el = document.getElementById('tl-import');
 
   el.innerHTML = `
     <div class="card" style="margin-bottom:12px">
       <div class="card-title" style="margin-bottom:8px">PALMS 챕터 분석</div>
       <p style="font-size:12px;color:#6b7280;margin-bottom:16px">
-        PALMS .xls/.xlsx 파일을 업로드하면 챕터 전체 요약과 멤버별 피드백을 보여줍니다.<br>
-        <strong>데이터는 저장되지 않습니다.</strong> 분석 결과만 확인하세요.
+        PALMS .xls/.xlsx 파일을 업로드하면 챕터 전체 요약과 멤버별 피드백을 보여줍니다.
       </p>
       <div class="upload-zone" id="uploadZone">
         <div style="font-size:36px;margin-bottom:8px">📋</div>
         <div style="font-weight:700;font-size:14px;margin-bottom:4px">파일 드래그 또는 클릭</div>
-        <div style="font-size:12px;color:#9ca3af">.xls, .xlsx — 저장 없이 분석만</div>
+        <div style="font-size:12px;color:#9ca3af">.xls, .xlsx</div>
         <input type="file" id="palmsFile" accept=".xls,.xlsx" style="display:none">
       </div>
     </div>
+    <div id="palmsSavedList"></div>
     <div id="importPreview"></div>
   `;
 
@@ -806,7 +806,65 @@ function renderImport() {
   zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('drag'); });
   zone.addEventListener('dragleave', () => zone.classList.remove('drag'));
   zone.addEventListener('drop', e => { e.preventDefault(); zone.classList.remove('drag'); handleFileAnalysis(e.dataTransfer.files[0]); });
+
+  await renderPalmsSavedList();
 }
+
+async function renderPalmsSavedList() {
+  const listEl = document.getElementById('palmsSavedList');
+  if (!listEl) return;
+
+  // period_start 기준 중복 제거해 기간별로 묶기
+  const { data } = await getSb().from('palms_records').select('period_start,period_end,member_name').order('period_start', { ascending: false });
+  if (!data?.length) { listEl.innerHTML = ''; return; }
+
+  // 기간별 그룹
+  const groups = {};
+  data.forEach(r => {
+    const key = `${r.period_start}__${r.period_end}`;
+    if (!groups[key]) groups[key] = { period_start: r.period_start, period_end: r.period_end, count: 0 };
+    groups[key].count++;
+  });
+  const periods = Object.values(groups).sort((a,b) => b.period_start.localeCompare(a.period_start));
+
+  listEl.innerHTML = `
+    <div class="card" style="margin-bottom:12px">
+      <div class="card-title" style="margin-bottom:12px">저장된 PALMS 리포트</div>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        ${periods.map(p => `
+          <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:#f9fafb;border-radius:8px;flex-wrap:wrap">
+            <div style="flex:1;min-width:0">
+              <div style="font-size:13px;font-weight:600">${p.period_start} ~ ${p.period_end}</div>
+              <div style="font-size:11px;color:#9ca3af;margin-top:2px">${p.count}명</div>
+            </div>
+            <button class="btn btn-outline btn-sm" onclick="viewPalmsReport('${p.period_start}','${p.period_end}')">📊 보기</button>
+            <button class="btn btn-outline btn-sm" onclick="copyPalmsLink('${p.period_start}','${p.period_end}')">🔗 링크</button>
+            <button class="btn btn-outline btn-sm" style="color:#CC0000;border-color:#fca5a5" onclick="deletePalmsReport('${p.period_start}','${p.period_end}')">🗑 삭제</button>
+          </div>`).join('')}
+      </div>
+    </div>
+  `;
+}
+
+window.viewPalmsReport = async function(start, end) {
+  const { data } = await getSb().from('palms_records').select('*').eq('period_start', start).eq('period_end', end);
+  if (!data?.length) return;
+  showPALMSAnalysis(data, start, end, `${start} ~ ${end}`);
+  document.getElementById('importPreview')?.scrollIntoView({ behavior: 'smooth' });
+};
+
+window.copyPalmsLink = function(start, end) {
+  const url = `${location.origin}/portal/palms-share.html?start=${start}&end=${end}`;
+  navigator.clipboard.writeText(url).then(() => showToast('공유 링크 복사됨!')).catch(() => prompt('링크 복사:', url));
+};
+
+window.deletePalmsReport = async function(start, end) {
+  if (!confirm(`${start} ~ ${end} 리포트를 삭제하시겠습니까?\n되돌릴 수 없습니다.`)) return;
+  const { error } = await getSb().from('palms_records').delete().eq('period_start', start).eq('period_end', end);
+  if (error) { alert('삭제 오류: ' + error.message); return; }
+  showToast('삭제됐습니다.');
+  await renderPalmsSavedList();
+};
 
 /* ── 붙여넣기 파싱 ── */
 // "5월 13일" / "5/13" / "2026-05-13" / "26.5.13" 등 유연 파싱
@@ -1359,6 +1417,7 @@ function showPALMSAnalysis(data, periodStart, periodEnd, fileName) {
       btn.textContent = '✅ 저장됨 — 링크 복사됨!';
       setTimeout(()=>{ btn.disabled=false; btn.textContent='💾 저장 + 공유 링크'; }, 3000);
       showToast('저장 완료! 공유 링크가 클립보드에 복사됐습니다.');
+      await renderPalmsSavedList();
     } catch(e) { alert('오류: '+e.message); btn.disabled=false; btn.textContent='💾 저장 + 공유 링크'; }
   });
 }
