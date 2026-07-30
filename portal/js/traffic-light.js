@@ -1174,16 +1174,22 @@ function showPALMSAnalysis(data, periodStart, periodEnd, fileName) {
   const prev = document.getElementById('importPreview');
   const n    = data.length;
 
-  // 챕터 집계
-  const totAttend  = data.filter(m => (m.attendance||0) > 0).length;
-  const totAbsent  = data.reduce((s,m) => s + (m.absence||0), 0);
+  // 챕터 집계 — PALMS 공식: 출석률 = (P+L+M+S) / (P+A+L+M+S)
+  const totP       = data.reduce((s,m) => s + (m.attendance||0), 0);   // Present
+  const totA       = data.reduce((s,m) => s + (m.absence||0), 0);      // Absent
+  const totL       = data.reduce((s,m) => s + (m.late_leave||0), 0);   // Late
+  const totM       = data.reduce((s,m) => s + (m.sick_leave||0), 0);   // Medical
+  const totS       = data.reduce((s,m) => s + (m.substitute||0), 0);   // Substitute
+  const totPLMS    = totP + totL + totM + totS;
+  const totAllMtg  = totPLMS + totA;
+  const totAbsent  = totA;
+  const attendRate = totAllMtg > 0 ? Math.round(totPLMS / totAllMtg * 100) : 0;
   const totRef     = data.reduce((s,m) => s + (m.given_t1||0) + (m.given_t2||0), 0);
   const totRecv    = data.reduce((s,m) => s + (m.received_t1||0) + (m.received_t2||0), 0);
   const totVis     = data.reduce((s,m) => s + (m.visitors||0), 0);
   const totOno     = data.reduce((s,m) => s + (m.one_on_one||0), 0);
   const totTyf     = data.reduce((s,m) => s + (Number(m.tyfcb)||0), 0);
   const totCeu     = data.reduce((s,m) => s + (m.ceu||0), 0);
-  const attendRate = Math.round(totAttend / n * 100);
 
   // 랭킹 (TOP3)
   const topRef = [...data].filter(m=>(m.given_t1||0)+(m.given_t2||0)>0)
@@ -1226,7 +1232,7 @@ function showPALMSAnalysis(data, periodStart, periodEnd, fileName) {
           <div style="font-size:16px;font-weight:700">${periodStart||'?'} ~ ${periodEnd||'?'}</div>
           <div style="font-size:12px;color:#9ca3af;margin-top:2px">${fileName} · ${n}명</div>
         </div>
-        <span style="font-size:11px;color:#9ca3af;background:#f9fafb;padding:4px 10px;border-radius:20px">저장 없음 — 분석 전용</span>
+        <button id="palmsSaveBtn" class="btn btn-primary btn-sm">💾 저장 + 공유 링크</button>
       </div>
     </div>
 
@@ -1327,6 +1333,34 @@ function showPALMSAnalysis(data, periodStart, periodEnd, fileName) {
       </div>
     </div>
   `;
+
+  // 저장 + 공유 링크 버튼
+  document.getElementById('palmsSaveBtn')?.addEventListener('click', async () => {
+    const btn = document.getElementById('palmsSaveBtn');
+    btn.disabled = true; btn.textContent = '저장 중...';
+    try {
+      const rows = data.map(m => ({
+        member_name: m.member_name,
+        member_id:   allMembers.find(x=>x.name===m.member_name)?.id || null,
+        period_start: periodStart || null,
+        period_end:   periodEnd   || null,
+        attendance: m.attendance||0, absence: m.absence||0,
+        late_leave: m.late_leave||0, sick_leave: m.sick_leave||0, substitute: m.substitute||0,
+        given_t1: m.given_t1||0, given_t2: m.given_t2||0,
+        received_t1: m.received_t1||0, received_t2: m.received_t2||0,
+        visitors: m.visitors||0, one_on_one: m.one_on_one||0,
+        tyfcb: Number(m.tyfcb)||0, ceu: m.ceu||0,
+      })).filter(r => r.period_start && r.period_end);
+      if (!rows.length) { alert('기간(시작/종료)이 인식되지 않아 저장할 수 없습니다.'); return; }
+      const { error } = await getSb().from('palms_records').upsert(rows, { onConflict: 'member_name,period_start' });
+      if (error) { alert('저장 오류: ' + error.message); return; }
+      const url = `${location.origin}/portal/palms-share.html?start=${periodStart}&end=${periodEnd}`;
+      await navigator.clipboard.writeText(url).catch(()=>{});
+      btn.textContent = '✅ 저장됨 — 링크 복사됨!';
+      setTimeout(()=>{ btn.disabled=false; btn.textContent='💾 저장 + 공유 링크'; }, 3000);
+      showToast('저장 완료! 공유 링크가 클립보드에 복사됐습니다.');
+    } catch(e) { alert('오류: '+e.message); btn.disabled=false; btn.textContent='💾 저장 + 공유 링크'; }
+  });
 }
 
 function calcWeeksInPeriod(start, end) {
@@ -1391,8 +1425,11 @@ function parsePALMS(rows) {
       const cell = String(r[j]??'').trim();
       const tryS = v => { if (!periodStart && v) { const d=parseDateKR(v); if(d) periodStart=d; }};
       const tryE = v => { if (!periodEnd   && v) { const d=parseDateKR(v); if(d) periodEnd=d;   }};
-      if (cell.includes('시작')) { tryS(cell.replace(/시작[：:\s]*/,'')); for(let k=j+1;k<Math.min(j+5,r.length);k++) tryS(String(r[k]??'').trim()); }
-      if (cell.includes('종료')) { tryE(cell.replace(/종료[：:\s]*/,'')); for(let k=j+1;k<Math.min(j+5,r.length);k++) tryE(String(r[k]??'').trim()); }
+      if (cell.includes('시작')||cell.includes('기간')) { tryS(cell.replace(/[^0-9년월일.\-\/\s]/g,'')); for(let k=j+1;k<Math.min(j+5,r.length);k++) tryS(String(r[k]??'').trim()); }
+      if (cell.includes('종료')) { tryE(cell.replace(/[^0-9년월일.\-\/\s]/g,'')); for(let k=j+1;k<Math.min(j+5,r.length);k++) tryE(String(r[k]??'').trim()); }
+      // "날짜 ~ 날짜" 단일 셀 패턴 (예: "2026. 5. 1. ~ 2026. 5. 31." 또는 "2026년 5월 1일~2026년 5월 31일")
+      const rng = cell.match(/(\d[\d년월일.\s]+\d)\s*[~–]\s*(\d[\d년월일.\s]+\d)/);
+      if (rng) { tryS(rng[1]); tryE(rng[2]); }
     }
     if (periodStart && periodEnd) break;
   }
@@ -1434,6 +1471,9 @@ function parseDateKR(str) {
   if(/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
   const num=Number(s);
   if(!isNaN(num)&&num>40000&&num<60000) { const d=new Date(Date.UTC(1899,11,30)+num*86400000); return d.toISOString().slice(0,10); }
+  // 한국어: 2026년 5월 1일
+  const mKo=s.match(/(\d{2,4})\s*년\s*(\d{1,2})\s*월\s*(\d{1,2})\s*일/);
+  if(mKo) { let y=Number(mKo[1]); if(y<100)y+=2000; return `${y}-${String(Number(mKo[2])).padStart(2,'0')}-${String(Number(mKo[3])).padStart(2,'0')}`; }
   const m=s.match(/(\d{2,4})[.\-\/\s]+(\d{1,2})[.\-\/\s]+(\d{1,2})/);
   if(!m) return '';
   let y=Number(m[1]); if(y<100) y+=2000;
