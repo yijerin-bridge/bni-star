@@ -1478,20 +1478,53 @@ function showFilePreview(data, saveDate, weeksAuto, periodStart, periodEnd, file
 
 function parsePALMS(rows) {
   let periodStart='', periodEnd='';
+
+  // 1단계: 키워드 기반 탐지 (첫 20행)
+  const allDatesInHeader = [];
   for (let i=0; i<Math.min(20,rows.length); i++) {
     const r = rows[i];
     for (let j=0; j<r.length; j++) {
       const cell = String(r[j]??'').trim();
+      if (!cell) continue;
+
       const tryS = v => { if (!periodStart && v) { const d=parseDateKR(v); if(d) periodStart=d; }};
       const tryE = v => { if (!periodEnd   && v) { const d=parseDateKR(v); if(d) periodEnd=d;   }};
-      if (cell.includes('시작')||cell.includes('기간')) { tryS(cell.replace(/[^0-9년월일.\-\/\s]/g,'')); for(let k=j+1;k<Math.min(j+5,r.length);k++) tryS(String(r[k]??'').trim()); }
-      if (cell.includes('종료')) { tryE(cell.replace(/[^0-9년월일.\-\/\s]/g,'')); for(let k=j+1;k<Math.min(j+5,r.length);k++) tryE(String(r[k]??'').trim()); }
-      // "날짜 ~ 날짜" 단일 셀 패턴 (예: "2026. 5. 1. ~ 2026. 5. 31." 또는 "2026년 5월 1일~2026년 5월 31일")
-      const rng = cell.match(/(\d[\d년월일.\s]+\d)\s*[~–]\s*(\d[\d년월일.\s]+\d)/);
+
+      // 키워드 기반
+      if (cell.includes('시작')||cell.includes('기간')||cell.includes('조회')||cell.includes('from')) {
+        tryS(cell.replace(/[^0-9년월일.\-\/\s]/g,''));
+        for (let k=j+1; k<Math.min(j+5,r.length); k++) tryS(String(r[k]??'').trim());
+      }
+      if (cell.includes('종료')||cell.includes('to')||cell.includes('끝')) {
+        tryE(cell.replace(/[^0-9년월일.\-\/\s]/g,''));
+        for (let k=j+1; k<Math.min(j+5,r.length); k++) tryE(String(r[k]??'').trim());
+      }
+
+      // "날짜 ~ 날짜" 단일 셀 패턴
+      const rng = cell.match(/(\d[\d년월일.\s]*\d)\s*[~–\-]\s*(\d[\d년월일.\s]*\d)/);
       if (rng) { tryS(rng[1]); tryE(rng[2]); }
+
+      // 헤더 영역의 모든 날짜 수집 (fallback용)
+      const d = parseDateKR(cell);
+      if (d) allDatesInHeader.push(d);
     }
     if (periodStart && periodEnd) break;
   }
+
+  // 2단계: fallback — 헤더에서 찾은 모든 날짜 중 최소=시작, 최대=종료
+  if ((!periodStart || !periodEnd) && allDatesInHeader.length >= 1) {
+    const sorted = [...allDatesInHeader].sort();
+    if (!periodStart) periodStart = sorted[0];
+    if (!periodEnd)   periodEnd   = sorted[sorted.length-1];
+    // 같은 날짜면(월만 있는 경우) 월말로 보정
+    if (periodStart === periodEnd && periodStart) {
+      const d = new Date(periodEnd);
+      d.setMonth(d.getMonth()+1, 0);
+      periodEnd = d.toISOString().slice(0,10);
+    }
+  }
+
+  console.log('[PALMS] 감지된 기간:', periodStart, '~', periodEnd, '/ 헤더 날짜:', allDatesInHeader);
 
   let headerIdx = rows.findIndex(r => String(r[0]||'').includes('이름'));
   if (headerIdx < 0) headerIdx = rows.findIndex(r => /^[가-힣]{2,4}$/.test(String(r[0]||'').trim()));
