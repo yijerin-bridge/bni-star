@@ -1177,7 +1177,7 @@ async function handleFile(file) {
 
     if (!wb.SheetNames.length) throw new Error('시트가 없습니다');
     const ws   = wb.Sheets[wb.SheetNames[0]];
-    const rows = XLSX.utils.sheet_to_json(ws, { header:1, defval:'', raw:false });
+    const rows = XLSX.utils.sheet_to_json(ws, { header:1, defval:'', raw:true, cellDates:true });
 
     console.log('[PALMS] 총 행수:', rows.length, '/ 첫 5행:', rows.slice(0,5));
 
@@ -1219,7 +1219,7 @@ async function handleFileAnalysis(file) {
     try { wb = XLSX.read(ab, { type:'array', codepage:949, cellDates:true }); }
     catch { wb = XLSX.read(ab, { type:'array' }); }
     const ws   = wb.Sheets[wb.SheetNames[0]];
-    const rows = XLSX.utils.sheet_to_json(ws, { header:1, defval:'', raw:false });
+    const rows = XLSX.utils.sheet_to_json(ws, { header:1, defval:'', raw:true, cellDates:true });
     const { periodStart, periodEnd, data } = parsePALMS(rows);
     if (!data.length) { prev.innerHTML = `<div class="alert-banner crit">멤버 데이터를 찾지 못했습니다.</div>`; return; }
     showPALMSAnalysis(data, periodStart, periodEnd, file.name);
@@ -1286,9 +1286,19 @@ function showPALMSAnalysis(data, periodStart, periodEnd, fileName) {
     <!-- 기간 헤더 -->
     <div class="card" style="margin-bottom:12px;border-left:4px solid var(--red)">
       <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
-        <div>
-          <div style="font-size:16px;font-weight:700">${periodStart||'?'} ~ ${periodEnd||'?'}</div>
-          <div style="font-size:12px;color:#9ca3af;margin-top:2px">${fileName} · ${n}명</div>
+        <div style="flex:1">
+          ${(periodStart && periodEnd) ? `
+            <div style="font-size:16px;font-weight:700">${periodStart} ~ ${periodEnd}</div>
+            <div style="font-size:12px;color:#9ca3af;margin-top:2px">${fileName} · ${n}명</div>
+          ` : `
+            <div style="font-size:12px;color:#CC0000;margin-bottom:8px">⚠️ 기간 자동 인식 실패 — 직접 입력하세요</div>
+            <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+              <input type="date" id="palmsStartInput" class="form-input" value="${periodStart||''}" style="width:150px">
+              <span style="color:#9ca3af">~</span>
+              <input type="date" id="palmsEndInput" class="form-input" value="${periodEnd||''}" style="width:150px">
+              <div style="font-size:11px;color:#9ca3af">${fileName} · ${n}명</div>
+            </div>
+          `}
         </div>
         <button id="palmsSaveBtn" class="btn btn-primary btn-sm">💾 저장 + 공유 링크</button>
       </div>
@@ -1397,11 +1407,13 @@ function showPALMSAnalysis(data, periodStart, periodEnd, fileName) {
     const btn = document.getElementById('palmsSaveBtn');
     btn.disabled = true; btn.textContent = '저장 중...';
     try {
+      const ps = document.getElementById('palmsStartInput')?.value || periodStart;
+      const pe = document.getElementById('palmsEndInput')?.value   || periodEnd;
       const rows = data.map(m => ({
         member_name: m.member_name,
         member_id:   allMembers.find(x=>x.name===m.member_name)?.id || null,
-        period_start: periodStart || null,
-        period_end:   periodEnd   || null,
+        period_start: ps || null,
+        period_end:   pe || null,
         attendance: m.attendance||0, absence: m.absence||0,
         late_leave: m.late_leave||0, sick_leave: m.sick_leave||0, substitute: m.substitute||0,
         given_t1: m.given_t1||0, given_t2: m.given_t2||0,
@@ -1412,7 +1424,7 @@ function showPALMSAnalysis(data, periodStart, periodEnd, fileName) {
       if (!rows.length) { alert('기간(시작/종료)이 인식되지 않아 저장할 수 없습니다.'); return; }
       const { error } = await getSb().from('palms_records').upsert(rows, { onConflict: 'member_name,period_start' });
       if (error) { alert('저장 오류: ' + error.message); return; }
-      const url = `${location.origin}/portal/palms-share.html?start=${periodStart}&end=${periodEnd}`;
+      const url = `${location.origin}/portal/palms-share.html?start=${ps}&end=${pe}`;
       await navigator.clipboard.writeText(url).catch(()=>{});
       btn.textContent = '✅ 저장됨 — 링크 복사됨!';
       setTimeout(()=>{ btn.disabled=false; btn.textContent='💾 저장 + 공유 링크'; }, 3000);
@@ -1559,6 +1571,8 @@ function parsePALMS(rows) {
 }
 
 function parseDateKR(str) {
+  // JS Date 객체 (cellDates:true 옵션)
+  if (str instanceof Date && !isNaN(str)) return str.toISOString().slice(0,10);
   const s=String(str??'').trim(); if(!s||s==='0') return '';
   if(/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
   const num=Number(s);
