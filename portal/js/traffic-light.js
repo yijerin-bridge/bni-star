@@ -1491,52 +1491,57 @@ function showFilePreview(data, saveDate, weeksAuto, periodStart, periodEnd, file
 function parsePALMS(rows) {
   let periodStart='', periodEnd='';
 
+  // 셀 값 → ISO 날짜 문자열 변환 (Date 객체 우선 처리)
+  const cellToDate = v => {
+    if (v instanceof Date && !isNaN(v)) return v.toISOString().slice(0,10);
+    return parseDateKR(String(v??'').trim());
+  };
+  // 셀 값 → 텍스트 (Date 객체는 ISO로, 나머지는 문자열로)
+  const cellToStr = v => v instanceof Date ? v.toISOString().slice(0,10) : String(v??'').trim();
+
   // 1단계: 키워드 기반 탐지 (첫 20행)
   const allDatesInHeader = [];
   for (let i=0; i<Math.min(20,rows.length); i++) {
     const r = rows[i];
     for (let j=0; j<r.length; j++) {
-      const cell = String(r[j]??'').trim();
+      const raw  = r[j];
+      const cell = cellToStr(raw);
       if (!cell) continue;
 
-      const tryS = v => { if (!periodStart && v) { const d=parseDateKR(v); if(d) periodStart=d; }};
-      const tryE = v => { if (!periodEnd   && v) { const d=parseDateKR(v); if(d) periodEnd=d;   }};
+      const tryS = v => { if (!periodStart) { const d=cellToDate(v); if(d) periodStart=d; }};
+      const tryE = v => { if (!periodEnd)   { const d=cellToDate(v); if(d) periodEnd=d;   }};
 
-      // 키워드 기반 — 같은 행 전체 스캔 (빈 컬럼 사이에 날짜가 멀리 있는 경우 대응)
+      // Date 객체 셀 자체가 날짜이면 헤더 날짜 풀에 추가
+      const selfDate = cellToDate(raw);
+      if (selfDate) allDatesInHeader.push(selfDate);
+
+      // 키워드 기반 — 같은 행 전체 스캔
       if (cell.includes('시작')||cell.includes('기간')||cell.includes('조회')||cell.includes('from')) {
-        tryS(cell.replace(/[^0-9년월일.\-\/\s]/g,''));
-        for (let k=0; k<r.length; k++) if (k!==j) tryS(String(r[k]??'').trim());
+        for (let k=0; k<r.length; k++) if (k!==j) tryS(r[k]);
       }
       if (cell.includes('종료')||cell.includes('to')||cell.includes('끝')) {
-        tryE(cell.replace(/[^0-9년월일.\-\/\s]/g,''));
-        for (let k=0; k<r.length; k++) if (k!==j) tryE(String(r[k]??'').trim());
+        for (let k=0; k<r.length; k++) if (k!==j) tryE(r[k]);
       }
 
-      // "날짜 ~ 날짜" 단일 셀 패턴
-      const rng = cell.match(/(\d[\d년월일.\s]*\d)\s*[~–\-]\s*(\d[\d년월일.\s]*\d)/);
+      // "날짜 ~ 날짜" 단일 셀 패턴 (텍스트 셀)
+      const rng = cell.match(/(\d[\d년월일.\s]*\d)\s*[~–]\s*(\d[\d년월일.\s]*\d)/);
       if (rng) { tryS(rng[1]); tryE(rng[2]); }
-
-      // 헤더 영역의 모든 날짜 수집 (fallback용)
-      const d = parseDateKR(cell);
-      if (d) allDatesInHeader.push(d);
     }
     if (periodStart && periodEnd) break;
   }
 
-  // 2단계: fallback — 헤더에서 찾은 모든 날짜 중 최소=시작, 최대=종료
+  // 2단계: fallback — 헤더에서 찾은 날짜 중 최솟값=시작, 최댓값=종료
   if ((!periodStart || !periodEnd) && allDatesInHeader.length >= 1) {
-    const sorted = [...allDatesInHeader].sort();
+    const sorted = [...new Set(allDatesInHeader)].sort();
     if (!periodStart) periodStart = sorted[0];
     if (!periodEnd)   periodEnd   = sorted[sorted.length-1];
-    // 같은 날짜면(월만 있는 경우) 월말로 보정
-    if (periodStart === periodEnd && periodStart) {
-      const d = new Date(periodEnd);
-      d.setMonth(d.getMonth()+1, 0);
+    if (periodStart === periodEnd) {
+      const d = new Date(periodEnd); d.setMonth(d.getMonth()+1, 0);
       periodEnd = d.toISOString().slice(0,10);
     }
   }
 
-  console.log('[PALMS] 감지된 기간:', periodStart, '~', periodEnd, '/ 헤더 날짜:', allDatesInHeader);
+  console.log('[PALMS] 감지 기간:', periodStart, '~', periodEnd, '/ 헤더 날짜 풀:', allDatesInHeader);
 
   let headerIdx = rows.findIndex(r => String(r[0]||'').includes('이름'));
   if (headerIdx < 0) headerIdx = rows.findIndex(r => /^[가-힣]{2,4}$/.test(String(r[0]||'').trim()));
