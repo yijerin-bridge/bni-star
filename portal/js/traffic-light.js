@@ -1491,9 +1491,14 @@ function showFilePreview(data, saveDate, weeksAuto, periodStart, periodEnd, file
 function parsePALMS(rows) {
   let periodStart='', periodEnd='';
 
-  // 셀 값 → ISO 날짜 문자열 변환 (Date 객체 우선 처리)
+  // 셀 값 → ISO 날짜 문자열 변환 (Date 객체는 로컬 기준으로 — UTC 변환 시 하루 당겨지는 문제 방지)
   const cellToDate = v => {
-    if (v instanceof Date && !isNaN(v)) return v.toISOString().slice(0,10);
+    if (v instanceof Date && !isNaN(v)) {
+      const y = v.getFullYear();
+      const m = String(v.getMonth()+1).padStart(2,'0');
+      const d = String(v.getDate()).padStart(2,'0');
+      return `${y}-${m}-${d}`;
+    }
     return parseDateKR(String(v??'').trim());
   };
   // 셀 값 → 텍스트 (Date 객체는 ISO로, 나머지는 문자열로)
@@ -1576,8 +1581,11 @@ function parsePALMS(rows) {
 }
 
 function parseDateKR(str) {
-  // JS Date 객체 (cellDates:true 옵션)
-  if (str instanceof Date && !isNaN(str)) return str.toISOString().slice(0,10);
+  // JS Date 객체 (cellDates:true 옵션) — 로컬 기준으로 읽어야 KST에서 하루 안 당겨짐
+  if (str instanceof Date && !isNaN(str)) {
+    const y=str.getFullYear(), mo=String(str.getMonth()+1).padStart(2,'0'), d=String(str.getDate()).padStart(2,'0');
+    return `${y}-${mo}-${d}`;
+  }
   const s=String(str??'').trim(); if(!s||s==='0') return '';
   if(/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
   const num=Number(s);
