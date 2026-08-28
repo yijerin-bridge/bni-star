@@ -87,6 +87,16 @@
     .bc-target-row { margin-top:10px;padding-left:28px;display:none;align-items:center;gap:8px; }
     .bc-target-row input { flex:1;max-width:140px; }
     .bc-item.checked .bc-target-row { display:flex; }
+
+    /* 담당자 칩 */
+    .role-chips { display:flex;flex-wrap:wrap;gap:5px;margin-top:4px; }
+    .rc-group-label { width:100%;font-size:10px;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:.5px;margin-top:6px;margin-bottom:1px; }
+    .rc-chip { padding:3px 9px;border:1.5px solid #e5e7eb;border-radius:20px;background:#fff;font-size:11px;cursor:pointer;font-family:inherit;transition:all .12s;white-space:nowrap; }
+    .rc-chip:hover { border-color:#CC0000;color:#CC0000; }
+    .rc-chip.sel { background:#CC0000;color:#fff;border-color:#CC0000; }
+    .rc-chip.disabled { opacity:.35;cursor:not-allowed;pointer-events:none; }
+    .rc-hint { width:100%;font-size:10px;color:#d1d5db;margin-top:3px; }
+    .role-badge { font-size:10px;padding:2px 7px;background:#f3f4f6;border-radius:10px;color:#374151;display:inline-block; }
   </style>
 </head>
 <body>
@@ -108,6 +118,8 @@ const BUILTIN_METRICS = [
   { key:'sponsored_count',  name:'스폰서 (신규추천)',unit:'명',  icon:'⭐', desc:'월간 신규추천회원 합계',              autoCompute: true },
   { key:'green_member_pct', name:'Green 멤버 비율',  unit:'%',   icon:'🟢', desc:'트래픽라이트 Green 멤버 비율 (자동집계)', autoCompute: true },
   { key:'member_count',     name:'멤버수',           unit:'명',  icon:'👥', desc:'현재 활성 멤버 수 (members 테이블 기준)', autoCompute: true },
+  { key:'renewal_rate',     name:'멤버 갱신율',      unit:'%',   icon:'🔄', desc:'1년 후 재등록한 멤버 비율 (수동 입력)', autoCompute: false },
+  { key:'amber_plus_pct',   name:'앰버 이상 비율',   unit:'%',   icon:'🟡', desc:'트래픽라이트 앰버+그린 멤버 비율 (자동집계)', autoCompute: true },
 ];
 
 let currentYM = '', weeklyAll = [], goalsAll = [], membersAll = [], rolesAll = [], canEdit = false;
@@ -152,6 +164,17 @@ function computeActual(key, ym) {
     case 'sponsored_count': return recs.length ? recs.reduce((s,r)=>s+(r.sponsored||0),0) : null;
     case 'green_member_pct': return computeGreenPct(ym);
     case 'member_count':    return membersAll.length || null;
+    case 'renewal_rate':    return null; // 수동 입력
+    case 'amber_plus_pct': {
+      if (!recs.length) return null;
+      const wks  = [...new Set(recs.map(r => r.week_date))];
+      const mids = [...new Set(recs.map(r => r.member_id))];
+      const cnt  = mids.filter(mid => {
+        const l = calcMemberScore(recs.filter(r => r.member_id === mid), wks.length).light;
+        return l === 'green' || l === 'amber';
+      }).length;
+      return Math.round(cnt / mids.length * 100);
+    }
     default: return null;
   }
 }
@@ -170,18 +193,49 @@ function computeGreenPct(ym) {
   return Math.round(greenCount / memberIds.length * 100);
 }
 
-function roleSelectHtml(id, selected = '') {
+function roleChipsHtml(id, preSelected = '') {
+  const sel = preSelected ? preSelected.split('|').map(s=>s.trim()).filter(Boolean) : [];
   const groups = { board:'의장단', leader:'리더팀', membership:'멤버십위원회', member:'일반멤버' };
   const grouped = {};
-  rolesAll.forEach(r => {
-    if (!grouped[r.role_type]) grouped[r.role_type] = [];
-    grouped[r.role_type].push(r.name);
+  rolesAll.forEach(r => { if (!grouped[r.role_type]) grouped[r.role_type] = []; grouped[r.role_type].push(r.name); });
+  let inner = '';
+  Object.entries(groups).forEach(([type, label]) => {
+    if (!grouped[type]?.length) return;
+    inner += `<span class="rc-group-label">${label}</span>`;
+    grouped[type].forEach(n => {
+      inner += `<button type="button" class="rc-chip${sel.includes(n)?' sel':''}" data-role="${n}">${n}</button>`;
+    });
   });
-  const options = Object.entries(groups).map(([type, label]) => {
-    if (!grouped[type]?.length) return '';
-    return `<optgroup label="${label}">${grouped[type].map(n => `<option value="${n}" ${n===selected?'selected':''}>${n}</option>`).join('')}</optgroup>`;
-  }).join('');
-  return `<select id="${id}" class="form-input"><option value="">— 담당 직책 미지정 —</option>${options}</select>`;
+  return `<div class="role-chips" id="${id}" data-max="3">${inner}<span class="rc-hint">최대 3개 선택</span></div>`;
+}
+
+function bindRoleChips(root) {
+  root.querySelectorAll('.role-chips').forEach(container => {
+    const max = parseInt(container.dataset.max) || 3;
+    const update = () => {
+      const chips = container.querySelectorAll('.rc-chip');
+      const selCount = container.querySelectorAll('.rc-chip.sel').length;
+      chips.forEach(c => {
+        if (!c.classList.contains('sel') && selCount >= max) c.classList.add('disabled');
+        else c.classList.remove('disabled');
+      });
+    };
+    container.querySelectorAll('.rc-chip').forEach(chip => {
+      chip.addEventListener('click', () => {
+        if (chip.classList.contains('disabled')) return;
+        chip.classList.toggle('sel');
+        update();
+      });
+    });
+    update();
+  });
+}
+
+function getSelectedRoles(id) {
+  const container = document.getElementById(id);
+  if (!container) return null;
+  const roles = [...container.querySelectorAll('.rc-chip.sel')].map(c => c.dataset.role);
+  return roles.length ? roles.join('|') : null;
 }
 
 function getLightFromRate(rate) {
@@ -345,7 +399,7 @@ function goalCard(c) {
       <div class="gc-bar" style="width:${pct}%;background:${barColor}"></div>
     </div>
     <div class="gc-pct">${c.rate !== null ? c.rate + '%' : '실적 미입력'}</div>
-    ${c.responsible_role ? `<div style="margin-top:8px;font-size:11px;color:#6b7280">👤 ${c.responsible_role}</div>` : ''}
+    ${c.responsible_role ? `<div style="margin-top:8px;display:flex;flex-wrap:wrap;gap:3px">${c.responsible_role.split('|').map(r=>`<span class="role-badge">👤 ${r}</span>`).join('')}</div>` : ''}
     ${c.notes ? `<div class="gc-notes">${c.notes}</div>` : ''}
   </div>`;
 }
@@ -395,7 +449,7 @@ function renderTrendView() {
         <div class="tc-actual" style="${isCur?'font-weight:900':''}">${actualStr}</div>
         <div class="tc-target">/${g.target_value}${g.metric_unit}</div>
         ${rate !== null ? `<div class="tc-pct">${rate}%</div>` : ''}
-        ${g.responsible_role ? `<div style="font-size:9px;color:#9ca3af;margin-top:1px">👤${g.responsible_role}</div>` : ''}
+        ${g.responsible_role ? g.responsible_role.split('|').map(r=>`<div style="font-size:9px;color:#9ca3af;margin-top:1px">👤${r}</div>`).join('') : ''}
       </div>
     </td>`;
   }
@@ -469,7 +523,7 @@ function showBuiltinGoalModal(missingBuiltin) {
           <label style="font-size:12px;color:#374151;white-space:nowrap">목표값</label>
           <input type="number" class="form-input bc-target-input" id="tgt_${b.key}" placeholder="숫자 입력" style="max-width:120px">
           <span style="font-size:12px;color:#6b7280">${b.unit}</span>
-          <select id="role_${b.key}" class="form-input" style="max-width:180px"><option value="">— 담당 직책 —</option></select>
+          <div id="croles_${b.key}" class="role-chips" data-max="3" style="margin-top:0"></div>
         </div>
       </div>`).join('')}
     </div>
@@ -480,20 +534,26 @@ function showBuiltinGoalModal(missingBuiltin) {
     </div>
   `);
 
-  // 직책 드롭다운 채우기
-  const groups = { board:'의장단', leader:'리더팀', membership:'멤버십위원회', member:'일반멤버' };
-  const grouped = {};
-  rolesAll.forEach(r => { if (!grouped[r.role_type]) grouped[r.role_type] = []; grouped[r.role_type].push(r.name); });
+  // 직책 칩 채우기
+  const groups2 = { board:'의장단', leader:'리더팀', membership:'멤버십위원회', member:'일반멤버' };
+  const grouped2 = {};
+  rolesAll.forEach(r => { if (!grouped2[r.role_type]) grouped2[r.role_type] = []; grouped2[r.role_type].push(r.name); });
   missingBuiltin.forEach(b => {
-    const sel = modal.querySelector('#role_' + b.key);
-    if (!sel) return;
-    Object.entries(groups).forEach(([type, label]) => {
-      if (!grouped[type]?.length) return;
-      const og = document.createElement('optgroup'); og.label = label;
-      grouped[type].forEach(n => { const o = document.createElement('option'); o.value = n; o.textContent = n; og.appendChild(o); });
-      sel.appendChild(og);
+    const container = modal.querySelector('#croles_' + b.key);
+    if (!container) return;
+    Object.entries(groups2).forEach(([type, label]) => {
+      if (!grouped2[type]?.length) return;
+      const lbl = document.createElement('span'); lbl.className='rc-group-label'; lbl.textContent=label;
+      container.appendChild(lbl);
+      grouped2[type].forEach(n => {
+        const chip = document.createElement('button'); chip.type='button'; chip.className='rc-chip'; chip.dataset.role=n; chip.textContent=n;
+        container.appendChild(chip);
+      });
     });
+    const hint = document.createElement('span'); hint.className='rc-hint'; hint.textContent='최대 3개';
+    container.appendChild(hint);
   });
+  bindRoleChips(modal);
 
   // 체크박스 → 카드 하이라이트
   modal.querySelectorAll('.bc-check').forEach(chk => {
@@ -511,7 +571,7 @@ function showBuiltinGoalModal(missingBuiltin) {
       const tgt = Number(modal.querySelector('#tgt_' + b.key)?.value);
       if (!tgt) return;
       const note = modal.querySelector('#note_' + b.key)?.value.trim() || null;
-      const responsible_role = modal.querySelector('#role_' + b.key)?.value || null;
+      const responsible_role = getSelectedRoles('croles_' + b.key);
       rows.push({
         year_month: currentYM, metric_key: b.key, metric_name: b.name,
         metric_unit: b.unit, target_value: tgt, actual_value: null,
@@ -550,8 +610,8 @@ function showCustomGoalModal() {
       <input type="number" id="actualVal" class="form-input" placeholder="미입력 시 빈칸">
     </div>
     <div class="form-group">
-      <label class="form-label">담당 직책 (선택)</label>
-      ${roleSelectHtml('roleVal')}
+      <label class="form-label">담당 직책 (최대 3개)</label>
+      ${roleChipsHtml('roleChips')}
     </div>
     <div class="form-group">
       <label class="form-label">메모 (선택)</label>
@@ -562,6 +622,7 @@ function showCustomGoalModal() {
       <button class="btn btn-primary" id="modalSave">저장</button>
     </div>
   `);
+  bindRoleChips(modal);
 
   modal.querySelector('#modalCancel').onclick = () => modal.remove();
   modal.querySelector('#modalSave').onclick = async () => {
@@ -571,7 +632,7 @@ function showCustomGoalModal() {
     if (!metric_name || !target_value) { alert('지표명과 목표값을 입력해 주세요.'); return; }
     const actual_raw = modal.querySelector('#actualVal').value;
     const actual_value = actual_raw !== '' ? Number(actual_raw) : null;
-    const responsible_role = modal.querySelector('#roleVal').value || null;
+    const responsible_role = getSelectedRoles('roleChips');
     const notes = modal.querySelector('#notesVal').value.trim() || null;
     const metric_key = 'custom_' + Date.now();
 
@@ -606,14 +667,14 @@ function showEditGoalModal(existing) {
       <label class="form-label">목표값</label>
       <input type="number" id="targetVal" class="form-input" value="${existing.target_value}">
     </div>
-    ${existing.is_custom ? `
+    ${(existing.is_custom || !BUILTIN_METRICS.find(b=>b.key===existing.metric_key)?.autoCompute) ? `
     <div class="form-group">
       <label class="form-label">실적값 (수동 입력)</label>
       <input type="number" id="actualVal" class="form-input" value="${existing.actual_value ?? ''}">
     </div>` : ''}
     <div class="form-group">
-      <label class="form-label">담당 직책 (선택)</label>
-      ${roleSelectHtml('roleVal', existing.responsible_role || '')}
+      <label class="form-label">담당 직책 (최대 3개)</label>
+      ${roleChipsHtml('roleChips', existing.responsible_role || '')}
     </div>
     <div class="form-group">
       <label class="form-label">메모 (선택)</label>
@@ -624,6 +685,7 @@ function showEditGoalModal(existing) {
       <button class="btn btn-primary" id="modalSave">저장</button>
     </div>
   `);
+  bindRoleChips(modal);
 
   modal.querySelector('#modalCancel').onclick = () => modal.remove();
   modal.querySelector('#modalSave').onclick = async () => {
@@ -633,7 +695,7 @@ function showEditGoalModal(existing) {
     const metric_unit = existing.is_custom ? modal.querySelector('#customUnit')?.value.trim() : existing.metric_unit;
     const actual_raw  = modal.querySelector('#actualVal')?.value;
     const actual_value = actual_raw !== undefined && actual_raw !== '' ? Number(actual_raw) : null;
-    const responsible_role = modal.querySelector('#roleVal').value || null;
+    const responsible_role = getSelectedRoles('roleChips');
     const notes = modal.querySelector('#notesVal').value.trim() || null;
 
     const { error } = await getSb().from('chapter_goals').update({
@@ -768,7 +830,7 @@ function showMetricDetail(metricKey, ym) {
       <span style="font-size:28px">${bm?.icon || '⚙'}</span>
       <div>
         <div style="font-size:16px;font-weight:900">${g.metric_name}</div>
-        <div style="font-size:12px;color:#9ca3af">${fmtYM(ym)}${g.responsible_role ? ` · 👤 ${g.responsible_role}` : ''}</div>
+        <div style="font-size:12px;color:#9ca3af;display:flex;gap:4px;flex-wrap:wrap;align-items:center">${fmtYM(ym)}${g.responsible_role ? g.responsible_role.split('|').map(r=>`<span class="role-badge">👤 ${r}</span>`).join('') : ''}</div>
       </div>
       <div style="margin-left:auto;text-align:right">
         <div style="font-size:26px;line-height:1">${lightEmoji(light)}</div>

@@ -103,6 +103,8 @@ const BUILTIN_METRICS = [
   { key:'sponsored_count',  name:'스폰서 (신규추천)',unit:'명',  icon:'⭐', autoCompute:true },
   { key:'green_member_pct', name:'Green 멤버 비율', unit:'%',   icon:'🟢', autoCompute:true },
   { key:'member_count',     name:'멤버수',          unit:'명',  icon:'👥', autoCompute:true },
+  { key:'renewal_rate',     name:'멤버 갱신율',     unit:'%',   icon:'🔄', autoCompute:false },
+  { key:'amber_plus_pct',   name:'앰버 이상 비율',  unit:'%',   icon:'🟡', autoCompute:true },
 ];
 
 let goalsAll = [], weeklyAll = [], membersAll = [];
@@ -149,6 +151,14 @@ function computeActual(key, ym) {
       return Math.round(green/mids.length*100);
     }
     case 'member_count': return membersAll.length || null;
+    case 'renewal_rate': return null;
+    case 'amber_plus_pct': {
+      if(!recs.length) return null;
+      const wks=[...new Set(recs.map(r=>r.week_date))];
+      const mids=[...new Set(recs.map(r=>r.member_id))];
+      const cnt=mids.filter(mid=>{const l=calcMemberScore(recs.filter(r=>r.member_id===mid),wks.length).light;return l==='green'||l==='amber';}).length;
+      return Math.round(cnt/mids.length*100);
+    }
     default: return null;
   }
 }
@@ -318,7 +328,7 @@ function render() {
         <div class="tc-actual" style="${isCur?'font-weight:900':''}">${aStr}</div>
         <div class="tc-target">/${g.target_value}${g.metric_unit}</div>
         ${rate!==null?`<div class="tc-pct">${rate}%</div>`:''}
-        ${g.responsible_role?`<div style="font-size:9px;color:#9ca3af;margin-top:1px">👤${g.responsible_role}</div>`:''}
+        ${g.responsible_role?g.responsible_role.split('|').map(r=>`<div style="font-size:9px;color:#9ca3af;margin-top:1px">👤${r}</div>`).join(''):''}
       </div>
     </td>`;
   }
@@ -384,7 +394,7 @@ function render() {
           </div>
           <div class="gc-bar-wrap"><div class="gc-bar" style="width:${pct}%;background:${bc}"></div></div>
           <div class="gc-pct">${c.rate!==null?c.rate+'%':'실적 미입력'}</div>
-          ${c.responsible_role?`<div style="margin-top:8px;font-size:11px;color:#6b7280">👤 ${c.responsible_role}</div>`:''}
+          ${c.responsible_role?`<div style="margin-top:8px;display:flex;flex-wrap:wrap;gap:3px">${c.responsible_role.split('|').map(r=>`<span style="font-size:10px;padding:2px 7px;background:#f3f4f6;border-radius:10px;color:#374151">👤 ${r}</span>`).join('')}</div>`:''}
           ${c.notes?`<div class="gc-notes">${c.notes}</div>`:''}
         </div>`;
       }).join('')}
