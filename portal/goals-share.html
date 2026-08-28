@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>챕터 목표 현황 — BNI STAR</title>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
+    body { font-family:'Noto Sans KR',sans-serif;background:#f8f9fa;color:#1a1a1a;min-height:100vh; }
+
+    .topbar { background:#8B0000;color:#fff;padding:14px 24px;display:flex;align-items:center;gap:12px; }
+    .topbar-logo { font-size:18px;font-weight:900;letter-spacing:-.5px; }
+    .topbar-sub  { font-size:12px;opacity:.75;margin-left:4px; }
+    .topbar-badge{ margin-left:auto;font-size:11px;background:rgba(255,255,255,.2);padding:4px 10px;border-radius:20px; }
+
+    .container { max-width:1200px;margin:0 auto;padding:28px 20px; }
+
+    .page-header { margin-bottom:24px; }
+    .page-header h1 { font-size:22px;font-weight:900; }
+    .page-header p  { font-size:13px;color:#6b7280;margin-top:4px; }
+
+    .year-nav { display:flex;align-items:center;gap:12px;margin-bottom:20px;flex-wrap:wrap; }
+    .year-nav button { padding:6px 14px;border-radius:8px;border:1.5px solid #e5e7eb;background:#fff;cursor:pointer;font-size:13px;font-family:inherit; }
+    .year-nav button:hover { border-color:#d1d5db; }
+    .year-label { font-size:18px;font-weight:900; }
+
+    .view-toggle { display:flex;gap:0;border:1.5px solid #e5e7eb;border-radius:8px;overflow:hidden; }
+    .view-toggle button { padding:5px 13px;border:none;background:#fff;cursor:pointer;font-size:12px;font-weight:600;font-family:inherit; }
+    .view-toggle button.active { background:#8B0000;color:#fff; }
+
+    /* 요약 */
+    .summary-bar { display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px;margin-bottom:24px; }
+    .sum-card { background:#fff;border:1.5px solid #e5e7eb;border-radius:10px;padding:14px;text-align:center; }
+    .sum-num  { font-size:22px;font-weight:900; }
+    .sum-label{ font-size:11px;color:#9ca3af;margin-top:4px; }
+
+    /* 추세 테이블 */
+    .trend-wrap { overflow-x:auto;margin-bottom:24px; }
+    .trend-table { width:100%;border-collapse:collapse;white-space:nowrap;font-size:12px; }
+    .trend-table th { background:#f9fafb;padding:8px 10px;font-weight:700;text-align:center;border:1px solid #e5e7eb; }
+    .trend-table th.metric-col { text-align:left;min-width:140px;position:sticky;left:0;z-index:2;background:#f9fafb; }
+    .trend-table td { padding:9px 10px;border:1px solid #e5e7eb;text-align:center;vertical-align:middle; }
+    .trend-table td.metric-col { text-align:left;background:#fff;position:sticky;left:0;z-index:1;font-weight:600; }
+    .trend-table td.metric-col .mc-sub { font-size:10px;font-weight:400;color:#9ca3af;margin-top:1px; }
+    .trend-cell { display:flex;flex-direction:column;align-items:center;gap:1px; }
+    .tc-signal { font-size:14px; }
+    .tc-actual { font-size:13px;font-weight:700; }
+    .tc-target { font-size:10px;color:#9ca3af; }
+    .tc-pct    { font-size:10px;color:#6b7280; }
+
+    /* 카드 그리드 */
+    .month-sel { display:flex;gap:6px;flex-wrap:wrap;margin-bottom:20px; }
+    .month-pill { padding:5px 12px;border-radius:20px;border:1.5px solid #e5e7eb;background:#fff;cursor:pointer;font-size:12px;font-weight:600;font-family:inherit; }
+    .month-pill.active { background:#8B0000;color:#fff;border-color:#8B0000; }
+    .month-pill.no-data { color:#d1d5db; }
+
+    .goals-grid { display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px;margin-bottom:24px; }
+    .goal-card { background:#fff;border:1.5px solid #e5e7eb;border-radius:14px;padding:18px; }
+    .goal-card.light-green { border-left:4px solid #16a34a; }
+    .goal-card.light-amber { border-left:4px solid #ca8a04; }
+    .goal-card.light-red   { border-left:4px solid #CC0000; }
+    .goal-card.light-gray  { border-left:4px solid #9ca3af; }
+    .gc-header { display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:12px; }
+    .gc-name   { font-size:13px;font-weight:700; }
+    .gc-badge  { font-size:11px;padding:2px 8px;border-radius:10px;font-weight:600;margin-left:8px;flex-shrink:0; }
+    .gc-badge.auto   { background:#eff6ff;color:#2563eb; }
+    .gc-badge.custom { background:#f5f3ff;color:#7c3aed; }
+    .gc-light  { font-size:22px;line-height:1; }
+    .gc-nums { display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px; }
+    .gc-num-box { background:#f9fafb;border-radius:8px;padding:8px 10px; }
+    .gc-num-label { font-size:10px;color:#9ca3af;margin-bottom:2px; }
+    .gc-num-val { font-size:17px;font-weight:900; }
+    .gc-num-unit { font-size:11px;color:#9ca3af;margin-left:2px; }
+    .gc-bar-wrap { height:6px;background:#f3f4f6;border-radius:3px;overflow:hidden;margin-bottom:6px; }
+    .gc-bar { height:100%;border-radius:3px; }
+    .gc-pct  { font-size:12px;color:#6b7280;text-align:right; }
+    .gc-notes { font-size:11px;color:#9ca3af;margin-top:6px;font-style:italic; }
+
+    .empty-msg { text-align:center;padding:48px;color:#9ca3af;font-size:14px; }
+
+    .footer { text-align:center;font-size:11px;color:#d1d5db;padding:24px;margin-top:8px; }
+  </style>
+</head>
+<body>
+<div class="topbar">
+  <span class="topbar-logo">BNI STAR</span>
+  <span class="topbar-sub">챕터 목표 현황</span>
+  <span class="topbar-badge">👀 읽기 전용</span>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="/js/supabase-config.js"></script>
+<script src="/portal/js/scoring.js"></script>
+<script>
+const BUILTIN_METRICS = [
+  { key:'attendance_rate',  name:'출석률',          unit:'%',   icon:'✅', autoCompute:true },
+  { key:'referral_count',   name:'리퍼럴',          unit:'건',  icon:'🤝', autoCompute:true },
+  { key:'visitor_count',    name:'비지터 초대',      unit:'명',  icon:'🙋', autoCompute:true },
+  { key:'ono_count',        name:'원투원 (인당)',    unit:'회',  icon:'☕', autoCompute:true },
+  { key:'tyfcb_amount',     name:'감사장 금액',      unit:'만원',icon:'💰', autoCompute:true },
+  { key:'ceu_count',        name:'CEU 총합',        unit:'점',  icon:'📚', autoCompute:true },
+  { key:'sponsored_count',  name:'스폰서 (신규추천)',unit:'명',  icon:'⭐', autoCompute:true },
+  { key:'green_member_pct', name:'Green 멤버 비율', unit:'%',   icon:'🟢', autoCompute:true },
+];
+
+let goalsAll = [], weeklyAll = [];
+let trendYear = new Date().getFullYear();
+let viewMode = 'trend';
+let cardMonth = `${new Date().getFullYear()}-${String(new Date().getMonth()+1).padStart(2,'0')}`;
+const todayYM = cardMonth;
+
+function getSb() { return supabase.createClient(SUPABASE_URL, SUPABASE_ANON); }
+function fmtYM(ym) { const [y,m] = ym.split('-'); return `${y}년 ${Number(m)}월`; }
+function lightEmoji(l) { return {green:'🟢',amber:'🟡',red:'🔴',gray:'⚫'}[l]||'⚫'; }
+function lightColor(l) { return {green:'#16a34a',amber:'#ca8a04',red:'#CC0000',gray:'#9ca3af'}[l]||'#9ca3af'; }
+function getLightFromRate(r) { if(r===null||r===undefined) return 'gray'; return r>=100?'green':r>=75?'amber':'red'; }
+
+function computeActual(key, ym) {
+  const recs = weeklyAll.filter(r => r.week_date?.startsWith(ym));
+  switch(key) {
+    case 'attendance_rate': if(!recs.length) return null; return Math.round(recs.filter(r=>!r.absent).length/recs.length*100);
+    case 'referral_count':  return recs.length ? recs.reduce((s,r)=>s+(r.given_t1||0)+(r.given_t2||0),0) : null;
+    case 'visitor_count':   return recs.length ? recs.reduce((s,r)=>s+(r.visitors||0),0) : null;
+    case 'ono_count': {
+      if(!recs.length) return null;
+      const mc = new Set(recs.map(r=>r.member_id)).size;
+      return mc ? Math.round(recs.reduce((s,r)=>s+(r.one_on_one||0),0)/mc*10)/10 : null;
+    }
+    case 'tyfcb_amount':    return recs.length ? Math.round(recs.reduce((s,r)=>s+Number(r.tyfcb||0),0)/10000) : null;
+    case 'ceu_count':       return recs.length ? recs.reduce((s,r)=>s+(r.ceu||0),0) : null;
+    case 'sponsored_count': return recs.length ? recs.reduce((s,r)=>s+(r.sponsored||0),0) : null;
+    case 'green_member_pct': {
+      if(!recs.length) return null;
+      const weeks = [...new Set(recs.map(r=>r.week_date))];
+      const mids = [...new Set(recs.map(r=>r.member_id))];
+      const green = mids.filter(mid => calcMemberScore(recs.filter(r=>r.member_id===mid), weeks.length).light==='green').length;
+      return Math.round(green/mids.length*100);
+    }
+    default: return null;
+  }
+}
+
+function getCardData(ym) {
+  return goalsAll.filter(g => g.year_month === ym).map(g => {
+    const bm = BUILTIN_METRICS.find(b => b.key === g.metric_key);
+    const actual = (bm?.autoCompute && g.actual_value == null) ? computeActual(g.metric_key, ym) : (g.actual_value ?? null);
+    const rate = (actual !== null && g.target_value > 0) ? Math.round(actual / g.target_value * 100) : null;
+    const light = getLightFromRate(rate);
+    return { ...g, actual, rate, light, isAuto: !!(bm?.autoCompute && g.actual_value == null) };
+  });
+}
+
+/* ── 렌더 ── */
+function render() {
+  const root = document.getElementById('root');
+  const MO = ['1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월'];
+  const months12 = Array.from({length:12},(_,i)=>`${trendYear}-${String(i+1).padStart(2,'0')}`);
+
+  // 사용된 지표 순서
+  const usedBuiltin = BUILTIN_METRICS.filter(b => goalsAll.find(g => g.metric_key === b.key));
+  const usedCustom  = [...new Set(goalsAll.filter(g=>g.is_custom).map(g=>g.metric_key))];
+  const usedKeys = [...usedBuiltin.map(b=>b.key), ...usedCustom];
+
+  function metricLabel(key) {
+    const bm = BUILTIN_METRICS.find(b=>b.key===key);
+    if (bm) return `<div>${bm.icon} ${bm.name}</div><div class="mc-sub">${bm.unit}</div>`;
+    const g = goalsAll.find(g2=>g2.metric_key===key);
+    return `<div>⚙ ${g?.metric_name||key}</div><div class="mc-sub">${g?.metric_unit||''}</div>`;
+  }
+
+  function trendCell(key, ym) {
+    const isFuture = ym > todayYM;
+    const g = goalsAll.find(g2=>g2.metric_key===key && g2.year_month===ym);
+    if (!g) return `<td style="background:${isFuture?'#fafafa':'#f5f5f5'};color:#d1d5db"></td>`;
+    const bm = BUILTIN_METRICS.find(b=>b.key===key);
+    const actual = (bm?.autoCompute && g.actual_value==null) ? computeActual(key,ym) : (g.actual_value??null);
+    const rate = (actual!==null && g.target_value>0) ? Math.round(actual/g.target_value*100) : null;
+    const light = getLightFromRate(rate);
+    const bg = {green:'#f0fdf4',amber:'#fefce8',red:'#fff1f2',gray:'#f9fafb'}[light];
+    const aStr = actual!==null ? (g.metric_unit==='만원'?Number(actual).toLocaleString('ko-KR'):actual) : '—';
+    const isCur = ym===todayYM;
+    return `<td style="background:${bg};${isCur?'outline:2px solid #8B0000;outline-offset:-2px':''}">
+      <div class="trend-cell">
+        <div class="tc-signal">${lightEmoji(light)}</div>
+        <div class="tc-actual" style="${isCur?'font-weight:900':''}">${aStr}</div>
+        <div class="tc-target">/${g.target_value}${g.metric_unit}</div>
+        ${rate!==null?`<div class="tc-pct">${rate}%</div>`:''}
+      </div>
+    </td>`;
+  }
+
+  const trendHtml = `
+    <div class="trend-wrap">
+      <table class="trend-table">
+        <thead><tr>
+          <th class="metric-col">지표</th>
+          ${months12.map((ym,i)=>{
+            const isCur=ym===todayYM, has=goalsAll.some(g=>g.year_month===ym);
+            return `<th style="${isCur?'background:#fff0f0;color:#8B0000;font-weight:900':has?'':'color:#d1d5db'}">${MO[i]}</th>`;
+          }).join('')}
+        </tr></thead>
+        <tbody>
+          ${usedKeys.length ? usedKeys.map(key=>`
+          <tr>
+            <td class="metric-col">${metricLabel(key)}</td>
+            ${months12.map(ym=>trendCell(key,ym)).join('')}
+          </tr>`).join('') : `<tr><td colspan="13" style="text-align:center;padding:32px;color:#9ca3af">${trendYear}년에 설정된 목표가 없습니다</td></tr>`}
+        </tbody>
+      </table>
+    </div>`;
+
+  // 카드뷰
+  const monthsWithData = [...new Set(goalsAll.map(g=>g.year_month))].sort();
+  const cards = getCardData(cardMonth);
+  const achieved = cards.filter(c=>c.light==='green').length;
+  const amber2   = cards.filter(c=>c.light==='amber').length;
+  const red2     = cards.filter(c=>c.light==='red').length;
+
+  const cardHtml = `
+    <div class="month-sel" id="monthSel">
+      ${monthsWithData.map(ym=>`
+        <button class="month-pill ${ym===cardMonth?'active':''}" data-ym="${ym}">${fmtYM(ym)}</button>
+      `).join('')}
+    </div>
+    ${cards.length ? `
+    <div class="summary-bar">
+      <div class="sum-card"><div class="sum-num" style="color:#16a34a">${achieved}</div><div class="sum-label">🟢 달성</div></div>
+      <div class="sum-card"><div class="sum-num" style="color:#ca8a04">${amber2}</div><div class="sum-label">🟡 근접</div></div>
+      <div class="sum-card"><div class="sum-num" style="color:#CC0000">${red2}</div><div class="sum-label">🔴 미달</div></div>
+      <div class="sum-card"><div class="sum-num">${cards.length}</div><div class="sum-label">전체 항목</div></div>
+    </div>
+    <div class="goals-grid">
+      ${cards.map(c => {
+        const bm = BUILTIN_METRICS.find(b=>b.key===c.metric_key);
+        const pct = c.rate!==null ? Math.min(c.rate,120) : 0;
+        const bc = lightColor(c.light);
+        const aDisp = c.actual!==null ? (c.metric_unit==='만원'?Number(c.actual).toLocaleString('ko-KR'):c.actual) : '—';
+        const tDisp = c.metric_unit==='만원'?Number(c.target_value).toLocaleString('ko-KR'):c.target_value;
+        return `<div class="goal-card light-${c.light}">
+          <div class="gc-header">
+            <div>
+              <div class="gc-name">${bm?bm.icon+' ':''}${c.metric_name}</div>
+              <span class="gc-badge ${c.isAuto?'auto':'custom'}">${c.isAuto?'자동집계':'수동입력'}</span>
+            </div>
+            <div class="gc-light">${lightEmoji(c.light)}</div>
+          </div>
+          <div class="gc-nums">
+            <div class="gc-num-box"><div class="gc-num-label">목표</div><div><span class="gc-num-val">${tDisp}</span><span class="gc-num-unit">${c.metric_unit}</span></div></div>
+            <div class="gc-num-box"><div class="gc-num-label">실적</div><div><span class="gc-num-val" style="color:${bc}">${aDisp}</span><span class="gc-num-unit">${c.actual!==null?c.metric_unit:''}</span></div></div>
+          </div>
+          <div class="gc-bar-wrap"><div class="gc-bar" style="width:${pct}%;background:${bc}"></div></div>
+          <div class="gc-pct">${c.rate!==null?c.rate+'%':'실적 미입력'}</div>
+          ${c.notes?`<div class="gc-notes">${c.notes}</div>`:''}
+        </div>`;
+      }).join('')}
+    </div>` : `<div class="empty-msg">${fmtYM(cardMonth)}에 설정된 목표가 없습니다</div>`}`;
+
+  root.innerHTML = `
+    <div class="page-header">
+      <h1>📊 챕터 목표 현황</h1>
+      <p>BNI STAR 챕터 — 월별 목표 및 달성 현황</p>
+    </div>
+
+    <div class="year-nav">
+      ${viewMode==='trend' ? `
+        <button id="prevYearBtn">← ${trendYear-1}년</button>
+        <span class="year-label">${trendYear}년</span>
+        <button id="nextYearBtn">${trendYear+1}년 →</button>
+      ` : ''}
+      <div style="margin-left:${viewMode==='trend'?'auto':'0'}" class="view-toggle">
+        <button id="btnTrend" class="${viewMode==='trend'?'active':''}">📈 연간 추세</button>
+        <button id="btnCards" class="${viewMode==='cards'?'active':''}">📋 월별 카드</button>
+      </div>
+    </div>
+
+    ${viewMode==='trend' ? trendHtml : cardHtml}
+  `;
+
+  // 이벤트
+  root.querySelector('#btnTrend')?.addEventListener('click', ()=>{ viewMode='trend'; render(); });
+  root.querySelector('#btnCards')?.addEventListener('click', ()=>{ viewMode='cards'; render(); });
+  root.querySelector('#prevYearBtn')?.addEventListener('click', ()=>{ trendYear--; render(); });
+  root.querySelector('#nextYearBtn')?.addEventListener('click', ()=>{ trendYear++; render(); });
+  root.querySelectorAll('.month-pill').forEach(btn => {
+    btn.addEventListener('click', ()=>{ cardMonth=btn.dataset.ym; render(); });
+  });
+}
+
+(async () => {
+  const params = new URLSearchParams(location.search);
+  if (params.get('year')) trendYear = parseInt(params.get('year'));
+  if (params.get('month')) { viewMode = 'cards'; cardMonth = params.get('month'); }
+
+  const [gRes, wRes] = await Promise.all([
+    getSb().from('chapter_goals').select('*').order('sort_order').order('created_at'),
+    getSb().from('weekly_records').select('*'),
+  ]);
+  goalsAll  = gRes.data || [];
+  weeklyAll = wRes.data || [];
+  render();
+})();
+</script>
+
+<div class="container">
+  <div id="root" style="text-align:center;padding:60px;color:#9ca3af">불러오는 중...</div>
+</div>
+
+<div class="footer">BNI STAR Portal — 편집은 포털 로그인 후 가능합니다</div>
+</body>
+</html>

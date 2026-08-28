@@ -203,6 +203,7 @@ function renderPage(bodyEl) {
           <button id="btnCards" class="${viewMode==='cards'?'active':''}">📋 카드</button>
           <button id="btnTrend" class="${viewMode==='trend'?'active':''}">📈 추세</button>
         </div>
+        <button class="btn btn-outline btn-sm" id="shareBtn">🔗 공유 링크</button>
         ${canEdit && viewMode==='cards' ? `<button class="btn btn-outline btn-sm" id="copyPrevBtn">이전 달 복사</button>` : ''}
         ${canEdit && viewMode==='cards' ? `<button class="btn btn-outline btn-sm" id="addBuiltinBtn">기본 지표 선택</button>` : ''}
         ${canEdit && viewMode==='cards' ? `<button class="btn btn-primary btn-sm" id="addCustomBtn">+ 커스텀</button>` : ''}
@@ -217,6 +218,16 @@ function renderPage(bodyEl) {
   bodyEl.querySelector('#btnTrend')?.addEventListener('click', () => { viewMode = 'trend'; renderPage(bodyEl); });
   bodyEl.querySelector('#trendPrevYear')?.addEventListener('click', () => { trendYear--; renderPage(bodyEl); });
   bodyEl.querySelector('#trendNextYear')?.addEventListener('click', () => { trendYear++; renderPage(bodyEl); });
+  bodyEl.querySelector('#shareBtn')?.addEventListener('click', () => {
+    const param = viewMode === 'cards' ? `?month=${currentYM}` : `?year=${trendYear}`;
+    const url = location.origin + '/portal/goals-share.html' + param;
+    navigator.clipboard.writeText(url).then(() => {
+      const btn = bodyEl.querySelector('#shareBtn');
+      const orig = btn.textContent;
+      btn.textContent = '✅ 복사됨';
+      setTimeout(() => { btn.textContent = orig; }, 2000);
+    });
+  });
 
   if (viewMode === 'cards') {
     bodyEl.querySelector('#prevBtn')?.addEventListener('click', () => { currentYM = shiftMonth(currentYM,-1); renderPage(bodyEl); });
