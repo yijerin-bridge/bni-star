@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>챕터 목표 관리 — BNI STAR Portal</title>
+  <meta name="robots" content="noindex, nofollow">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/portal/css/portal.css">
+  <style>
+    .month-nav { display:flex;align-items:center;gap:12px;margin-bottom:24px;flex-wrap:wrap; }
+    .month-nav button { padding:6px 14px;border-radius:8px;border:1.5px solid var(--border);background:#fff;cursor:pointer;font-size:13px; }
+    .month-nav button:hover { border-color:#d1d5db; }
+    .month-label { font-size:18px;font-weight:900;min-width:100px;text-align:center; }
+
+    .goals-grid { display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px;margin-bottom:24px; }
+
+    .goal-card { background:#fff;border:1.5px solid var(--border);border-radius:14px;padding:18px;position:relative; }
+    .goal-card.light-green { border-left:4px solid #16a34a; }
+    .goal-card.light-amber { border-left:4px solid #ca8a04; }
+    .goal-card.light-red   { border-left:4px solid #CC0000; }
+    .goal-card.light-gray  { border-left:4px solid #9ca3af; }
+
+    .gc-header { display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:12px; }
+    .gc-name   { font-size:13px;font-weight:700;flex:1; }
+    .gc-badge  { font-size:11px;padding:2px 8px;border-radius:10px;font-weight:600;flex-shrink:0;margin-left:8px; }
+    .gc-badge.auto   { background:#eff6ff;color:#2563eb; }
+    .gc-badge.custom { background:#f5f3ff;color:#7c3aed; }
+
+    .gc-light  { font-size:22px;line-height:1; }
+
+    .gc-nums { display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px; }
+    .gc-num-box { background:#f9fafb;border-radius:8px;padding:8px 10px; }
+    .gc-num-label { font-size:10px;color:#9ca3af;margin-bottom:2px; }
+    .gc-num-val { font-size:18px;font-weight:900; }
+    .gc-num-unit { font-size:11px;color:#9ca3af;margin-left:2px; }
+
+    .gc-bar-wrap { height:6px;background:#f3f4f6;border-radius:3px;overflow:hidden;margin-bottom:8px; }
+    .gc-bar { height:100%;border-radius:3px;transition:width .4s; }
+
+    .gc-pct  { font-size:12px;color:#6b7280;text-align:right; }
+    .gc-notes { font-size:11px;color:#9ca3af;margin-top:6px;font-style:italic; }
+
+    .gc-actions { position:absolute;top:12px;right:12px;display:flex;gap:4px;opacity:0;transition:opacity .15s; }
+    .goal-card:hover .gc-actions { opacity:1; }
+    .gc-btn { padding:3px 8px;font-size:11px;border:1.5px solid var(--border);border-radius:6px;background:#fff;cursor:pointer;font-family:inherit; }
+    .gc-btn.del { color:#CC0000;border-color:#fca5a5; }
+
+    .add-custom-btn { border:2px dashed var(--border);border-radius:14px;padding:18px;text-align:center;cursor:pointer;color:#9ca3af;font-size:13px;transition:all .15s; }
+    .add-custom-btn:hover { border-color:#CC0000;color:#CC0000; }
+
+    .section-title { font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--text-muted);margin-bottom:12px;display:flex;align-items:center;gap:8px; }
+    .section-title::after { content:'';flex:1;height:1px;background:var(--border); }
+
+    .summary-bar { display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px;margin-bottom:24px; }
+    .sum-card { background:#fff;border:1.5px solid var(--border);border-radius:10px;padding:14px;text-align:center; }
+    .sum-num  { font-size:24px;font-weight:900; }
+    .sum-label{ font-size:11px;color:#9ca3af;margin-top:4px; }
+
+    .copy-row { display:flex;align-items:center;gap:8px;margin-bottom:16px;flex-wrap:wrap; }
+  </style>
+</head>
+<body>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="/js/supabase-config.js"></script>
+<script src="/js/members-data.js"></script>
+<script src="/portal/js/portal-auth.js"></script>
+<script src="/portal/js/portal-nav.js"></script>
+<script>
+/* ── 기본 내장 지표 정의 ── */
+const BUILTIN_METRICS = [
+  { key:'attendance_rate', name:'출석률',     unit:'%',  desc:'월간 출석 기록 기준 (P+L+M+S / 전체)', autoCompute: true },
+  { key:'referral_count',  name:'리퍼럴',     unit:'건', desc:'월간 준 T1+T2 합계',                   autoCompute: true },
+  { key:'visitor_count',   name:'비지터 초대', unit:'명', desc:'월간 비지터 합계',                     autoCompute: true },
+  { key:'ono_count',       name:'원투원',     unit:'회', desc:'월간 1:1 미팅 합계',                   autoCompute: true },
+  { key:'tyfcb_amount',    name:'감사장 금액', unit:'만원', desc:'월간 TYFCB 합계 (만원)',             autoCompute: true },
+];
+
+let currentYM = '', weeklyAll = [], goalsAll = [], canEdit = false;
+
+function getSb() { return supabase.createClient(SUPABASE_URL, SUPABASE_ANON); }
+
+function fmtYM(ym) {
+  const [y,m] = ym.split('-');
+  return `${y}년 ${Number(m)}월`;
+}
+
+function shiftMonth(ym, delta) {
+  const d = new Date(ym + '-01');
+  d.setMonth(d.getMonth() + delta);
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+}
+
+function thisYM() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+}
+
+/* ── 월간 실적 자동 계산 ── */
+function computeActual(key, ym) {
+  const [y,m] = ym.split('-');
+  const recs = weeklyAll.filter(r => r.week_date && r.week_date.startsWith(ym));
+  if (!recs.length && key !== 'attendance_rate') return null;
+  switch(key) {
+    case 'attendance_rate': {
+      if (!recs.length) return null;
+      const total = recs.length;
+      const present = recs.filter(r => !r.absent).length;
+      return Math.round(present / total * 100);
+    }
+    case 'referral_count':  return recs.reduce((s,r)=>s+(r.given_t1||0)+(r.given_t2||0),0);
+    case 'visitor_count':   return recs.reduce((s,r)=>s+(r.visitors||0),0);
+    case 'ono_count':       return recs.reduce((s,r)=>s+(r.one_on_one||0),0);
+    case 'tyfcb_amount':    return Math.round(recs.reduce((s,r)=>s+Number(r.tyfcb||0),0)/10000);
+    default: return null;
+  }
+}
+
+function getLightFromRate(rate) {
+  if (rate === null) return 'gray';
+  if (rate >= 100) return 'green';
+  if (rate >= 75)  return 'amber';
+  return 'red';
+}
+
+function lightEmoji(l) { return {green:'🟢',amber:'🟡',red:'🔴',gray:'⚫'}[l]||'⚫'; }
+function lightColor(l) { return {green:'#16a34a',amber:'#ca8a04',red:'#CC0000',gray:'#9ca3af'}[l]||'#9ca3af'; }
+
+/* ── 렌더링 ── */
+function renderPage(bodyEl) {
+  const goals = goalsAll.filter(g => g.year_month === currentYM);
+
+  // 실적 계산
+  const cards = goals.map(g => {
+    const bm = BUILTIN_METRICS.find(b => b.key === g.metric_key);
+    const actual = (bm?.autoCompute && g.actual_value == null)
+      ? computeActual(g.metric_key, currentYM)
+      : (g.actual_value ?? null);
+    const rate = (actual !== null && g.target_value > 0) ? Math.round(actual / g.target_value * 100) : null;
+    const light = getLightFromRate(rate);
+    return { ...g, actual, rate, light, isAuto: !!(bm?.autoCompute && g.actual_value == null) };
+  });
+
+  const achieved = cards.filter(c => c.light === 'green').length;
+  const amber    = cards.filter(c => c.light === 'amber').length;
+  const red      = cards.filter(c => c.light === 'red').length;
+
+  // 내장 지표 중 아직 목표 미설정인 것
+  const missingBuiltin = BUILTIN_METRICS.filter(b => !goals.find(g => g.metric_key === b.key));
+
+  bodyEl.querySelector('#goalsRoot').innerHTML = `
+    <!-- 월 네비 -->
+    <div class="month-nav">
+      <button id="prevBtn">← 이전 달</button>
+      <span class="month-label">${fmtYM(currentYM)}</span>
+      <button id="nextBtn">다음 달 →</button>
+      <div style="margin-left:auto;display:flex;gap:8px;flex-wrap:wrap">
+        ${canEdit ? `<button class="btn btn-outline btn-sm" id="copyPrevBtn">이전 달 목표 복사</button>` : ''}
+        ${canEdit ? `<button class="btn btn-primary btn-sm" id="addGoalBtn">+ 목표 추가</button>` : ''}
+      </div>
+    </div>
+
+    <!-- 요약 -->
+    ${cards.length ? `
+    <div class="summary-bar">
+      <div class="sum-card"><div class="sum-num" style="color:#16a34a">${achieved}</div><div class="sum-label">🟢 달성</div></div>
+      <div class="sum-card"><div class="sum-num" style="color:#ca8a04">${amber}</div><div class="sum-label">🟡 근접</div></div>
+      <div class="sum-card"><div class="sum-num" style="color:#CC0000">${red}</div><div class="sum-label">🔴 미달</div></div>
+      <div class="sum-card"><div class="sum-num">${cards.length}</div><div class="sum-label">전체 항목</div></div>
+    </div>` : ''}
+
+    <!-- 카드 그리드 -->
+    ${cards.length ? `
+    <div class="section-title">성과 현황</div>
+    <div class="goals-grid">
+      ${cards.map(c => goalCard(c)).join('')}
+      ${canEdit ? `<div class="add-custom-btn" id="addCustomCard">+ 커스텀 목표 추가</div>` : ''}
+    </div>` : `
+    <div class="empty-state" style="margin-top:40px">
+      <div class="es-icon">🎯</div>
+      <p>${fmtYM(currentYM)}에 설정된 목표가 없습니다</p>
+      ${canEdit ? `<button class="btn btn-primary" style="margin-top:16px" id="addGoalBtn2">+ 목표 추가하기</button>` : ''}
+    </div>`}
+
+    <!-- 미설정 내장 지표 안내 -->
+    ${canEdit && missingBuiltin.length ? `
+    <div class="section-title" style="margin-top:8px">추가 가능한 기본 지표</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:24px">
+      ${missingBuiltin.map(b => `
+        <button class="btn btn-outline btn-sm" onclick="addBuiltinGoal('${b.key}')">
+          + ${b.name} 목표 설정
+        </button>`).join('')}
+    </div>` : ''}
+  `;
+
+  // 이벤트
+  bodyEl.querySelector('#prevBtn').onclick = () => { currentYM = shiftMonth(currentYM,-1); renderPage(bodyEl); };
+  bodyEl.querySelector('#nextBtn').onclick = () => { currentYM = shiftMonth(currentYM,+1); renderPage(bodyEl); };
+  bodyEl.querySelector('#addGoalBtn')?.addEventListener('click', () => showGoalModal());
+  bodyEl.querySelector('#addGoalBtn2')?.addEventListener('click', () => showGoalModal());
+  bodyEl.querySelector('#addCustomCard')?.addEventListener('click', () => showGoalModal(true));
+  bodyEl.querySelector('#copyPrevBtn')?.addEventListener('click', () => copyPrevMonth());
+
+  bodyEl.querySelectorAll('.gc-edit-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const g = goalsAll.find(x => x.id === btn.dataset.id);
+      if (g) showGoalModal(g.is_custom, g);
+    });
+  });
+  bodyEl.querySelectorAll('.gc-del-btn').forEach(btn => {
+    btn.addEventListener('click', () => deleteGoal(btn.dataset.id));
+  });
+}
+
+function goalCard(c) {
+  const bm = BUILTIN_METRICS.find(b => b.key === c.metric_key);
+  const pct = c.rate !== null ? Math.min(c.rate, 120) : 0;
+  const barColor = lightColor(c.light);
+  const actualDisplay = c.actual !== null
+    ? (c.metric_unit === '만원' ? (c.actual).toLocaleString('ko-KR') : c.actual)
+    : '—';
+  const targetDisplay = c.metric_unit === '만원'
+    ? Number(c.target_value).toLocaleString('ko-KR')
+    : c.target_value;
+
+  return `
+  <div class="goal-card light-${c.light}">
+    <div class="gc-actions">
+      ${canEdit ? `<button class="gc-btn gc-edit-btn" data-id="${c.id}">수정</button>` : ''}
+      ${canEdit ? `<button class="gc-btn del gc-del-btn" data-id="${c.id}">삭제</button>` : ''}
+    </div>
+    <div class="gc-header">
+      <div>
+        <div class="gc-name">${c.metric_name}</div>
+        <span class="gc-badge ${c.isAuto ? 'auto' : 'custom'}">${c.isAuto ? '자동집계' : '수동입력'}</span>
+      </div>
+      <div class="gc-light">${lightEmoji(c.light)}</div>
+    </div>
+    <div class="gc-nums">
+      <div class="gc-num-box">
+        <div class="gc-num-label">목표</div>
+        <div><span class="gc-num-val">${targetDisplay}</span><span class="gc-num-unit">${c.metric_unit}</span></div>
+      </div>
+      <div class="gc-num-box">
+        <div class="gc-num-label">실적</div>
+        <div><span class="gc-num-val" style="color:${barColor}">${actualDisplay}</span><span class="gc-num-unit">${c.actual !== null ? c.metric_unit : ''}</span></div>
+      </div>
+    </div>
+    <div class="gc-bar-wrap">
+      <div class="gc-bar" style="width:${pct}%;background:${barColor}"></div>
+    </div>
+    <div class="gc-pct">${c.rate !== null ? c.rate + '%' : '실적 미입력'}</div>
+    ${c.notes ? `<div class="gc-notes">${c.notes}</div>` : ''}
+  </div>`;
+}
+
+/* ── 목표 추가/수정 모달 ── */
+function showGoalModal(isCustom = false, existing = null) {
+  const bm = existing ? BUILTIN_METRICS.find(b => b.key === existing.metric_key) : null;
+  const isEdit = !!existing;
+  const forceCustom = isCustom || (existing?.is_custom);
+
+  const modal = createModal(`
+    <h2 style="font-size:16px;font-weight:700;margin-bottom:20px">${isEdit ? '목표 수정' : '목표 추가'}</h2>
+
+    ${!isEdit ? `
+    <div class="form-group">
+      <label class="form-label">유형</label>
+      <div style="display:flex;gap:8px;margin-bottom:4px">
+        <button id="typeBuiltin" class="btn ${!forceCustom?'btn-primary':'btn-outline'} btn-sm" onclick="switchType(false,this)">기본 지표</button>
+        <button id="typeCustom"  class="btn ${forceCustom?'btn-primary':'btn-outline'} btn-sm" onclick="switchType(true,this)">커스텀 지표</button>
+      </div>
+    </div>
+    <div id="builtinPicker" style="${forceCustom?'display:none':''}">
+      <div class="form-group">
+        <label class="form-label">지표 선택</label>
+        <select id="builtinSel" class="form-input">
+          ${BUILTIN_METRICS.map(b=>`<option value="${b.key}" data-unit="${b.unit}" data-name="${b.name}">${b.name} (${b.unit}) — ${b.desc}</option>`).join('')}
+        </select>
+      </div>
+    </div>` : ''}
+
+    <div id="customFields" style="${(!isEdit && !forceCustom)?'display:none':''}">
+      <div class="form-row2">
+        <div class="form-group">
+          <label class="form-label">지표명</label>
+          <input id="customName" class="form-input" placeholder="예: 신규 멤버 수" value="${existing?.is_custom ? existing.metric_name : ''}">
+        </div>
+        <div class="form-group">
+          <label class="form-label">단위</label>
+          <input id="customUnit" class="form-input" placeholder="명 / % / 건" value="${existing?.is_custom ? existing.metric_unit : ''}">
+        </div>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">목표값</label>
+      <input type="number" id="targetVal" class="form-input" placeholder="숫자 입력" value="${existing ? existing.target_value : ''}">
+    </div>
+
+    ${(forceCustom || existing?.is_custom) ? `
+    <div class="form-group">
+      <label class="form-label">실적값 (수동 입력)</label>
+      <input type="number" id="actualVal" class="form-input" placeholder="미입력 시 빈칸" value="${existing?.actual_value ?? ''}">
+    </div>` : ''}
+
+    <div class="form-group">
+      <label class="form-label">메모 (선택)</label>
+      <input id="notesVal" class="form-input" placeholder="참고사항" value="${existing?.notes||''}">
+    </div>
+
+    <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:4px">
+      <button class="btn btn-outline" id="modalCancel">취소</button>
+      <button class="btn btn-primary" id="modalSave">저장</button>
+    </div>
+  `);
+
+  window.switchType = (toCustom, btn) => {
+    modal.querySelector('#builtinPicker').style.display = toCustom ? 'none' : '';
+    modal.querySelector('#customFields').style.display  = toCustom ? '' : 'none';
+    modal.querySelectorAll('#typeBuiltin,#typeCustom').forEach(b => b.className = b.className.replace('btn-primary','btn-outline'));
+    btn.className = btn.className.replace('btn-outline','btn-primary');
+  };
+
+  modal.querySelector('#modalCancel').onclick = () => modal.remove();
+  modal.querySelector('#modalSave').onclick = async () => {
+    const isNowCustom = modal.querySelector('#customFields')?.style.display !== 'none';
+    let metric_key, metric_name, metric_unit;
+
+    if (isNowCustom || existing?.is_custom) {
+      metric_name = modal.querySelector('#customName')?.value.trim();
+      metric_unit = modal.querySelector('#customUnit')?.value.trim() || '';
+      metric_key  = existing?.metric_key || ('custom_' + Date.now());
+      if (!metric_name) return;
+    } else {
+      const sel = modal.querySelector('#builtinSel');
+      metric_key  = sel.value;
+      metric_name = sel.options[sel.selectedIndex].dataset.name;
+      metric_unit = sel.options[sel.selectedIndex].dataset.unit;
+    }
+
+    const target_value = Number(modal.querySelector('#targetVal').value);
+    if (!target_value) return;
+    const actual_raw   = modal.querySelector('#actualVal')?.value;
+    const actual_value = actual_raw !== undefined && actual_raw !== '' ? Number(actual_raw) : null;
+    const notes        = modal.querySelector('#notesVal').value.trim() || null;
+    const is_custom    = !!(isNowCustom || existing?.is_custom);
+
+    const row = { year_month: currentYM, metric_key, metric_name, metric_unit, target_value, actual_value, notes, is_custom };
+
+    let error;
+    if (isEdit) {
+      ({ error } = await getSb().from('chapter_goals').update(row).eq('id', existing.id));
+    } else {
+      ({ error } = await getSb().from('chapter_goals').upsert(row, { onConflict:'year_month,metric_key' }));
+    }
+    if (error) { alert('저장 오류: ' + error.message); return; }
+    modal.remove();
+    await reload();
+    renderPage(document.querySelector('[data-goals-body]'));
+  };
+}
+
+/* ── 내장 지표 바로 추가 ── */
+window.addBuiltinGoal = function(key) {
+  const bm = BUILTIN_METRICS.find(b => b.key === key);
+  if (!bm) return;
+  showGoalModal(false, null);
+  // 셀렉트 자동 선택
+  setTimeout(() => {
+    const sel = document.getElementById('builtinSel');
+    if (sel) sel.value = key;
+  }, 50);
+};
+
+/* ── 삭제 ── */
+async function deleteGoal(id) {
+  if (!confirm('이 목표 항목을 삭제하시겠습니까?')) return;
+  const { error } = await getSb().from('chapter_goals').delete().eq('id', id);
+  if (error) { alert('삭제 오류: ' + error.message); return; }
+  await reload();
+  renderPage(document.querySelector('[data-goals-body]'));
+}
+
+/* ── 이전 달 목표 복사 ── */
+async function copyPrevMonth() {
+  const prev = shiftMonth(currentYM, -1);
+  const prevGoals = goalsAll.filter(g => g.year_month === prev);
+  if (!prevGoals.length) { alert(`${fmtYM(prev)}에 설정된 목표가 없습니다.`); return; }
+  if (!confirm(`${fmtYM(prev)} 목표를 ${fmtYM(currentYM)}으로 복사하시겠습니까?`)) return;
+  const rows = prevGoals.map(g => ({
+    year_month: currentYM, metric_key: g.metric_key, metric_name: g.metric_name,
+    metric_unit: g.metric_unit, target_value: g.target_value, is_custom: g.is_custom,
+    notes: g.notes, actual_value: null,
+  }));
+  const { error } = await getSb().from('chapter_goals').upsert(rows, { onConflict:'year_month,metric_key' });
+  if (error) { alert('복사 오류: ' + error.message); return; }
+  await reload();
+  renderPage(document.querySelector('[data-goals-body]'));
+}
+
+/* ── 데이터 로드 ── */
+async function reload() {
+  const [gRes, wRes] = await Promise.all([
+    getSb().from('chapter_goals').select('*').order('sort_order').order('created_at'),
+    getSb().from('weekly_records').select('*'),
+  ]);
+  goalsAll   = gRes.data || [];
+  weeklyAll  = wRes.data || [];
+}
+
+/* ── 모달 헬퍼 ── */
+function createModal(html) {
+  const m = document.createElement('div');
+  m.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;display:flex;align-items:center;justify-content:center;padding:24px;overflow-y:auto';
+  m.innerHTML = `<div style="background:#fff;border-radius:14px;padding:28px;width:100%;max-width:500px">${html}</div>`;
+  document.body.appendChild(m);
+  return m;
+}
+
+/* ── 초기화 ── */
+document.addEventListener('DOMContentLoaded', async () => {
+  const layout = renderPortalLayout({ title: '챕터 목표 관리' });
+  if (!layout) return;
+  const { session, bodyEl } = layout;
+  canEdit = canManageMembers(session); // 의장단만 수정 가능
+
+  bodyEl.setAttribute('data-goals-body', '');
+  bodyEl.innerHTML = `
+    <div class="page-header">
+      <div>
+        <h1>챕터 목표 관리</h1>
+        <p>의장단이 설정한 월별 목표와 실적 현황</p>
+      </div>
+    </div>
+    <div id="goalsRoot"><div style="text-align:center;padding:48px;color:#9ca3af">불러오는 중...</div></div>
+  `;
+
+  currentYM = thisYM();
+  await reload();
+  renderPage(bodyEl);
+});
+</script>
+</body>
+</html>
