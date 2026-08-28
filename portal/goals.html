@@ -107,6 +107,7 @@ const BUILTIN_METRICS = [
   { key:'ceu_count',        name:'교육점수 만점자 비율', unit:'%', icon:'📚', desc:'교육점수 만점(주평균 CEU≥0.5) 멤버 비율', autoCompute: true },
   { key:'sponsored_count',  name:'스폰서 (신규추천)',unit:'명',  icon:'⭐', desc:'월간 신규추천회원 합계',              autoCompute: true },
   { key:'green_member_pct', name:'Green 멤버 비율',  unit:'%',   icon:'🟢', desc:'트래픽라이트 Green 멤버 비율 (자동집계)', autoCompute: true },
+  { key:'member_count',     name:'멤버수',           unit:'명',  icon:'👥', desc:'현재 활성 멤버 수 (members 테이블 기준)', autoCompute: true },
 ];
 
 let currentYM = '', weeklyAll = [], goalsAll = [], membersAll = [], rolesAll = [], canEdit = false;
@@ -150,6 +151,7 @@ function computeActual(key, ym) {
     }
     case 'sponsored_count': return recs.length ? recs.reduce((s,r)=>s+(r.sponsored||0),0) : null;
     case 'green_member_pct': return computeGreenPct(ym);
+    case 'member_count':    return membersAll.length || null;
     default: return null;
   }
 }
@@ -686,7 +688,21 @@ function showMetricDetail(metricKey, ym) {
   const light  = getLightFromRate(rate);
 
   let tableHtml = '';
-  if (!bm || g.is_custom) {
+  if (metricKey === 'member_count') {
+    const names = membersAll.map(m => m.name);
+    tableHtml = `
+      <div style="overflow-x:auto;margin-bottom:10px">
+        <table style="width:100%;border-collapse:collapse;font-size:13px">
+          <thead><tr style="background:#f9fafb">
+            <th style="padding:8px 12px;border:1px solid #e5e7eb;text-align:left">멤버</th>
+          </tr></thead>
+          <tbody>
+            ${names.map((n,i) => `<tr style="${i%2===1?'background:#fafafa':''}"><td style="padding:8px 12px;border:1px solid #e5e7eb">${n}</td></tr>`).join('')}
+          </tbody>
+        </table>
+      </div>
+      <p style="font-size:11px;color:#9ca3af">현재 활성 멤버 기준</p>`;
+  } else if (!bm || g.is_custom) {
     tableHtml = `<p style="color:#6b7280;font-size:13px;padding:16px 0">커스텀 지표 — 실적: <b>${g.actual_value ?? '미입력'} ${g.metric_unit}</b></p>`;
   } else {
     const rows = mids.map(mid => {
@@ -718,6 +734,7 @@ function showMetricDetail(metricKey, ym) {
           const res = calcMemberScore(mr, weeks.length);
           return { name, val: res.total, sub: lightEmoji(res.light), hi: res.light === 'green' };
         }
+        case 'member_count': return { name, val: 1, sub: '' };
         default: return { name, val: 0, sub: '' };
       }
     }).sort((a,b) => b.val - a.val);

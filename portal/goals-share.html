@@ -102,6 +102,7 @@ const BUILTIN_METRICS = [
   { key:'ceu_count',        name:'교육점수 만점자 비율', unit:'%', icon:'📚', autoCompute:true },
   { key:'sponsored_count',  name:'스폰서 (신규추천)',unit:'명',  icon:'⭐', autoCompute:true },
   { key:'green_member_pct', name:'Green 멤버 비율', unit:'%',   icon:'🟢', autoCompute:true },
+  { key:'member_count',     name:'멤버수',          unit:'명',  icon:'👥', autoCompute:true },
 ];
 
 let goalsAll = [], weeklyAll = [], membersAll = [];
@@ -147,6 +148,7 @@ function computeActual(key, ym) {
       const green = mids.filter(mid => calcMemberScore(recs.filter(r=>r.member_id===mid), weeks.length).light==='green').length;
       return Math.round(green/mids.length*100);
     }
+    case 'member_count': return membersAll.length || null;
     default: return null;
   }
 }
