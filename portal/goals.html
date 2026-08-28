@@ -111,7 +111,8 @@ const BUILTIN_METRICS = [
 
 let currentYM = '', weeklyAll = [], goalsAll = [], membersAll = [], rolesAll = [], canEdit = false;
 let viewMode = 'trend'; // 'cards' | 'trend'
-let trendYear = new Date().getFullYear();
+function currentFiscalYear() { const d = new Date(); return d.getMonth() >= 4 ? d.getFullYear() : d.getFullYear() - 1; }
+let trendYear = currentFiscalYear();
 
 function getSb() { return supabase.createClient(SUPABASE_URL, SUPABASE_ANON); }
 function fmtYM(ym) { const [y,m] = ym.split('-'); return `${y}년 ${Number(m)}월`; }
@@ -349,8 +350,11 @@ function goalCard(c) {
 
 /* ── 추세뷰 (연간 12개월) ── */
 function renderTrendView() {
-  // 연간 12개월 생성
-  const months = Array.from({length:12}, (_,i) => `${trendYear}-${String(i+1).padStart(2,'0')}`);
+  // 5월~4월 회기 12개월 생성
+  const months = Array.from({length:12}, (_,i) => {
+    const d = new Date(trendYear, 4 + i); // 5월(index4)부터
+    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+  });
   const todayYM = thisYM();
 
   // 지표 순서: builtin 우선 → 커스텀
@@ -363,7 +367,7 @@ function renderTrendView() {
   }
 
   // 연도에 데이터가 없는 경우 안내
-  const yearHasData = goalsAll.some(g => g.year_month.startsWith(String(trendYear)));
+  const yearHasData = months.some(ym => goalsAll.some(g => g.year_month === ym));
 
   function cellForKeyMonth(key, ym) {
     const isFuture = ym > todayYM;
@@ -401,16 +405,17 @@ function renderTrendView() {
     return `<div>⚙ ${g?.metric_name || key}</div><div class="mc-sub">${g?.metric_unit || ''}</div>`;
   }
 
-  const MO = ['1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월'];
+  const fiscalLabel = `${trendYear}년 5월 ~ ${trendYear+1}년 4월`;
+  const MO = ['5월','6월','7월','8월','9월','10월','11월','12월','1월','2월','3월','4월'];
 
   return `
   <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap">
-    <button class="btn btn-outline btn-sm" id="trendPrevYear">← ${trendYear-1}년</button>
-    <span style="font-size:17px;font-weight:900">${trendYear}년 연간 목표 현황</span>
-    <button class="btn btn-outline btn-sm" id="trendNextYear">${trendYear+1}년 →</button>
+    <button class="btn btn-outline btn-sm" id="trendPrevYear">← ${trendYear-1}/${String(trendYear).slice(2)}기</button>
+    <span style="font-size:17px;font-weight:900">${fiscalLabel}</span>
+    <button class="btn btn-outline btn-sm" id="trendNextYear">${trendYear+1}/${String(trendYear+2).slice(2)}기 →</button>
     <span style="font-size:11px;color:#9ca3af;margin-left:4px">빨간 테두리 = 현재 월</span>
   </div>
-  ${!yearHasData ? `<div style="text-align:center;padding:24px;color:#9ca3af;font-size:13px">${trendYear}년에 설정된 목표가 없습니다</div>` : ''}
+  ${!yearHasData ? `<div style="text-align:center;padding:24px;color:#9ca3af;font-size:13px">${fiscalLabel}에 설정된 목표가 없습니다</div>` : ''}
   <div class="trend-wrap">
     <table class="trend-table">
       <thead>

@@ -105,7 +105,8 @@ const BUILTIN_METRICS = [
 ];
 
 let goalsAll = [], weeklyAll = [], membersAll = [];
-let trendYear = new Date().getFullYear();
+function currentFiscalYear() { const d = new Date(); return d.getMonth() >= 4 ? d.getFullYear() : d.getFullYear() - 1; }
+let trendYear = currentFiscalYear();
 let viewMode = 'trend';
 let cardMonth = `${new Date().getFullYear()}-${String(new Date().getMonth()+1).padStart(2,'0')}`;
 const todayYM = cardMonth;
@@ -280,8 +281,11 @@ window.showMetricDetail = showMetricDetail;
 /* ── 렌더 ── */
 function render() {
   const root = document.getElementById('root');
-  const MO = ['1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월'];
-  const months12 = Array.from({length:12},(_,i)=>`${trendYear}-${String(i+1).padStart(2,'0')}`);
+  const MO = ['5월','6월','7월','8월','9월','10월','11월','12월','1월','2월','3월','4월'];
+  const months12 = Array.from({length:12},(_,i)=>{
+    const d = new Date(trendYear, 4+i);
+    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+  });
 
   // 사용된 지표 순서
   const usedBuiltin = BUILTIN_METRICS.filter(b => goalsAll.find(g => g.metric_key === b.key));
@@ -392,9 +396,9 @@ function render() {
 
     <div class="year-nav">
       ${viewMode==='trend' ? `
-        <button id="prevYearBtn">← ${trendYear-1}년</button>
-        <span class="year-label">${trendYear}년</span>
-        <button id="nextYearBtn">${trendYear+1}년 →</button>
+        <button id="prevYearBtn">← ${trendYear-1}/${String(trendYear).slice(2)}기</button>
+        <span class="year-label">${trendYear}년 5월 ~ ${trendYear+1}년 4월</span>
+        <button id="nextYearBtn">${trendYear+1}/${String(trendYear+2).slice(2)}기 →</button>
       ` : ''}
       <div style="margin-left:${viewMode==='trend'?'auto':'0'}" class="view-toggle">
         <button id="btnTrend" class="${viewMode==='trend'?'active':''}">📈 연간 추세</button>
