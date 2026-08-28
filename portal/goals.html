@@ -112,7 +112,7 @@ const BUILTIN_METRICS = [
   { key:'attendance_rate',  name:'출석률',          unit:'%',   icon:'✅', desc:'월간 출석 기록 기준 (P+L+M+S / 전체)', autoCompute: true },
   { key:'referral_count',   name:'리퍼럴',          unit:'건',  icon:'🤝', desc:'월간 준 T1+T2 합계',                   autoCompute: true },
   { key:'visitor_count',    name:'비지터 초대',      unit:'명',  icon:'🙋', desc:'월간 비지터 합계',                     autoCompute: true },
-  { key:'ono_count',        name:'원투원 (인당)',     unit:'회',  icon:'☕', desc:'월간 1:1 미팅 인당 평균',              autoCompute: true },
+  { key:'ono_count',        name:'원투원 주2회 달성률', unit:'%', icon:'☕', desc:'주평균 원투원 2회 이상 달성 멤버 비율', autoCompute: true },
   { key:'tyfcb_amount',     name:'감사장 금액',      unit:'만원',icon:'💰', desc:'월간 TYFCB 합계 (만원)',              autoCompute: true },
   { key:'ceu_count',        name:'교육점수 만점자 비율', unit:'%', icon:'📚', desc:'교육점수 만점(주평균 CEU≥0.5) 멤버 비율', autoCompute: true },
   { key:'sponsored_count',  name:'스폰서 (신규추천)',unit:'명',  icon:'⭐', desc:'월간 신규추천회원 합계',              autoCompute: true },
@@ -146,9 +146,13 @@ function computeActual(key, ym) {
     case 'visitor_count':   return recs.length ? recs.reduce((s,r)=>s+(r.visitors||0),0) : null;
     case 'ono_count': {
       if (!recs.length) return null;
-      const memberCount = new Set(recs.map(r => r.member_id)).size;
-      const total = recs.reduce((s,r)=>s+(r.one_on_one||0),0);
-      return memberCount ? Math.round(total / memberCount * 10) / 10 : null;
+      const wks  = [...new Set(recs.map(r => r.week_date))];
+      const mids = [...new Set(recs.map(r => r.member_id))];
+      const cnt  = mids.filter(mid => {
+        const tot = recs.filter(r => r.member_id === mid).reduce((s,r)=>s+(r.one_on_one||0),0);
+        return wks.length ? tot / wks.length >= 2 : false;
+      }).length;
+      return Math.round(cnt / mids.length * 100);
     }
     case 'tyfcb_amount':    return recs.length ? Math.round(recs.reduce((s,r)=>s+Number(r.tyfcb||0),0)/10000) : null;
     case 'ceu_count': {
@@ -782,7 +786,8 @@ function showMetricDetail(metricKey, ym) {
         case 'visitor_count':   return { name, val: mr.reduce((s,r)=>s+(r.visitors||0),0),   sub: '' };
         case 'ono_count': {
           const tot = mr.reduce((s,r)=>s+(r.one_on_one||0),0);
-          return { name, val: weeks.length ? Math.round(tot/weeks.length*10)/10 : 0, sub: `총 ${tot}회` };
+          const avg = weeks.length ? tot/weeks.length : 0;
+          return { name, val: Math.round(avg*10)/10, sub: `총 ${tot}회`, hi: avg >= 2 };
         }
         case 'tyfcb_amount':   return { name, val: Math.round(mr.reduce((s,r)=>s+Number(r.tyfcb||0),0)/10000), sub: '' };
         case 'ceu_count': {
