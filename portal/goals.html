@@ -110,7 +110,8 @@ const BUILTIN_METRICS = [
 ];
 
 let currentYM = '', weeklyAll = [], goalsAll = [], canEdit = false;
-let viewMode = 'cards'; // 'cards' | 'trend'
+let viewMode = 'trend'; // 'cards' | 'trend'
+let trendYear = new Date().getFullYear();
 
 function getSb() { return supabase.createClient(SUPABASE_URL, SUPABASE_ANON); }
 function fmtYM(ym) { const [y,m] = ym.split('-'); return `${y}년 ${Number(m)}월`; }
@@ -209,6 +210,8 @@ function renderPage(bodyEl) {
   // 공통 이벤트
   bodyEl.querySelector('#btnCards')?.addEventListener('click', () => { viewMode = 'cards'; renderPage(bodyEl); });
   bodyEl.querySelector('#btnTrend')?.addEventListener('click', () => { viewMode = 'trend'; renderPage(bodyEl); });
+  bodyEl.querySelector('#trendPrevYear')?.addEventListener('click', () => { trendYear--; renderPage(bodyEl); });
+  bodyEl.querySelector('#trendNextYear')?.addEventListener('click', () => { trendYear++; renderPage(bodyEl); });
 
   if (viewMode === 'cards') {
     bodyEl.querySelector('#prevBtn')?.addEventListener('click', () => { currentYM = shiftMonth(currentYM,-1); renderPage(bodyEl); });
@@ -304,29 +307,32 @@ function goalCard(c) {
   </div>`;
 }
 
-/* ── 추세뷰 ── */
+/* ── 추세뷰 (연간 12개월) ── */
 function renderTrendView() {
-  // 표시할 월 범위: goalsAll에 있는 월 + 현재 월, 최근 8개
-  const monthSet = new Set([...goalsAll.map(g => g.year_month), currentYM]);
-  const months = [...monthSet].sort().slice(-8);
+  // 연간 12개월 생성
+  const months = Array.from({length:12}, (_,i) => `${trendYear}-${String(i+1).padStart(2,'0')}`);
+  const todayYM = thisYM();
 
-  // 모든 지표 모음 (builtin 우선, 커스텀은 뒤에)
-  const allMetricKeys = new Set();
-  goalsAll.forEach(g => allMetricKeys.add(g.metric_key));
-  BUILTIN_METRICS.forEach(b => { if (allMetricKeys.has(b.key)) allMetricKeys.delete(b.key); });
-  const orderedKeys = [
-    ...BUILTIN_METRICS.filter(b => allMetricKeys.has(b.key) || goalsAll.find(g => g.metric_key === b.key)).map(b => b.key),
-    ...[...allMetricKeys].filter(k => k.startsWith('custom_')),
-  ];
-  // 실제로 쓰인 키만 추리기
-  const usedKeys = orderedKeys.filter(k => goalsAll.find(g => g.metric_key === k));
-  if (!usedKeys.length) {
-    return `<div class="empty-state" style="margin-top:40px"><div class="es-icon">📈</div><p>목표 데이터가 없습니다</p></div>`;
+  // 지표 순서: builtin 우선 → 커스텀
+  const usedBuiltin = BUILTIN_METRICS.filter(b => goalsAll.find(g => g.metric_key === b.key));
+  const usedCustomKeys = [...new Set(goalsAll.filter(g => g.is_custom).map(g => g.metric_key))];
+  const usedKeys = [...usedBuiltin.map(b => b.key), ...usedCustomKeys];
+
+  if (!usedKeys.length && !goalsAll.length) {
+    return `<div class="empty-state" style="margin-top:40px"><div class="es-icon">📈</div><p>목표 데이터가 없습니다<br><small style="color:#9ca3af">월별 카드에서 먼저 목표를 추가해 주세요</small></p></div>`;
   }
 
+  // 연도에 데이터가 없는 경우 안내
+  const yearHasData = goalsAll.some(g => g.year_month.startsWith(String(trendYear)));
+
   function cellForKeyMonth(key, ym) {
+    const isFuture = ym > todayYM;
     const g = goalsAll.find(g2 => g2.metric_key === key && g2.year_month === ym);
-    if (!g) return `<td style="background:#fafafa;color:#d1d5db">—</td>`;
+    if (!g) {
+      return `<td style="background:${isFuture?'#fafafa':'#f5f5f5'};color:#d1d5db;font-size:11px">
+        ${isFuture ? '' : '—'}
+      </td>`;
+    }
     const bm = BUILTIN_METRICS.find(b => b.key === key);
     const actual = (bm?.autoCompute && g.actual_value == null)
       ? computeActual(key, ym) : (g.actual_value ?? null);
@@ -336,12 +342,12 @@ function renderTrendView() {
     const actualStr = actual !== null
       ? (g.metric_unit === '만원' ? Number(actual).toLocaleString('ko-KR') : actual)
       : '—';
-    const isCurrentYM = ym === currentYM;
-    return `<td style="background:${bg};${isCurrentYM?'font-weight:700':''}">
+    const isCur = ym === todayYM;
+    return `<td style="background:${bg};${isCur?'outline:2px solid #CC0000;outline-offset:-2px;':''}">
       <div class="trend-cell">
         <div class="tc-signal">${lightEmoji(light)}</div>
-        <div class="tc-actual">${actualStr}<span style="font-size:10px;font-weight:400;color:#9ca3af"> ${g.metric_unit}</span></div>
-        <div class="tc-target">목표 ${g.target_value}${g.metric_unit}</div>
+        <div class="tc-actual" style="${isCur?'font-weight:900':''}">${actualStr}</div>
+        <div class="tc-target">/${g.target_value}${g.metric_unit}</div>
         ${rate !== null ? `<div class="tc-pct">${rate}%</div>` : ''}
       </div>
     </td>`;
@@ -354,13 +360,26 @@ function renderTrendView() {
     return `<div>⚙ ${g?.metric_name || key}</div><div class="mc-sub">${g?.metric_unit || ''}</div>`;
   }
 
+  const MO = ['1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월'];
+
   return `
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap">
+    <button class="btn btn-outline btn-sm" id="trendPrevYear">← ${trendYear-1}년</button>
+    <span style="font-size:17px;font-weight:900">${trendYear}년 연간 목표 현황</span>
+    <button class="btn btn-outline btn-sm" id="trendNextYear">${trendYear+1}년 →</button>
+    <span style="font-size:11px;color:#9ca3af;margin-left:4px">빨간 테두리 = 현재 월</span>
+  </div>
+  ${!yearHasData ? `<div style="text-align:center;padding:24px;color:#9ca3af;font-size:13px">${trendYear}년에 설정된 목표가 없습니다</div>` : ''}
   <div class="trend-wrap">
     <table class="trend-table">
       <thead>
         <tr>
           <th class="metric-col">지표</th>
-          ${months.map(ym => `<th style="${ym===currentYM?'background:#fff5f5;color:#CC0000':''}">${fmtYMShort(ym)}${ym===currentYM?' ●':''}</th>`).join('')}
+          ${months.map((ym,i) => {
+            const isCur = ym === todayYM;
+            const hasGoal = goalsAll.some(g => g.year_month === ym);
+            return `<th style="${isCur?'background:#fff0f0;color:#CC0000;font-weight:900':hasGoal?'':'color:#d1d5db'}">${MO[i]}</th>`;
+          }).join('')}
         </tr>
       </thead>
       <tbody>
@@ -372,7 +391,6 @@ function renderTrendView() {
       </tbody>
     </table>
   </div>
-  <p style="font-size:11px;color:#9ca3af;text-align:center">● 표시된 열이 현재 월 / 최근 8개월 표시</p>
   `;
 }
 
