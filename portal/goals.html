@@ -102,7 +102,7 @@ const BUILTIN_METRICS = [
   { key:'attendance_rate',  name:'출석률',          unit:'%',   icon:'✅', desc:'월간 출석 기록 기준 (P+L+M+S / 전체)', autoCompute: true },
   { key:'referral_count',   name:'리퍼럴',          unit:'건',  icon:'🤝', desc:'월간 준 T1+T2 합계',                   autoCompute: true },
   { key:'visitor_count',    name:'비지터 초대',      unit:'명',  icon:'🙋', desc:'월간 비지터 합계',                     autoCompute: true },
-  { key:'ono_count',        name:'원투원',           unit:'회',  icon:'☕', desc:'월간 1:1 미팅 합계',                   autoCompute: true },
+  { key:'ono_count',        name:'원투원 (인당)',     unit:'회',  icon:'☕', desc:'월간 1:1 미팅 인당 평균',              autoCompute: true },
   { key:'tyfcb_amount',     name:'감사장 금액',      unit:'만원',icon:'💰', desc:'월간 TYFCB 합계 (만원)',              autoCompute: true },
   { key:'ceu_count',        name:'CEU 총합',         unit:'점',  icon:'📚', desc:'월간 CEU 합계',                       autoCompute: true },
   { key:'sponsored_count',  name:'스폰서 (신규추천)',unit:'명',  icon:'⭐', desc:'월간 신규추천회원 합계',              autoCompute: true },
@@ -130,7 +130,12 @@ function computeActual(key, ym) {
     }
     case 'referral_count':  return recs.length ? recs.reduce((s,r)=>s+(r.given_t1||0)+(r.given_t2||0),0) : null;
     case 'visitor_count':   return recs.length ? recs.reduce((s,r)=>s+(r.visitors||0),0) : null;
-    case 'ono_count':       return recs.length ? recs.reduce((s,r)=>s+(r.one_on_one||0),0) : null;
+    case 'ono_count': {
+      if (!recs.length) return null;
+      const memberCount = new Set(recs.map(r => r.member_id)).size;
+      const total = recs.reduce((s,r)=>s+(r.one_on_one||0),0);
+      return memberCount ? Math.round(total / memberCount * 10) / 10 : null;
+    }
     case 'tyfcb_amount':    return recs.length ? Math.round(recs.reduce((s,r)=>s+Number(r.tyfcb||0),0)/10000) : null;
     case 'ceu_count':       return recs.length ? recs.reduce((s,r)=>s+(r.ceu||0),0) : null;
     case 'sponsored_count': return recs.length ? recs.reduce((s,r)=>s+(r.sponsored||0),0) : null;
