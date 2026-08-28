@@ -312,6 +312,7 @@ function render() {
         <div class="tc-actual" style="${isCur?'font-weight:900':''}">${aStr}</div>
         <div class="tc-target">/${g.target_value}${g.metric_unit}</div>
         ${rate!==null?`<div class="tc-pct">${rate}%</div>`:''}
+        ${g.responsible_role?`<div style="font-size:9px;color:#9ca3af;margin-top:1px">👤${g.responsible_role}</div>`:''}
       </div>
     </td>`;
   }
@@ -377,6 +378,7 @@ function render() {
           </div>
           <div class="gc-bar-wrap"><div class="gc-bar" style="width:${pct}%;background:${bc}"></div></div>
           <div class="gc-pct">${c.rate!==null?c.rate+'%':'실적 미입력'}</div>
+          ${c.responsible_role?`<div style="margin-top:8px;font-size:11px;color:#6b7280">👤 ${c.responsible_role}</div>`:''}
           ${c.notes?`<div class="gc-notes">${c.notes}</div>`:''}
         </div>`;
       }).join('')}

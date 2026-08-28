@@ -109,7 +109,7 @@ const BUILTIN_METRICS = [
   { key:'green_member_pct', name:'Green 멤버 비율',  unit:'%',   icon:'🟢', desc:'트래픽라이트 Green 멤버 비율 (자동집계)', autoCompute: true },
 ];
 
-let currentYM = '', weeklyAll = [], goalsAll = [], membersAll = [], canEdit = false;
+let currentYM = '', weeklyAll = [], goalsAll = [], membersAll = [], rolesAll = [], canEdit = false;
 let viewMode = 'trend'; // 'cards' | 'trend'
 let trendYear = new Date().getFullYear();
 
@@ -165,6 +165,20 @@ function computeGreenPct(ym) {
     return light === 'green';
   }).length;
   return Math.round(greenCount / memberIds.length * 100);
+}
+
+function roleSelectHtml(id, selected = '') {
+  const groups = { board:'의장단', leader:'리더팀', membership:'멤버십위원회', member:'일반멤버' };
+  const grouped = {};
+  rolesAll.forEach(r => {
+    if (!grouped[r.role_type]) grouped[r.role_type] = [];
+    grouped[r.role_type].push(r.name);
+  });
+  const options = Object.entries(groups).map(([type, label]) => {
+    if (!grouped[type]?.length) return '';
+    return `<optgroup label="${label}">${grouped[type].map(n => `<option value="${n}" ${n===selected?'selected':''}>${n}</option>`).join('')}</optgroup>`;
+  }).join('');
+  return `<select id="${id}" class="form-input"><option value="">— 담당 직책 미지정 —</option>${options}</select>`;
 }
 
 function getLightFromRate(rate) {
@@ -328,6 +342,7 @@ function goalCard(c) {
       <div class="gc-bar" style="width:${pct}%;background:${barColor}"></div>
     </div>
     <div class="gc-pct">${c.rate !== null ? c.rate + '%' : '실적 미입력'}</div>
+    ${c.responsible_role ? `<div style="margin-top:8px;font-size:11px;color:#6b7280">👤 ${c.responsible_role}</div>` : ''}
     ${c.notes ? `<div class="gc-notes">${c.notes}</div>` : ''}
   </div>`;
 }
@@ -374,6 +389,7 @@ function renderTrendView() {
         <div class="tc-actual" style="${isCur?'font-weight:900':''}">${actualStr}</div>
         <div class="tc-target">/${g.target_value}${g.metric_unit}</div>
         ${rate !== null ? `<div class="tc-pct">${rate}%</div>` : ''}
+        ${g.responsible_role ? `<div style="font-size:9px;color:#9ca3af;margin-top:1px">👤${g.responsible_role}</div>` : ''}
       </div>
     </td>`;
   }
@@ -442,11 +458,11 @@ function showBuiltinGoalModal(missingBuiltin) {
           <span class="bc-unit">${b.unit}</span>
         </label>
         <div class="bc-desc">${b.desc}</div>
-        <div class="bc-target-row">
+        <div class="bc-target-row" style="flex-wrap:wrap;gap:8px">
           <label style="font-size:12px;color:#374151;white-space:nowrap">목표값</label>
-          <input type="number" class="form-input bc-target-input" id="tgt_${b.key}" placeholder="숫자 입력" style="max-width:140px">
+          <input type="number" class="form-input bc-target-input" id="tgt_${b.key}" placeholder="숫자 입력" style="max-width:120px">
           <span style="font-size:12px;color:#6b7280">${b.unit}</span>
-          <input class="form-input" id="note_${b.key}" placeholder="메모 (선택)" style="max-width:160px">
+          <select id="role_${b.key}" class="form-input" style="max-width:180px"><option value="">— 담당 직책 —</option></select>
         </div>
       </div>`).join('')}
     </div>
@@ -456,6 +472,21 @@ function showBuiltinGoalModal(missingBuiltin) {
       <button class="btn btn-primary" id="bcSave">선택 항목 저장</button>
     </div>
   `);
+
+  // 직책 드롭다운 채우기
+  const groups = { board:'의장단', leader:'리더팀', membership:'멤버십위원회', member:'일반멤버' };
+  const grouped = {};
+  rolesAll.forEach(r => { if (!grouped[r.role_type]) grouped[r.role_type] = []; grouped[r.role_type].push(r.name); });
+  missingBuiltin.forEach(b => {
+    const sel = modal.querySelector('#role_' + b.key);
+    if (!sel) return;
+    Object.entries(groups).forEach(([type, label]) => {
+      if (!grouped[type]?.length) return;
+      const og = document.createElement('optgroup'); og.label = label;
+      grouped[type].forEach(n => { const o = document.createElement('option'); o.value = n; o.textContent = n; og.appendChild(o); });
+      sel.appendChild(og);
+    });
+  });
 
   // 체크박스 → 카드 하이라이트
   modal.querySelectorAll('.bc-check').forEach(chk => {
@@ -473,10 +504,11 @@ function showBuiltinGoalModal(missingBuiltin) {
       const tgt = Number(modal.querySelector('#tgt_' + b.key)?.value);
       if (!tgt) return;
       const note = modal.querySelector('#note_' + b.key)?.value.trim() || null;
+      const responsible_role = modal.querySelector('#role_' + b.key)?.value || null;
       rows.push({
         year_month: currentYM, metric_key: b.key, metric_name: b.name,
         metric_unit: b.unit, target_value: tgt, actual_value: null,
-        is_custom: false, notes: note,
+        is_custom: false, notes: note, responsible_role,
       });
     });
     if (!rows.length) { alert('저장할 항목이 없습니다.\n체크 후 목표값을 입력해 주세요.'); return; }
@@ -511,6 +543,10 @@ function showCustomGoalModal() {
       <input type="number" id="actualVal" class="form-input" placeholder="미입력 시 빈칸">
     </div>
     <div class="form-group">
+      <label class="form-label">담당 직책 (선택)</label>
+      ${roleSelectHtml('roleVal')}
+    </div>
+    <div class="form-group">
       <label class="form-label">메모 (선택)</label>
       <input id="notesVal" class="form-input" placeholder="참고사항">
     </div>
@@ -528,12 +564,13 @@ function showCustomGoalModal() {
     if (!metric_name || !target_value) { alert('지표명과 목표값을 입력해 주세요.'); return; }
     const actual_raw = modal.querySelector('#actualVal').value;
     const actual_value = actual_raw !== '' ? Number(actual_raw) : null;
+    const responsible_role = modal.querySelector('#roleVal').value || null;
     const notes = modal.querySelector('#notesVal').value.trim() || null;
     const metric_key = 'custom_' + Date.now();
 
     const { error } = await getSb().from('chapter_goals').insert({
       year_month: currentYM, metric_key, metric_name, metric_unit,
-      target_value, actual_value, notes, is_custom: true,
+      target_value, actual_value, notes, is_custom: true, responsible_role,
     });
     if (error) { alert('저장 오류: ' + error.message); return; }
     modal.remove();
@@ -568,6 +605,10 @@ function showEditGoalModal(existing) {
       <input type="number" id="actualVal" class="form-input" value="${existing.actual_value ?? ''}">
     </div>` : ''}
     <div class="form-group">
+      <label class="form-label">담당 직책 (선택)</label>
+      ${roleSelectHtml('roleVal', existing.responsible_role || '')}
+    </div>
+    <div class="form-group">
       <label class="form-label">메모 (선택)</label>
       <input id="notesVal" class="form-input" value="${existing.notes||''}">
     </div>
@@ -585,10 +626,11 @@ function showEditGoalModal(existing) {
     const metric_unit = existing.is_custom ? modal.querySelector('#customUnit')?.value.trim() : existing.metric_unit;
     const actual_raw  = modal.querySelector('#actualVal')?.value;
     const actual_value = actual_raw !== undefined && actual_raw !== '' ? Number(actual_raw) : null;
+    const responsible_role = modal.querySelector('#roleVal').value || null;
     const notes = modal.querySelector('#notesVal').value.trim() || null;
 
     const { error } = await getSb().from('chapter_goals').update({
-      metric_name, metric_unit, target_value, actual_value, notes,
+      metric_name, metric_unit, target_value, actual_value, notes, responsible_role,
     }).eq('id', existing.id);
     if (error) { alert('저장 오류: ' + error.message); return; }
     modal.remove();
@@ -704,7 +746,7 @@ function showMetricDetail(metricKey, ym) {
       <span style="font-size:28px">${bm?.icon || '⚙'}</span>
       <div>
         <div style="font-size:16px;font-weight:900">${g.metric_name}</div>
-        <div style="font-size:12px;color:#9ca3af">${fmtYM(ym)}</div>
+        <div style="font-size:12px;color:#9ca3af">${fmtYM(ym)}${g.responsible_role ? ` · 👤 ${g.responsible_role}` : ''}</div>
       </div>
       <div style="margin-left:auto;text-align:right">
         <div style="font-size:26px;line-height:1">${lightEmoji(light)}</div>
@@ -732,14 +774,16 @@ window.showMetricDetail = showMetricDetail;
 
 /* ── 데이터 로드 ── */
 async function reload() {
-  const [gRes, wRes, mRes] = await Promise.all([
+  const [gRes, wRes, mRes, rRes] = await Promise.all([
     getSb().from('chapter_goals').select('*').order('sort_order').order('created_at'),
     getSb().from('weekly_records').select('*'),
     getSb().from('members').select('id,name').eq('is_active', true),
+    getSb().from('roles').select('name,tier,role_type').order('tier').order('name'),
   ]);
   goalsAll   = gRes.data || [];
   weeklyAll  = wRes.data || [];
   membersAll = mRes.data || [];
+  rolesAll   = rRes.data || [];
 }
 
 /* ── 모달 헬퍼 ── */
