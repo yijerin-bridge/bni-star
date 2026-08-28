@@ -104,7 +104,7 @@ const BUILTIN_METRICS = [
   { key:'green_member_pct', name:'Green 멤버 비율', unit:'%',   icon:'🟢', autoCompute:true },
 ];
 
-let goalsAll = [], weeklyAll = [];
+let goalsAll = [], weeklyAll = [], membersAll = [];
 let trendYear = new Date().getFullYear();
 let viewMode = 'trend';
 let cardMonth = `${new Date().getFullYear()}-${String(new Date().getMonth()+1).padStart(2,'0')}`;
@@ -160,6 +160,123 @@ function getCardData(ym) {
   });
 }
 
+/* ── 드릴다운 상세 ── */
+function createModal(html) {
+  const m = document.createElement('div');
+  m.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;display:flex;align-items:flex-start;justify-content:center;padding:24px;overflow-y:auto';
+  m.innerHTML = `<div style="background:#fff;border-radius:14px;padding:28px;width:100%;max-width:540px;margin:auto">${html}</div>`;
+  document.body.appendChild(m);
+  m.addEventListener('click', e => { if (e.target === m) m.remove(); });
+  return m;
+}
+
+function showMetricDetail(metricKey, ym) {
+  const g  = goalsAll.find(g2 => g2.metric_key === metricKey && g2.year_month === ym);
+  const bm = BUILTIN_METRICS.find(b => b.key === metricKey);
+  if (!g) return;
+
+  const recs  = weeklyAll.filter(r => r.week_date?.startsWith(ym));
+  const weeks = [...new Set(recs.map(r => r.week_date))].sort();
+  const mids  = [...new Set(recs.map(r => r.member_id))];
+  const getName = mid => membersAll.find(m => m.id === mid)?.name || mid;
+
+  const actual = (bm?.autoCompute && g.actual_value == null) ? computeActual(metricKey, ym) : (g.actual_value ?? null);
+  const rate   = (actual !== null && g.target_value > 0) ? Math.round(actual / g.target_value * 100) : null;
+  const light  = getLightFromRate(rate);
+
+  let tableHtml = '';
+  if (!bm || g.is_custom) {
+    tableHtml = `<p style="color:#6b7280;font-size:13px;padding:16px 0">커스텀 지표 — 실적: <b>${g.actual_value ?? '미입력'} ${g.metric_unit}</b></p>`;
+  } else {
+    const rows = mids.map(mid => {
+      const mr   = recs.filter(r => r.member_id === mid);
+      const name = getName(mid);
+      switch (metricKey) {
+        case 'attendance_rate': {
+          const present = mr.filter(r => !r.absent).length;
+          return { name, val: Math.round(present/mr.length*100), sub:`${present}/${mr.length}회`, hi:present/mr.length>=0.95 };
+        }
+        case 'referral_count': {
+          const t1=mr.reduce((s,r)=>s+(r.given_t1||0),0), t2=mr.reduce((s,r)=>s+(r.given_t2||0),0);
+          return { name, val:t1+t2, sub:`T1: ${t1}  T2: ${t2}` };
+        }
+        case 'visitor_count':   return { name, val:mr.reduce((s,r)=>s+(r.visitors||0),0), sub:'' };
+        case 'ono_count': {
+          const tot=mr.reduce((s,r)=>s+(r.one_on_one||0),0);
+          return { name, val:weeks.length?Math.round(tot/weeks.length*10)/10:0, sub:`총 ${tot}회` };
+        }
+        case 'tyfcb_amount':   return { name, val:Math.round(mr.reduce((s,r)=>s+Number(r.tyfcb||0),0)/10000), sub:'' };
+        case 'ceu_count': {
+          const tot=mr.reduce((s,r)=>s+(r.ceu||0),0);
+          const avg=weeks.length?tot/weeks.length:0;
+          const score=scoreCeu(avg);
+          return { name, val:score, sub:`총 ${tot}점 / 주평균 ${Math.round(avg*10)/10}`, hi:score>=10 };
+        }
+        case 'sponsored_count': return { name, val:mr.reduce((s,r)=>s+(r.sponsored||0),0), sub:'' };
+        case 'green_member_pct': {
+          const res=calcMemberScore(mr, weeks.length);
+          return { name, val:res.total, sub:lightEmoji(res.light), hi:res.light==='green' };
+        }
+        default: return { name, val:0, sub:'' };
+      }
+    }).sort((a,b)=>b.val-a.val);
+
+    const unitLabel = {attendance_rate:'%',referral_count:'건',visitor_count:'명',ono_count:'회',tyfcb_amount:'만원',ceu_count:'점',sponsored_count:'명',green_member_pct:'점'}[metricKey]||g.metric_unit;
+    const col2 = {attendance_rate:'출석/총',referral_count:'T1 / T2',ono_count:'총횟수',ceu_count:'총점 / 주평균',green_member_pct:'신호등'}[metricKey];
+    const fmtYM2 = ym2 => { const [y,mo]=ym2.split('-'); return `${y}년 ${Number(mo)}월`; };
+
+    tableHtml = `
+      <div style="overflow-x:auto;margin-bottom:10px">
+        <table style="width:100%;border-collapse:collapse;font-size:13px">
+          <thead><tr style="background:#f9fafb">
+            <th style="padding:8px 12px;border:1px solid #e5e7eb;text-align:left">멤버</th>
+            <th style="padding:8px 12px;border:1px solid #e5e7eb;text-align:right">${g.metric_name}</th>
+            ${col2?`<th style="padding:8px 12px;border:1px solid #e5e7eb;text-align:center;color:#9ca3af;font-size:11px;font-weight:400">${col2}</th>`:''}
+          </tr></thead>
+          <tbody>
+            ${rows.map((d,i)=>`
+            <tr style="${d.hi?'background:#f0fdf4':i%2===1?'background:#fafafa':''}">
+              <td style="padding:8px 12px;border:1px solid #e5e7eb;font-weight:${d.hi?700:400}">${d.name}</td>
+              <td style="padding:8px 12px;border:1px solid #e5e7eb;text-align:right;font-weight:700">${d.val}<span style="font-size:11px;color:#9ca3af;font-weight:400"> ${unitLabel}</span></td>
+              ${col2?`<td style="padding:8px 12px;border:1px solid #e5e7eb;text-align:center;color:#6b7280;font-size:12px">${d.sub}</td>`:''}
+            </tr>`).join('')}
+          </tbody>
+        </table>
+      </div>
+      <p style="font-size:11px;color:#9ca3af">${weeks.length}주 집계 · ${mids.length}명</p>`;
+  }
+
+  const fmtYMLocal = ym2 => { const [y,mo]=ym2.split('-'); return `${y}년 ${Number(mo)}월`; };
+  const modal = createModal(`
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">
+      <span style="font-size:28px">${bm?.icon||'⚙'}</span>
+      <div>
+        <div style="font-size:16px;font-weight:900">${g.metric_name}</div>
+        <div style="font-size:12px;color:#9ca3af">${fmtYMLocal(ym)}</div>
+      </div>
+      <div style="margin-left:auto;text-align:right">
+        <div style="font-size:26px;line-height:1">${lightEmoji(light)}</div>
+        ${rate!==null?`<div style="font-size:12px;color:#6b7280">${rate}%</div>`:''}
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px">
+      <div style="background:#f9fafb;border-radius:8px;padding:10px;text-align:center">
+        <div style="font-size:11px;color:#9ca3af;margin-bottom:2px">목표</div>
+        <div style="font-size:18px;font-weight:900">${g.target_value}<span style="font-size:11px;color:#9ca3af;font-weight:400"> ${g.metric_unit}</span></div>
+      </div>
+      <div style="background:#f9fafb;border-radius:8px;padding:10px;text-align:center">
+        <div style="font-size:11px;color:#9ca3af;margin-bottom:2px">실적</div>
+        <div style="font-size:18px;font-weight:900;color:${lightColor(light)}">${actual!==null?actual:'—'}<span style="font-size:11px;color:#9ca3af;font-weight:400"> ${actual!==null?g.metric_unit:''}</span></div>
+      </div>
+    </div>
+    ${tableHtml}
+    <div style="text-align:right;margin-top:16px">
+      <button onclick="this.closest('[style*=fixed]').remove()" style="padding:8px 18px;border:1.5px solid #e5e7eb;border-radius:8px;background:#fff;cursor:pointer;font-family:inherit">닫기</button>
+    </div>
+  `);
+}
+window.showMetricDetail = showMetricDetail;
+
 /* ── 렌더 ── */
 function render() {
   const root = document.getElementById('root');
@@ -189,7 +306,7 @@ function render() {
     const bg = {green:'#f0fdf4',amber:'#fefce8',red:'#fff1f2',gray:'#f9fafb'}[light];
     const aStr = actual!==null ? (g.metric_unit==='만원'?Number(actual).toLocaleString('ko-KR'):actual) : '—';
     const isCur = ym===todayYM;
-    return `<td style="background:${bg};${isCur?'outline:2px solid #8B0000;outline-offset:-2px':''}">
+    return `<td style="background:${bg};${isCur?'outline:2px solid #8B0000;outline-offset:-2px':''}cursor:pointer" onclick="showMetricDetail('${key}','${ym}')">
       <div class="trend-cell">
         <div class="tc-signal">${lightEmoji(light)}</div>
         <div class="tc-actual" style="${isCur?'font-weight:900':''}">${aStr}</div>
@@ -246,7 +363,7 @@ function render() {
         const bc = lightColor(c.light);
         const aDisp = c.actual!==null ? (c.metric_unit==='만원'?Number(c.actual).toLocaleString('ko-KR'):c.actual) : '—';
         const tDisp = c.metric_unit==='만원'?Number(c.target_value).toLocaleString('ko-KR'):c.target_value;
-        return `<div class="goal-card light-${c.light}">
+        return `<div class="goal-card light-${c.light}" style="cursor:pointer" onclick="showMetricDetail('${c.metric_key}','${c.year_month}')">
           <div class="gc-header">
             <div>
               <div class="gc-name">${bm?bm.icon+' ':''}${c.metric_name}</div>
@@ -301,12 +418,14 @@ function render() {
   if (params.get('year')) trendYear = parseInt(params.get('year'));
   if (params.get('month')) { viewMode = 'cards'; cardMonth = params.get('month'); }
 
-  const [gRes, wRes] = await Promise.all([
+  const [gRes, wRes, mRes] = await Promise.all([
     getSb().from('chapter_goals').select('*').order('sort_order').order('created_at'),
     getSb().from('weekly_records').select('*'),
+    getSb().from('members').select('id,name').eq('is_active', true),
   ]);
-  goalsAll  = gRes.data || [];
-  weeklyAll = wRes.data || [];
+  goalsAll   = gRes.data || [];
+  weeklyAll  = wRes.data || [];
+  membersAll = mRes.data || [];
   render();
 })();
 </script>
