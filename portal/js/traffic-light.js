@@ -207,6 +207,7 @@ function renderOverview() {
       <span class="score-badge amber">🟡 ${amber}명</span>
       <span class="score-badge red">🔴 ${red}명</span>
       <span class="score-badge gray">⚫ ${gray}명</span>
+      <button id="tlExcelBtn" style="margin-left:auto;padding:6px 14px;border:1.5px solid #e5e7eb;border-radius:8px;background:#fff;cursor:pointer;font-size:12px;font-weight:600;font-family:inherit">📥 엑셀 내보내기</button>
     </div>
 
     <div class="member-score-grid">
@@ -248,6 +249,41 @@ function renderOverview() {
       }).join('')}
     </div>
   `;
+  document.getElementById('tlExcelBtn')?.addEventListener('click', () => exportTLExcel(memberScores));
+}
+
+function exportTLExcel(memberScores) {
+  const today = new Date().toISOString().slice(0,10);
+  const headers = ['멤버명','소속','신호등','종합점수','출석점수','리퍼럴점수','TYFCB점수','비지터점수','1:1점수','CEU점수','스폰서점수','출석률(%)','리퍼럴(건)','비지터(명)','1:1(회)','TYFCB(만원)','CEU','스폰서(명)','결석(회)','지각(회)'];
+  const lightLabel = {green:'🟢 그린', amber:'🟡 앰버', red:'🔴 레드', gray:'⚫ 그레이'};
+  const rows = memberScores.map(m => [
+    m.name,
+    m.company || '',
+    lightLabel[m.light] || m.light,
+    m.recs.length ? m.total : '',
+    m.breakdown?.attendance ?? '',
+    m.breakdown?.referral   ?? '',
+    m.breakdown?.tyfcb      ?? '',
+    m.breakdown?.visitor    ?? '',
+    m.breakdown?.ono        ?? '',
+    m.breakdown?.ceu        ?? '',
+    m.breakdown?.sponsored  ?? '',
+    m.stats?.attendRate != null ? Math.round(m.stats.attendRate) : '',
+    m.stats?.totRef   ?? '',
+    m.stats?.totVis   ?? '',
+    m.stats?.totOno   ?? '',
+    m.stats?.totTyf   ?? '',
+    m.stats?.totCeu   ?? '',
+    m.stats?.totSponsored ?? '',
+    m.stats?.absN  ?? '',
+    m.stats?.lateN ?? '',
+  ]);
+  const ws = XLSX.utils.aoa_to_sheet([headers, ...rows]);
+  const colWidths = [10,14,8,8,8,8,8,8,6,6,8,8,8,8,8,10,6,8,6,6].map(w=>({wch:w}));
+  ws['!cols'] = colWidths;
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, '트래픽라이트');
+  XLSX.writeFile(wb, `트래픽라이트_${today}.xlsx`);
 }
 
 /* ═══════════════════════════════════════════════
