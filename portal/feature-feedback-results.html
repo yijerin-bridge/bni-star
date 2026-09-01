@@ -74,21 +74,10 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="/js/supabase-config.js"></script>
 <script>
-const SHARE_TOKEN = 'bni-star-ff';
-
 const params = new URLSearchParams(location.search);
 const presenterParam = params.get('presenter') || '';
 
-if (params.get('token') !== SHARE_TOKEN) {
-  document.getElementById('root').innerHTML = `
-    <div class="gate">
-      <div class="gate-icon">🔒</div>
-      <div class="gate-title">접근 권한이 없습니다</div>
-      <div class="gate-sub">결과는 공유링크를 통해서만 볼 수 있습니다.</div>
-    </div>`;
-} else {
-  init();
-}
+init();
 
 const QUESTIONS = [
   { key:'q1', text:'무엇을 하는 사람인지 명확하게 이해됐다', short:'명확한 이해' },
