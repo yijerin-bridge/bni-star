@@ -75,8 +75,6 @@
 const params = new URLSearchParams(location.search);
 const presenterParam = params.get('presenter') || '';
 
-init();
-
 const QUESTIONS = [
   { key:'q1', text:'무엇을 하는 사람인지 명확하게 이해됐다', short:'명확한 이해' },
   { key:'q2', text:'어떤 고객을 찾고 있는지 구체적으로 그려졌다', short:'고객 묘사' },
@@ -218,6 +216,8 @@ async function init() {
 
   applyFilters();
 }
+
+init();
 </script>
 </body>
 </html>
