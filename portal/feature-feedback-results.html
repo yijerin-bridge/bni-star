@@ -76,12 +76,12 @@ const params = new URLSearchParams(location.search);
 const presenterParam = params.get('presenter') || '';
 
 const QUESTIONS = [
-  { key:'q1', text:'무엇을 하는 사람인지 명확하게 이해됐다', short:'명확한 이해' },
-  { key:'q2', text:'어떤 고객을 찾고 있는지 구체적으로 그려졌다', short:'고객 묘사' },
-  { key:'q3', text:'경쟁자와 다른 강점이 기억에 남는다', short:'차별 강점' },
-  { key:'q4', text:'"이런 분 소개해 주세요"라는 요청이 분명했다', short:'소개 요청' },
-  { key:'q5', text:'소개하고 싶은 사람이 실제로 떠올랐다', short:'이름 떠오름' },
-  { key:'q6', text:'믿고 소개해도 되겠다는 신뢰가 느껴졌다', short:'신뢰' },
+  { key:'q1', text:'어떤 일을 하시는지 잘 이해됐다', short:'이해' },
+  { key:'q2', text:'어떤 분을 소개해 드리면 좋을지 떠올랐다', short:'소개 대상' },
+  { key:'q3', text:'다른 분들과 구별되는 점이 인상 깊었다', short:'차별점' },
+  { key:'q4', text:'"이런 분 소개해 주세요"라는 요청이 구체적으로 전달됐다', short:'소개 요청' },
+  { key:'q5', text:'발표를 들으며 떠오르는 분이 있었다', short:'떠오름' },
+  { key:'q6', text:'믿을 수 있는 분이라는 느낌이 들었다', short:'신뢰' },
 ];
 
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);

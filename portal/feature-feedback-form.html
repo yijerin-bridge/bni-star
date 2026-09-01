@@ -25,18 +25,14 @@
     .q-label { font-size:14px; font-weight:700; margin-bottom:14px; line-height:1.5; }
     .q-label .req { color:#8B0000; margin-left:2px; }
 
-    .scale-row { display:flex; align-items:center; gap:8px; }
-    .scale-anchor { font-size:11px; color:#9ca3af; white-space:nowrap; flex-shrink:0; text-align:center; }
-    .scale-options { display:flex; flex:1; gap:4px; justify-content:space-between; }
-    .scale-opt { display:flex; flex-direction:column; align-items:center; gap:4px; cursor:pointer; flex:1; }
-    .scale-opt input[type=radio] { display:none; }
-    .scale-circle {
-      width:40px; height:40px; border-radius:50%;
-      border:2px solid #e5e7eb;
-      display:flex; align-items:center; justify-content:center;
-      font-size:14px; font-weight:700; color:#9ca3af; transition:.15s;
-    }
-    .scale-opt:has(input:checked) .scale-circle { border-color:#8B0000; background:#8B0000; color:#fff; }
+    /* 별점 */
+    .star-group { display:flex; flex-direction:row-reverse; justify-content:flex-end; gap:6px; }
+    .star-group input[type=radio] { display:none; }
+    .star-group label { font-size:36px; cursor:pointer; color:#e5e7eb; line-height:1; transition:color .1s; }
+    .star-group label:hover,
+    .star-group label:hover ~ label { color:#f59e0b; }
+    .star-group input:checked ~ label { color:#f59e0b; }
+    .star-hint { font-size:11px; color:#9ca3af; margin-top:8px; }
 
     select, textarea {
       width:100%; border:1.5px solid #e5e7eb; border-radius:10px;
@@ -110,12 +106,12 @@
 <script src="/js/members-data.js"></script>
 <script>
 const QUESTIONS = [
-  { key:'q1', text:'무엇을 하는 사람인지 명확하게 이해됐다' },
-  { key:'q2', text:'어떤 고객을 찾고 있는지 구체적으로 그려졌다' },
-  { key:'q3', text:'경쟁자와 다른 강점이 기억에 남는다' },
-  { key:'q4', text:'"이런 분 소개해 주세요"라는 요청이 분명했다' },
-  { key:'q5', text:'소개하고 싶은 사람이 실제로 떠올랐다' },
-  { key:'q6', text:'믿고 소개해도 되겠다는 신뢰가 느껴졌다' },
+  { key:'q1', text:'어떤 일을 하시는지 잘 이해됐다' },
+  { key:'q2', text:'어떤 분을 소개해 드리면 좋을지 떠올랐다' },
+  { key:'q3', text:'다른 분들과 구별되는 점이 인상 깊었다' },
+  { key:'q4', text:'"이런 분 소개해 주세요"라는 요청이 구체적으로 전달됐다' },
+  { key:'q5', text:'발표를 들으며 떠오르는 분이 있었다' },
+  { key:'q6', text:'믿을 수 있는 분이라는 느낌이 들었다' },
 ];
 
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
@@ -132,22 +128,17 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
   }
 })();
 
-// 질문 렌더
+// 별점 질문 렌더 (row-reverse 트릭: DOM 5→1, 화면 1→5)
 document.getElementById('qContainer').innerHTML = QUESTIONS.map((q,i) => `
   <div class="card">
     <div class="q-label">${i+1}. ${q.text}<span class="req">*</span></div>
-    <div class="scale-row">
-      <span class="scale-anchor">전혀<br>아니다</span>
-      <div class="scale-options">
-        ${[1,2,3,4,5].map(v=>`
-          <label class="scale-opt">
-            <input type="radio" name="${q.key}" value="${v}">
-            <div class="scale-circle">${v}</div>
-          </label>`).join('')}
-      </div>
-      <span class="scale-anchor">매우<br>그렇다</span>
+    <div class="star-group" id="sg-${q.key}">
+      ${[5,4,3,2,1].map(v=>`
+        <label for="${q.key}-${v}">★</label>
+        <input type="radio" name="${q.key}" id="${q.key}-${v}" value="${v}">`).join('')}
     </div>
-    <div class="err-msg" id="err-${q.key}">점수를 선택해 주세요.</div>
+    <div class="star-hint">1점(별로) ~ 5점(매우 그렇다)</div>
+    <div class="err-msg" id="err-${q.key}">별점을 선택해 주세요.</div>
   </div>
 `).join('');
 
