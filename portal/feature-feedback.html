@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>피처 프레젠테이션 피드백 — BNI 크라운챕터</title>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
+    body { font-family:'Noto Sans KR',sans-serif; background:#f3f4f6; color:#1a1a1a; min-height:100vh; }
+
+    .topbar { background:#8B0000; color:#fff; padding:14px 20px; display:flex; align-items:center; gap:10px; }
+    .topbar-logo { font-size:17px; font-weight:900; letter-spacing:-.5px; }
+    .topbar-sub  { font-size:12px; opacity:.7; }
+    .topbar-badge{ margin-left:auto; font-size:11px; background:rgba(255,255,255,.2); padding:3px 10px; border-radius:20px; }
+
+    .container { max-width:620px; margin:0 auto; padding:28px 16px 60px; }
+
+    .page-title { font-size:20px; font-weight:900; margin-bottom:4px; }
+    .page-sub   { font-size:13px; color:#6b7280; margin-bottom:24px; }
+
+    .card { background:#fff; border-radius:14px; padding:22px 20px; margin-bottom:14px; box-shadow:0 1px 4px rgba(0,0,0,.06); }
+
+    .q-label { font-size:14px; font-weight:700; margin-bottom:14px; line-height:1.5; }
+    .q-label .req { color:#8B0000; margin-left:2px; }
+
+    .scale-row { display:flex; align-items:flex-end; gap:0; }
+    .scale-anchor { font-size:11px; color:#9ca3af; white-space:nowrap; }
+    .scale-anchor.left  { margin-right:8px; }
+    .scale-anchor.right { margin-left:8px; }
+    .scale-options { display:flex; flex:1; gap:4px; justify-content:space-between; }
+    .scale-opt { display:flex; flex-direction:column; align-items:center; gap:6px; cursor:pointer; flex:1; }
+    .scale-opt input[type=radio] { display:none; }
+    .scale-circle {
+      width:36px; height:36px; border-radius:50%; border:2px solid #d1d5db;
+      display:flex; align-items:center; justify-content:center;
+      font-size:13px; font-weight:700; color:#9ca3af; transition:.15s;
+    }
+    .scale-opt:has(input:checked) .scale-circle {
+      border-color:#8B0000; background:#8B0000; color:#fff;
+    }
+    .scale-num { font-size:11px; color:#d1d5db; }
+    .scale-opt:has(input:checked) .scale-num { color:#8B0000; }
+
+    select, textarea {
+      width:100%; border:1.5px solid #e5e7eb; border-radius:10px;
+      padding:10px 14px; font-size:14px; font-family:inherit;
+      background:#fff; color:#1a1a1a; outline:none; transition:.15s;
+    }
+    select:focus, textarea:focus { border-color:#8B0000; }
+    textarea { resize:vertical; min-height:80px; }
+
+    .submit-btn {
+      width:100%; padding:14px; background:#8B0000; color:#fff;
+      border:none; border-radius:12px; font-size:16px; font-weight:700;
+      font-family:inherit; cursor:pointer; margin-top:8px; transition:.15s;
+    }
+    .submit-btn:hover { background:#700000; }
+    .submit-btn:disabled { background:#d1d5db; cursor:not-allowed; }
+
+    .toast {
+      position:fixed; bottom:24px; left:50%; transform:translateX(-50%);
+      background:#1a1a1a; color:#fff; padding:12px 24px; border-radius:10px;
+      font-size:14px; font-weight:600; opacity:0; pointer-events:none;
+      transition:opacity .3s; z-index:999; white-space:nowrap;
+    }
+    .toast.show { opacity:1; }
+
+    .results-link { text-align:center; margin-top:20px; }
+    .results-link a { color:#8B0000; font-size:13px; font-weight:600; text-decoration:none; }
+    .results-link a:hover { text-decoration:underline; }
+
+    .error-msg { color:#8B0000; font-size:12px; margin-top:6px; display:none; }
+    .error-msg.show { display:block; }
+  </style>
+</head>
+<body>
+
+<div class="topbar">
+  <span class="topbar-logo">BNI 크라운챕터</span>
+  <span class="topbar-sub">피처 프레젠테이션 피드백</span>
+  <span class="topbar-badge">공개 설문</span>
+</div>
+
+<div class="container">
+  <div class="page-title">피처 프레젠테이션 피드백</div>
+  <p class="page-sub">발표를 들으며 떠오르는 대로 바로 체크해 주세요. 익명으로 제출됩니다.</p>
+
+  <form id="feedbackForm" novalidate>
+
+    <!-- 발표자 선택 -->
+    <div class="card">
+      <div class="q-label">발표자 이름<span class="req">*</span></div>
+      <select id="presenterSelect" required>
+        <option value="">-- 선택 --</option>
+      </select>
+      <div class="error-msg" id="err-presenter">발표자를 선택해 주세요.</div>
+    </div>
+
+    <!-- Q1~Q6 -->
+    <div id="questions"></div>
+
+    <!-- 자유 의견 -->
+    <div class="card">
+      <div class="q-label">자유롭게 피드백을 남겨주세요 <span style="font-weight:400;color:#9ca3af">(선택)</span></div>
+      <textarea id="commentField" placeholder="발표에서 인상 깊었던 점, 개선하면 좋을 점 등 자유롭게 작성해 주세요."></textarea>
+    </div>
+
+    <button type="submit" class="submit-btn" id="submitBtn">피드백 제출하기</button>
+  </form>
+
+  <div class="results-link">
+    <a href="feature-feedback-results.html">📊 전체 결과 보기 →</a>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="/js/supabase-config.js"></script>
+<script src="/js/members-data.js"></script>
+<script>
+const QUESTIONS = [
+  { key:'q1', text:'무엇을 하는 사람인지 명확하게 이해됐다' },
+  { key:'q2', text:'어떤 고객을 찾고 있는지 구체적으로 그려졌다' },
+  { key:'q3', text:'경쟁자와 다른 강점이 기억에 남는다' },
+  { key:'q4', text:'"이런 분 소개해 주세요"라는 요청이 분명했다' },
+  { key:'q5', text:'소개하고 싶은 사람이 실제로 떠올랐다' },
+  { key:'q6', text:'믿고 소개해도 되겠다는 신뢰가 느껴졌다' },
+];
+
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+
+// 멤버 목록 로드
+async function loadMembers() {
+  const sel = document.getElementById('presenterSelect');
+  try {
+    const { data } = await sb.from('members').select('name').order('name');
+    const names = (data && data.length) ? data.map(m => m.name) : MEMBERS_DEFAULT.map(m => m.name);
+    names.forEach(n => {
+      const o = document.createElement('option');
+      o.value = n; o.textContent = n;
+      sel.appendChild(o);
+    });
+  } catch {
+    MEMBERS_DEFAULT.forEach(m => {
+      const o = document.createElement('option');
+      o.value = m.name; o.textContent = m.name;
+      sel.appendChild(o);
+    });
+  }
+}
+
+// 질문 렌더
+function renderQuestions() {
+  const container = document.getElementById('questions');
+  container.innerHTML = QUESTIONS.map((q, i) => `
+    <div class="card">
+      <div class="q-label">${i+1}. ${q.text}<span class="req">*</span></div>
+      <div class="scale-row">
+        <span class="scale-anchor left">전혀<br>아니다</span>
+        <div class="scale-options">
+          ${[1,2,3,4,5].map(v => `
+            <label class="scale-opt">
+              <input type="radio" name="${q.key}" value="${v}" required>
+              <div class="scale-circle">${v}</div>
+            </label>
+          `).join('')}
+        </div>
+        <span class="scale-anchor right">매우<br>그렇다</span>
+      </div>
+      <div class="error-msg" id="err-${q.key}">점수를 선택해 주세요.</div>
+    </div>
+  `).join('');
+}
+
+function showToast(msg, duration = 2500) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), duration);
+}
+
+document.getElementById('feedbackForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  let valid = true;
+
+  const presenter = document.getElementById('presenterSelect').value;
+  const errP = document.getElementById('err-presenter');
+  if (!presenter) { errP.classList.add('show'); valid = false; } else errP.classList.remove('show');
+
+  const scores = {};
+  QUESTIONS.forEach(q => {
+    const checked = document.querySelector(`input[name="${q.key}"]:checked`);
+    const errEl = document.getElementById(`err-${q.key}`);
+    if (!checked) { errEl.classList.add('show'); valid = false; }
+    else { errEl.classList.remove('show'); scores[q.key] = parseInt(checked.value); }
+  });
+
+  if (!valid) return;
+
+  const btn = document.getElementById('submitBtn');
+  btn.disabled = true;
+  btn.textContent = '제출 중...';
+
+  const payload = {
+    presenter_name: presenter,
+    comment: document.getElementById('commentField').value.trim() || null,
+    ...scores,
+  };
+
+  const { error } = await sb.from('feature_feedback').insert([payload]);
+
+  if (error) {
+    showToast('제출 오류: ' + error.message, 4000);
+    btn.disabled = false;
+    btn.textContent = '피드백 제출하기';
+    return;
+  }
+
+  showToast('✅ 피드백이 제출되었습니다. 감사합니다!');
+  document.getElementById('feedbackForm').reset();
+  btn.disabled = false;
+  btn.textContent = '피드백 제출하기';
+});
+
+loadMembers();
+renderQuestions();
+</script>
+</body>
+</html>
