@@ -74,9 +74,11 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="/js/supabase-config.js"></script>
 <script>
-const SHARE_TOKEN = 'bni-crown-star-ff';
+const SHARE_TOKEN = 'bni-star-ff';
 
 const params = new URLSearchParams(location.search);
+const presenterParam = params.get('presenter') || '';
+
 if (params.get('token') !== SHARE_TOKEN) {
   document.getElementById('root').innerHTML = `
     <div class="gate">
@@ -115,21 +117,6 @@ function groupByPresenter(data) {
     const sb2=QUESTIONS.reduce((s,q)=>s+(avg(b[1],q.key)||0),0);
     return sb2-sa;
   });
-}
-
-function applyFilters() {
-  let filtered = allFeedback;
-  const pv = document.getElementById('pfFilter')?.value;
-  const period = document.getElementById('periodFilter')?.value;
-  if (pv) filtered = filtered.filter(r=>r.presenter_name===pv);
-  if (period) {
-    const cutoff = new Date(Date.now()-parseInt(period)*86400000).toISOString();
-    filtered = filtered.filter(r=>r.created_at>=cutoff);
-  }
-  document.getElementById('totalCount').textContent = filtered.length;
-  const grouped = groupByPresenter(filtered);
-  renderSummary(grouped);
-  renderCards(grouped);
 }
 
 function renderSummary(grouped) {
@@ -182,37 +169,65 @@ window.toggleComments = (btn, id) => {
   btn.textContent=hidden?'💬 코멘트 접기':`💬 코멘트 ${el.querySelectorAll('.comment-item').length}건 보기`;
 };
 
+function applyFilters() {
+  let filtered = allFeedback;
+  const pv = presenterParam || document.getElementById('pfFilter')?.value || '';
+  const period = document.getElementById('periodFilter')?.value;
+  if (pv) filtered = filtered.filter(r=>r.presenter_name===pv);
+  if (period) {
+    const cutoff = new Date(Date.now()-parseInt(period)*86400000).toISOString();
+    filtered = filtered.filter(r=>r.created_at>=cutoff);
+  }
+  const tc = document.getElementById('totalCount');
+  if (tc) tc.textContent = filtered.length;
+  const grouped = groupByPresenter(filtered);
+  renderSummary(grouped);
+  renderCards(grouped);
+}
+
 async function init() {
   const root = document.getElementById('root');
-  root.innerHTML = `
-    <div class="page-title">피처 프레젠테이션 피드백 결과</div>
-    <p class="page-sub">발표자별 평균 점수 및 코멘트</p>
-    <div class="controls">
-      <select id="pfFilter"><option value="">전체 발표자</option></select>
-      <select id="periodFilter">
-        <option value="">전체 기간</option>
-        <option value="7">최근 7일</option>
-        <option value="30">최근 30일</option>
-        <option value="90">최근 90일</option>
-      </select>
-      <span class="pill-count" id="totalCount">—</span>
-      <span style="font-size:12px;color:#9ca3af">건</span>
-    </div>
-    <div class="section-title">📋 발표자별 요약</div>
-    <div style="overflow-x:auto;margin-bottom:20px"><table class="summary-table" id="summaryTbl"></table></div>
-    <div class="section-title">📌 발표자별 상세</div>
-    <div id="detailCards"></div>
-  `;
-
-  document.getElementById('pfFilter').addEventListener('change', applyFilters);
-  document.getElementById('periodFilter').addEventListener('change', applyFilters);
 
   const { data } = await sb.from('feature_feedback').select('*').order('created_at', { ascending:false });
   allFeedback = data || [];
 
-  const names=[...new Set(allFeedback.map(r=>r.presenter_name))].sort();
-  const sel=document.getElementById('pfFilter');
-  names.forEach(n=>{ const o=document.createElement('option'); o.value=n; o.textContent=n; sel.appendChild(o); });
+  if (presenterParam) {
+    // 발표자 단독 결과 화면
+    root.innerHTML = `
+      <div class="page-title">${presenterParam} 피드백 결과</div>
+      <p class="page-sub">BNI 스타챕터 피처 프레젠테이션</p>
+      <span class="pill-count" id="totalCount">—</span>
+      <span style="font-size:12px;color:#9ca3af;margin-left:6px">건</span>
+      <div style="margin-top:20px" id="detailCards"></div>
+    `;
+    document.getElementById('summaryTbl') || root.insertAdjacentHTML('beforeend', '<table id="summaryTbl" style="display:none"></table>');
+  } else {
+    // 전체 결과 화면
+    root.innerHTML = `
+      <div class="page-title">피처 피드백 결과</div>
+      <p class="page-sub">BNI 스타챕터 피처 프레젠테이션</p>
+      <div class="controls">
+        <select id="pfFilter"><option value="">전체 발표자</option></select>
+        <select id="periodFilter">
+          <option value="">전체 기간</option>
+          <option value="7">최근 7일</option>
+          <option value="30">최근 30일</option>
+          <option value="90">최근 90일</option>
+        </select>
+        <span class="pill-count" id="totalCount">—</span>
+        <span style="font-size:12px;color:#9ca3af">건</span>
+      </div>
+      <div class="section-title">📋 발표자별 요약</div>
+      <div style="overflow-x:auto;margin-bottom:20px"><table class="summary-table" id="summaryTbl"></table></div>
+      <div class="section-title">📌 발표자별 상세</div>
+      <div id="detailCards"></div>
+    `;
+    const names=[...new Set(allFeedback.map(r=>r.presenter_name))].sort();
+    const sel=document.getElementById('pfFilter');
+    names.forEach(n=>{ const o=document.createElement('option'); o.value=n; o.textContent=n; sel.appendChild(o); });
+    document.getElementById('pfFilter').addEventListener('change', applyFilters);
+    document.getElementById('periodFilter').addEventListener('change', applyFilters);
+  }
 
   applyFilters();
 }

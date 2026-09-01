@@ -83,7 +83,7 @@
 <script src="/portal/js/portal-nav.js"></script>
 <script>
 /* ── 설정 ── */
-const SHARE_TOKEN = 'bni-crown-star-ff';
+const SHARE_TOKEN = 'bni-star-ff';
 
 const QUESTIONS = [
   { key:'q1', text:'무엇을 하는 사람인지 명확하게 이해됐다', short:'명확한 이해' },
@@ -361,9 +361,12 @@ function renderDetailCards(grouped) {
             <div class="pc-name">${name}</div>
             <div class="pc-meta">응답 ${recs.length}건</div>
           </div>
-          <div style="text-align:right">
-            <div class="pc-avg">${fmt(overall)}</div>
-            <div class="pc-avg-sub">종합 / 5.0</div>
+          <div style="text-align:right;display:flex;flex-direction:column;align-items:flex-end;gap:6px">
+            <div>
+              <div class="pc-avg">${fmt(overall)}</div>
+              <div class="pc-avg-sub">종합 / 5.0</div>
+            </div>
+            <button onclick="copyPresenterLink('${encodeURIComponent(name)}')" style="padding:4px 10px;border:1.5px solid var(--border);border-radius:7px;background:#fff;cursor:pointer;font-size:11px;font-weight:600;font-family:inherit" id="plink-${encodeURIComponent(name)}">🔗 결과 공유</button>
           </div>
         </div>
         ${QUESTIONS.map((q,i) => {
@@ -392,6 +395,15 @@ function renderDetailCards(grouped) {
       </div>`;
   }).join('');
 }
+
+window.copyPresenterLink = (encodedName) => {
+  const name = decodeURIComponent(encodedName);
+  const url = `${location.origin}/portal/feature-feedback-results.html?token=${SHARE_TOKEN}&presenter=${encodedName}`;
+  navigator.clipboard.writeText(url).then(() => {
+    const btn = document.getElementById('plink-'+encodedName);
+    if (btn) { btn.textContent = '✅ 복사됨!'; setTimeout(()=>{ btn.textContent='🔗 결과 공유'; }, 2000); }
+  });
+};
 
 window.toggleResponses = (btn, id) => {
   const el = document.getElementById(id);
