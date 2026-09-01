@@ -3,229 +3,387 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>피처 프레젠테이션 피드백 — BNI 크라운챕터</title>
+  <title>피처 피드백 — BNI STAR Portal</title>
+  <meta name="robots" content="noindex, nofollow">
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/portal/css/portal.css">
   <style>
-    *, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
-    body { font-family:'Noto Sans KR',sans-serif; background:#f3f4f6; color:#1a1a1a; min-height:100vh; }
+    .tab-bar { display:flex; gap:0; border:1.5px solid var(--border); border-radius:10px; overflow:hidden; margin-bottom:24px; width:fit-content; }
+    .tab-bar button { padding:8px 20px; border:none; background:#fff; cursor:pointer; font-size:13px; font-weight:600; font-family:inherit; color:var(--text-muted); transition:.15s; }
+    .tab-bar button.active { background:#CC0000; color:#fff; }
 
-    .topbar { background:#8B0000; color:#fff; padding:14px 20px; display:flex; align-items:center; gap:10px; }
-    .topbar-logo { font-size:17px; font-weight:900; letter-spacing:-.5px; }
-    .topbar-sub  { font-size:12px; opacity:.7; }
-    .topbar-badge{ margin-left:auto; font-size:11px; background:rgba(255,255,255,.2); padding:3px 10px; border-radius:20px; }
-
-    .container { max-width:620px; margin:0 auto; padding:28px 16px 60px; }
-
-    .page-title { font-size:20px; font-weight:900; margin-bottom:4px; }
-    .page-sub   { font-size:13px; color:#6b7280; margin-bottom:24px; }
-
-    .card { background:#fff; border-radius:14px; padding:22px 20px; margin-bottom:14px; box-shadow:0 1px 4px rgba(0,0,0,.06); }
-
+    /* 피드백 폼 */
+    .ff-card { background:#fff; border:1.5px solid var(--border); border-radius:14px; padding:20px; margin-bottom:12px; }
     .q-label { font-size:14px; font-weight:700; margin-bottom:14px; line-height:1.5; }
-    .q-label .req { color:#8B0000; margin-left:2px; }
+    .q-label .req { color:#CC0000; margin-left:2px; }
 
-    .scale-row { display:flex; align-items:flex-end; gap:0; }
-    .scale-anchor { font-size:11px; color:#9ca3af; white-space:nowrap; }
-    .scale-anchor.left  { margin-right:8px; }
-    .scale-anchor.right { margin-left:8px; }
+    .scale-row { display:flex; align-items:center; gap:8px; }
+    .scale-anchor { font-size:11px; color:#9ca3af; white-space:nowrap; flex-shrink:0; }
     .scale-options { display:flex; flex:1; gap:4px; justify-content:space-between; }
-    .scale-opt { display:flex; flex-direction:column; align-items:center; gap:6px; cursor:pointer; flex:1; }
+    .scale-opt { display:flex; flex-direction:column; align-items:center; gap:4px; cursor:pointer; flex:1; }
     .scale-opt input[type=radio] { display:none; }
     .scale-circle {
-      width:36px; height:36px; border-radius:50%; border:2px solid #d1d5db;
+      width:38px; height:38px; border-radius:50%;
+      border:2px solid var(--border);
       display:flex; align-items:center; justify-content:center;
       font-size:13px; font-weight:700; color:#9ca3af; transition:.15s;
     }
-    .scale-opt:has(input:checked) .scale-circle {
-      border-color:#8B0000; background:#8B0000; color:#fff;
-    }
-    .scale-num { font-size:11px; color:#d1d5db; }
-    .scale-opt:has(input:checked) .scale-num { color:#8B0000; }
+    .scale-opt:has(input:checked) .scale-circle { border-color:#CC0000; background:#CC0000; color:#fff; }
 
-    select, textarea {
-      width:100%; border:1.5px solid #e5e7eb; border-radius:10px;
-      padding:10px 14px; font-size:14px; font-family:inherit;
-      background:#fff; color:#1a1a1a; outline:none; transition:.15s;
-    }
-    select:focus, textarea:focus { border-color:#8B0000; }
-    textarea { resize:vertical; min-height:80px; }
+    .err-msg { color:#CC0000; font-size:12px; margin-top:6px; display:none; }
+    .err-msg.show { display:block; }
 
-    .submit-btn {
-      width:100%; padding:14px; background:#8B0000; color:#fff;
-      border:none; border-radius:12px; font-size:16px; font-weight:700;
-      font-family:inherit; cursor:pointer; margin-top:8px; transition:.15s;
-    }
-    .submit-btn:hover { background:#700000; }
+    .submit-btn { padding:12px 32px; background:#CC0000; color:#fff; border:none; border-radius:10px; font-size:14px; font-weight:700; font-family:inherit; cursor:pointer; transition:.15s; }
+    .submit-btn:hover { background:#a00000; }
     .submit-btn:disabled { background:#d1d5db; cursor:not-allowed; }
 
-    .toast {
-      position:fixed; bottom:24px; left:50%; transform:translateX(-50%);
-      background:#1a1a1a; color:#fff; padding:12px 24px; border-radius:10px;
-      font-size:14px; font-weight:600; opacity:0; pointer-events:none;
-      transition:opacity .3s; z-index:999; white-space:nowrap;
-    }
-    .toast.show { opacity:1; }
+    /* 결과 */
+    .summary-table { width:100%; border-collapse:collapse; background:#fff; border-radius:12px; overflow:hidden; box-shadow:0 1px 3px rgba(0,0,0,.06); }
+    .summary-table th { background:#CC0000; color:#fff; font-size:12px; font-weight:700; padding:10px 14px; text-align:left; }
+    .summary-table th:not(:first-child) { text-align:center; }
+    .summary-table td { padding:10px 14px; font-size:13px; border-bottom:1px solid var(--border); }
+    .summary-table td:not(:first-child) { text-align:center; font-weight:700; }
+    .summary-table tr:last-child td { border-bottom:none; }
+    .score-chip { display:inline-block; padding:2px 8px; border-radius:20px; font-size:11px; font-weight:700; }
+    .score-high { background:#dcfce7; color:#15803d; }
+    .score-mid  { background:#fef9c3; color:#854d0e; }
+    .score-low  { background:#fee2e2; color:#b91c1c; }
 
-    .results-link { text-align:center; margin-top:20px; }
-    .results-link a { color:#8B0000; font-size:13px; font-weight:600; text-decoration:none; }
-    .results-link a:hover { text-decoration:underline; }
+    .presenter-card { background:#fff; border:1.5px solid var(--border); border-radius:14px; padding:20px; margin-bottom:12px; }
+    .pc-header { display:flex; align-items:center; gap:12px; margin-bottom:16px; }
+    .pc-name   { font-size:17px; font-weight:900; }
+    .pc-meta   { font-size:12px; color:var(--text-muted); }
+    .pc-avg    { margin-left:auto; font-size:22px; font-weight:900; color:#CC0000; }
+    .pc-avg-sub{ font-size:11px; color:var(--text-muted); text-align:right; }
 
-    .error-msg { color:#8B0000; font-size:12px; margin-top:6px; display:none; }
-    .error-msg.show { display:block; }
+    .q-row { display:flex; align-items:center; gap:10px; margin-bottom:6px; }
+    .q-row-text { font-size:12px; color:#374151; flex:1; min-width:0; }
+    .q-bar-wrap { width:120px; height:7px; background:#f3f4f6; border-radius:4px; flex-shrink:0; }
+    .q-bar { height:7px; border-radius:4px; background:#CC0000; }
+    .q-score { font-size:12px; font-weight:700; width:28px; text-align:right; flex-shrink:0; }
+
+    .comment-list { margin-top:12px; border-top:1px solid var(--border); padding-top:12px; }
+    .comment-item { background:#f9fafb; border-radius:8px; padding:10px 12px; margin-bottom:6px; font-size:12px; color:#374151; line-height:1.6; }
+    .comment-date { font-size:10px; color:var(--text-muted); margin-bottom:3px; }
+    .toggle-btn { font-size:12px; color:#CC0000; background:none; border:none; cursor:pointer; font-family:inherit; font-weight:600; padding:0; margin-top:8px; }
+
+    .share-bar { display:flex; align-items:center; gap:10px; margin-bottom:20px; flex-wrap:wrap; }
+    .share-bar select { padding:7px 12px; border:1.5px solid var(--border); border-radius:8px; font-size:13px; font-family:inherit; }
+    .share-bar select:focus { outline:none; border-color:#CC0000; }
+    .pill-count { background:#CC0000; color:#fff; font-size:11px; font-weight:700; padding:3px 10px; border-radius:20px; }
+    .copy-link-btn { padding:7px 14px; border:1.5px solid var(--border); border-radius:8px; background:#fff; cursor:pointer; font-size:12px; font-weight:600; font-family:inherit; margin-left:auto; }
+    .copy-link-btn:hover { border-color:#CC0000; color:#CC0000; }
   </style>
 </head>
 <body>
-
-<div class="topbar">
-  <span class="topbar-logo">BNI 크라운챕터</span>
-  <span class="topbar-sub">피처 프레젠테이션 피드백</span>
-  <span class="topbar-badge">공개 설문</span>
-</div>
-
-<div class="container">
-  <div class="page-title">피처 프레젠테이션 피드백</div>
-  <p class="page-sub">발표를 들으며 떠오르는 대로 바로 체크해 주세요. 익명으로 제출됩니다.</p>
-
-  <form id="feedbackForm" novalidate>
-
-    <!-- 발표자 선택 -->
-    <div class="card">
-      <div class="q-label">발표자 이름<span class="req">*</span></div>
-      <select id="presenterSelect" required>
-        <option value="">-- 선택 --</option>
-      </select>
-      <div class="error-msg" id="err-presenter">발표자를 선택해 주세요.</div>
-    </div>
-
-    <!-- Q1~Q6 -->
-    <div id="questions"></div>
-
-    <!-- 자유 의견 -->
-    <div class="card">
-      <div class="q-label">자유롭게 피드백을 남겨주세요 <span style="font-weight:400;color:#9ca3af">(선택)</span></div>
-      <textarea id="commentField" placeholder="발표에서 인상 깊었던 점, 개선하면 좋을 점 등 자유롭게 작성해 주세요."></textarea>
-    </div>
-
-    <button type="submit" class="submit-btn" id="submitBtn">피드백 제출하기</button>
-  </form>
-
-  <div class="results-link">
-    <a href="feature-feedback-results.html">📊 전체 결과 보기 →</a>
-  </div>
-</div>
-
-<div class="toast" id="toast"></div>
-
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="/js/supabase-config.js"></script>
 <script src="/js/members-data.js"></script>
+<script src="/portal/js/portal-auth.js"></script>
+<script src="/portal/js/portal-nav.js"></script>
 <script>
+/* ── 설정 ── */
+const SHARE_TOKEN = 'bni-crown-star-ff';
+
 const QUESTIONS = [
-  { key:'q1', text:'무엇을 하는 사람인지 명확하게 이해됐다' },
-  { key:'q2', text:'어떤 고객을 찾고 있는지 구체적으로 그려졌다' },
-  { key:'q3', text:'경쟁자와 다른 강점이 기억에 남는다' },
-  { key:'q4', text:'"이런 분 소개해 주세요"라는 요청이 분명했다' },
-  { key:'q5', text:'소개하고 싶은 사람이 실제로 떠올랐다' },
-  { key:'q6', text:'믿고 소개해도 되겠다는 신뢰가 느껴졌다' },
+  { key:'q1', text:'무엇을 하는 사람인지 명확하게 이해됐다', short:'명확한 이해' },
+  { key:'q2', text:'어떤 고객을 찾고 있는지 구체적으로 그려졌다', short:'고객 묘사' },
+  { key:'q3', text:'경쟁자와 다른 강점이 기억에 남는다', short:'차별 강점' },
+  { key:'q4', text:'"이런 분 소개해 주세요"라는 요청이 분명했다', short:'소개 요청' },
+  { key:'q5', text:'소개하고 싶은 사람이 실제로 떠올랐다', short:'이름 떠오름' },
+  { key:'q6', text:'믿고 소개해도 되겠다는 신뢰가 느껴졌다', short:'신뢰' },
 ];
 
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+let allFeedback = [];
+let canSeeResults = false;
+let portalSession = null;
 
-// 멤버 목록 로드
-async function loadMembers() {
-  const sel = document.getElementById('presenterSelect');
-  try {
-    const { data } = await sb.from('members').select('name').order('name');
-    const names = (data && data.length) ? data.map(m => m.name) : MEMBERS_DEFAULT.map(m => m.name);
-    names.forEach(n => {
-      const o = document.createElement('option');
-      o.value = n; o.textContent = n;
-      sel.appendChild(o);
-    });
-  } catch {
-    MEMBERS_DEFAULT.forEach(m => {
-      const o = document.createElement('option');
-      o.value = m.name; o.textContent = m.name;
-      sel.appendChild(o);
-    });
-  }
-}
+/* ── 렌더링 ── */
+const layout = renderPortalLayout({ title: '피처 피드백' });
+if (!layout) throw new Error('auth failed');
+const { session, bodyEl } = layout;
+portalSession = session;
 
-// 질문 렌더
-function renderQuestions() {
-  const container = document.getElementById('questions');
-  container.innerHTML = QUESTIONS.map((q, i) => `
-    <div class="card">
-      <div class="q-label">${i+1}. ${q.text}<span class="req">*</span></div>
-      <div class="scale-row">
-        <span class="scale-anchor left">전혀<br>아니다</span>
-        <div class="scale-options">
-          ${[1,2,3,4,5].map(v => `
-            <label class="scale-opt">
-              <input type="radio" name="${q.key}" value="${v}" required>
-              <div class="scale-circle">${v}</div>
-            </label>
-          `).join('')}
-        </div>
-        <span class="scale-anchor right">매우<br>그렇다</span>
-      </div>
-      <div class="error-msg" id="err-${q.key}">점수를 선택해 주세요.</div>
+canSeeResults = canAccessFeatureFeedback(session);
+
+bodyEl.innerHTML = `
+  <div style="max-width:700px">
+    <div class="tab-bar" id="tabBar">
+      <button id="tabForm" class="active" onclick="switchTab('form')">✍️ 피드백 남기기</button>
+      ${canSeeResults ? `<button id="tabResults" onclick="switchTab('results')">📊 결과 보기</button>` : ''}
     </div>
-  `).join('');
+    <div id="panelForm"></div>
+    ${canSeeResults ? `<div id="panelResults" style="display:none"></div>` : ''}
+  </div>
+`;
+
+function switchTab(tab) {
+  document.getElementById('panelForm').style.display    = tab === 'form'    ? '' : 'none';
+  const rp = document.getElementById('panelResults');
+  if (rp) rp.style.display = tab === 'results' ? '' : 'none';
+  document.getElementById('tabForm').classList.toggle('active', tab === 'form');
+  const tr = document.getElementById('tabResults');
+  if (tr) tr.classList.toggle('active', tab === 'results');
 }
 
-function showToast(msg, duration = 2500) {
-  const t = document.getElementById('toast');
-  t.textContent = msg;
-  t.classList.add('show');
-  setTimeout(() => t.classList.remove('show'), duration);
+/* ── 피드백 폼 ── */
+function renderForm() {
+  const fp = document.getElementById('panelForm');
+  fp.innerHTML = `
+    <form id="ffForm" novalidate>
+      <div class="ff-card">
+        <div class="q-label">발표자 이름<span class="req">*</span></div>
+        <select id="presenterSel" style="width:100%;padding:10px 14px;border:1.5px solid var(--border);border-radius:10px;font-size:14px;font-family:inherit;background:#fff">
+          <option value="">-- 선택 --</option>
+        </select>
+        <div class="err-msg" id="err-presenter">발표자를 선택해 주세요.</div>
+      </div>
+
+      ${QUESTIONS.map((q,i) => `
+        <div class="ff-card">
+          <div class="q-label">${i+1}. ${q.text}<span class="req">*</span></div>
+          <div class="scale-row">
+            <span class="scale-anchor">전혀<br>아니다</span>
+            <div class="scale-options">
+              ${[1,2,3,4,5].map(v=>`
+                <label class="scale-opt">
+                  <input type="radio" name="${q.key}" value="${v}">
+                  <div class="scale-circle">${v}</div>
+                </label>`).join('')}
+            </div>
+            <span class="scale-anchor" style="text-align:right">매우<br>그렇다</span>
+          </div>
+          <div class="err-msg" id="err-${q.key}">점수를 선택해 주세요.</div>
+        </div>
+      `).join('')}
+
+      <div class="ff-card">
+        <div class="q-label">자유 의견 <span style="font-weight:400;color:var(--text-muted)">(선택)</span></div>
+        <textarea id="commentField" rows="3"
+          style="width:100%;border:1.5px solid var(--border);border-radius:10px;padding:10px 14px;font-size:14px;font-family:inherit;resize:vertical"
+          placeholder="인상 깊었던 점, 개선하면 좋을 점 등"></textarea>
+      </div>
+
+      <button type="submit" class="submit-btn" id="submitBtn">피드백 제출하기</button>
+    </form>
+  `;
+
+  // 멤버 목록 로드
+  (async () => {
+    const sel = document.getElementById('presenterSel');
+    try {
+      const { data } = await sb.from('members').select('name').eq('is_active', true).order('name');
+      const names = (data && data.length) ? data.map(m=>m.name) : MEMBERS_DEFAULT.map(m=>m.name);
+      names.forEach(n => { const o=document.createElement('option'); o.value=n; o.textContent=n; sel.appendChild(o); });
+    } catch {
+      MEMBERS_DEFAULT.forEach(m => { const o=document.createElement('option'); o.value=m.name; o.textContent=m.name; sel.appendChild(o); });
+    }
+  })();
+
+  document.getElementById('ffForm').addEventListener('submit', async e => {
+    e.preventDefault();
+    let valid = true;
+
+    const presenter = document.getElementById('presenterSel').value;
+    const errP = document.getElementById('err-presenter');
+    if (!presenter) { errP.classList.add('show'); valid=false; } else errP.classList.remove('show');
+
+    const scores = {};
+    QUESTIONS.forEach(q => {
+      const checked = document.querySelector(`input[name="${q.key}"]:checked`);
+      const errEl = document.getElementById('err-'+q.key);
+      if (!checked) { errEl.classList.add('show'); valid=false; }
+      else { errEl.classList.remove('show'); scores[q.key] = parseInt(checked.value); }
+    });
+    if (!valid) return;
+
+    const btn = document.getElementById('submitBtn');
+    btn.disabled = true; btn.textContent = '제출 중...';
+
+    const { error } = await sb.from('feature_feedback').insert([{
+      presenter_name: presenter,
+      comment: document.getElementById('commentField').value.trim() || null,
+      ...scores,
+    }]);
+
+    if (error) {
+      alert('제출 오류: ' + error.message);
+      btn.disabled = false; btn.textContent = '피드백 제출하기';
+      return;
+    }
+
+    btn.textContent = '✅ 제출 완료!';
+    setTimeout(() => {
+      document.getElementById('ffForm').reset();
+      btn.disabled = false; btn.textContent = '피드백 제출하기';
+    }, 2000);
+  });
 }
 
-document.getElementById('feedbackForm').addEventListener('submit', async e => {
-  e.preventDefault();
-  let valid = true;
+/* ── 결과 ── */
+function avg(arr, key) {
+  const vals = arr.map(r=>r[key]).filter(v=>v!=null);
+  return vals.length ? vals.reduce((s,v)=>s+v,0)/vals.length : null;
+}
+function fmt(v) { return v!=null ? v.toFixed(1) : '—'; }
+function scoreClass(v) { return v>=4.2?'score-high':v>=3.0?'score-mid':'score-low'; }
 
-  const presenter = document.getElementById('presenterSelect').value;
-  const errP = document.getElementById('err-presenter');
-  if (!presenter) { errP.classList.add('show'); valid = false; } else errP.classList.remove('show');
+function groupByPresenter(data) {
+  const map = {};
+  data.forEach(r => { if(!map[r.presenter_name]) map[r.presenter_name]=[]; map[r.presenter_name].push(r); });
+  return Object.entries(map).sort((a,b) => {
+    const sa = QUESTIONS.reduce((s,q)=>{ const v=avg(a[1],q.key); return s+(v||0); }, 0);
+    const sb2 = QUESTIONS.reduce((s,q)=>{ const v=avg(b[1],q.key); return s+(v||0); }, 0);
+    return sb2 - sa;
+  });
+}
 
-  const scores = {};
-  QUESTIONS.forEach(q => {
-    const checked = document.querySelector(`input[name="${q.key}"]:checked`);
-    const errEl = document.getElementById(`err-${q.key}`);
-    if (!checked) { errEl.classList.add('show'); valid = false; }
-    else { errEl.classList.remove('show'); scores[q.key] = parseInt(checked.value); }
+function renderResults() {
+  const rp = document.getElementById('panelResults');
+  if (!rp) return;
+
+  const shareUrl = `${location.origin}/portal/feature-feedback-results.html?token=${SHARE_TOKEN}`;
+
+  rp.innerHTML = `
+    <div class="share-bar">
+      <select id="pfFilter"><option value="">전체 발표자</option></select>
+      <select id="periodFilter">
+        <option value="">전체 기간</option>
+        <option value="7">최근 7일</option>
+        <option value="30">최근 30일</option>
+        <option value="90">최근 90일</option>
+      </select>
+      <span class="pill-count" id="totalCount">—</span>
+      <span style="font-size:12px;color:var(--text-muted)">건</span>
+      <button class="copy-link-btn" id="copyShareBtn">🔗 결과 공유링크 복사</button>
+    </div>
+    <div style="overflow-x:auto;margin-bottom:24px">
+      <table class="summary-table" id="summaryTbl"></table>
+    </div>
+    <div id="detailCards"></div>
+  `;
+
+  document.getElementById('copyShareBtn').addEventListener('click', function() {
+    navigator.clipboard.writeText(shareUrl).then(() => {
+      this.textContent = '✅ 복사됨!';
+      setTimeout(() => { this.textContent = '🔗 결과 공유링크 복사'; }, 2000);
+    });
   });
 
-  if (!valid) return;
+  document.getElementById('pfFilter').addEventListener('change', applyFilters);
+  document.getElementById('periodFilter').addEventListener('change', applyFilters);
 
-  const btn = document.getElementById('submitBtn');
-  btn.disabled = true;
-  btn.textContent = '제출 중...';
+  loadResults();
+}
 
-  const payload = {
-    presenter_name: presenter,
-    comment: document.getElementById('commentField').value.trim() || null,
-    ...scores,
-  };
+async function loadResults() {
+  const { data } = await sb.from('feature_feedback').select('*').order('created_at', { ascending: false });
+  allFeedback = data || [];
 
-  const { error } = await sb.from('feature_feedback').insert([payload]);
+  const names = [...new Set(allFeedback.map(r=>r.presenter_name))].sort();
+  const sel = document.getElementById('pfFilter');
+  if (sel) names.forEach(n => { const o=document.createElement('option'); o.value=n; o.textContent=n; sel.appendChild(o); });
 
-  if (error) {
-    showToast('제출 오류: ' + error.message, 4000);
-    btn.disabled = false;
-    btn.textContent = '피드백 제출하기';
-    return;
+  applyFilters();
+}
+
+function applyFilters() {
+  const presenterVal = document.getElementById('pfFilter')?.value || '';
+  const periodVal    = document.getElementById('periodFilter')?.value || '';
+
+  let filtered = allFeedback;
+  if (presenterVal) filtered = filtered.filter(r=>r.presenter_name===presenterVal);
+  if (periodVal) {
+    const cutoff = new Date(Date.now()-parseInt(periodVal)*86400000).toISOString();
+    filtered = filtered.filter(r=>r.created_at>=cutoff);
   }
 
-  showToast('✅ 피드백이 제출되었습니다. 감사합니다!');
-  document.getElementById('feedbackForm').reset();
-  btn.disabled = false;
-  btn.textContent = '피드백 제출하기';
-});
+  const tc = document.getElementById('totalCount');
+  if (tc) tc.textContent = filtered.length;
 
-loadMembers();
-renderQuestions();
+  const grouped = groupByPresenter(filtered);
+  renderSummaryTable(grouped);
+  renderDetailCards(grouped);
+}
+
+function renderSummaryTable(grouped) {
+  const tbl = document.getElementById('summaryTbl');
+  if (!tbl) return;
+  if (!grouped.length) { tbl.innerHTML = ''; return; }
+  tbl.innerHTML = `
+    <thead><tr>
+      <th>발표자</th><th>응답</th>
+      ${QUESTIONS.map(q=>`<th>${q.short}</th>`).join('')}
+      <th>평균</th>
+    </tr></thead>
+    <tbody>
+      ${grouped.map(([name,recs]) => {
+        const avgs = QUESTIONS.map(q=>avg(recs,q.key));
+        const tot = avgs.filter(v=>v!=null);
+        const overall = tot.length ? tot.reduce((s,v)=>s+v,0)/tot.length : null;
+        return `<tr>
+          <td style="font-weight:700">${name}</td>
+          <td>${recs.length}</td>
+          ${avgs.map(v=>`<td><span class="score-chip ${scoreClass(v??0)}">${fmt(v)}</span></td>`).join('')}
+          <td><span class="score-chip ${scoreClass(overall??0)}" style="font-size:13px">${fmt(overall)}</span></td>
+        </tr>`;
+      }).join('')}
+    </tbody>
+  `;
+}
+
+function renderDetailCards(grouped) {
+  const el = document.getElementById('detailCards');
+  if (!el) return;
+  el.innerHTML = grouped.map(([name,recs]) => {
+    const avgs = QUESTIONS.map(q=>avg(recs,q.key));
+    const tot = avgs.filter(v=>v!=null);
+    const overall = tot.length ? tot.reduce((s,v)=>s+v,0)/tot.length : null;
+    const comments = recs.filter(r=>r.comment);
+    const eid = encodeURIComponent(name);
+    return `
+      <div class="presenter-card">
+        <div class="pc-header">
+          <div>
+            <div class="pc-name">${name}</div>
+            <div class="pc-meta">응답 ${recs.length}건</div>
+          </div>
+          <div style="text-align:right">
+            <div class="pc-avg">${fmt(overall)}</div>
+            <div class="pc-avg-sub">종합 / 5.0</div>
+          </div>
+        </div>
+        ${QUESTIONS.map((q,i) => {
+          const v = avgs[i];
+          const w = v!=null ? Math.round(v/5*100) : 0;
+          return `<div class="q-row">
+            <div class="q-row-text">${q.text}</div>
+            <div class="q-bar-wrap"><div class="q-bar" style="width:${w}%"></div></div>
+            <div class="q-score">${fmt(v)}</div>
+          </div>`;
+        }).join('')}
+        ${comments.length ? `
+          <div class="comment-list">
+            <button class="toggle-btn" onclick="toggleComments(this,'${eid}')">💬 코멘트 ${comments.length}건 보기</button>
+            <div id="cmt-${eid}" style="display:none;margin-top:8px">
+              ${comments.map(r=>`<div class="comment-item"><div class="comment-date">${r.created_at.slice(0,10)}</div>${r.comment}</div>`).join('')}
+            </div>
+          </div>` : ''}
+      </div>`;
+  }).join('');
+}
+
+window.toggleComments = (btn, id) => {
+  const el = document.getElementById('cmt-'+id);
+  const hidden = el.style.display==='none';
+  el.style.display = hidden ? 'block' : 'none';
+  btn.textContent = hidden ? '💬 코멘트 접기' : `💬 코멘트 ${el.querySelectorAll('.comment-item').length}건 보기`;
+};
+
+/* ── 초기화 ── */
+renderForm();
+if (canSeeResults) renderResults();
 </script>
 </body>
 </html>

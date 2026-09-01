@@ -3,18 +3,16 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>피처 프레젠테이션 결과 — BNI 크라운챕터</title>
+  <title>피처 피드백 결과 — BNI 크라운챕터</title>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap" rel="stylesheet">
   <style>
     *, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
     body { font-family:'Noto Sans KR',sans-serif; background:#f3f4f6; color:#1a1a1a; min-height:100vh; }
 
-    .topbar { background:#8B0000; color:#fff; padding:14px 20px; display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+    .topbar { background:#8B0000; color:#fff; padding:14px 20px; display:flex; align-items:center; gap:10px; }
     .topbar-logo { font-size:17px; font-weight:900; letter-spacing:-.5px; }
     .topbar-sub  { font-size:12px; opacity:.7; }
     .topbar-badge{ margin-left:auto; font-size:11px; background:rgba(255,255,255,.2); padding:3px 10px; border-radius:20px; }
-    .topbar-link { font-size:12px; color:rgba(255,255,255,.85); text-decoration:none; padding:4px 12px; border:1px solid rgba(255,255,255,.4); border-radius:20px; }
-    .topbar-link:hover { background:rgba(255,255,255,.15); }
 
     .container { max-width:900px; margin:0 auto; padding:28px 16px 60px; }
     .page-title { font-size:20px; font-weight:900; margin-bottom:4px; }
@@ -22,260 +20,202 @@
 
     .controls { display:flex; gap:10px; flex-wrap:wrap; margin-bottom:20px; align-items:center; }
     .controls select { padding:8px 12px; border:1.5px solid #e5e7eb; border-radius:8px; font-size:13px; font-family:inherit; background:#fff; }
-    .controls select:focus { outline:none; border-color:#8B0000; }
+
     .pill-count { background:#8B0000; color:#fff; font-size:11px; font-weight:700; padding:3px 9px; border-radius:20px; }
 
-    .section-title { font-size:15px; font-weight:800; margin:24px 0 12px; }
+    .section-title { font-size:14px; font-weight:800; margin:20px 0 10px; }
 
-    /* 개인별 카드 */
-    .presenter-card { background:#fff; border-radius:14px; padding:20px; margin-bottom:14px; box-shadow:0 1px 4px rgba(0,0,0,.06); }
-    .pc-header { display:flex; align-items:center; gap:12px; margin-bottom:16px; }
-    .pc-name  { font-size:17px; font-weight:900; }
-    .pc-meta  { font-size:12px; color:#9ca3af; }
-    .pc-avg   { margin-left:auto; font-size:22px; font-weight:900; color:#8B0000; }
-    .pc-avg-label { font-size:11px; color:#9ca3af; text-align:right; }
-
-    .q-rows { display:flex; flex-direction:column; gap:8px; }
-    .q-row { display:flex; align-items:center; gap:10px; }
-    .q-text { font-size:12px; color:#374151; flex:1; min-width:0; }
-    .q-bar-wrap { width:140px; height:8px; background:#f3f4f6; border-radius:4px; flex-shrink:0; }
-    .q-bar { height:8px; border-radius:4px; background:#8B0000; transition:.4s; }
-    .q-score { font-size:12px; font-weight:700; width:28px; text-align:right; flex-shrink:0; }
-
-    /* 코멘트 목록 */
-    .comments-section { margin-top:12px; border-top:1px solid #f3f4f6; padding-top:12px; }
-    .comment-item { background:#f9fafb; border-radius:8px; padding:10px 12px; margin-bottom:6px; font-size:12px; color:#374151; line-height:1.6; }
-    .comment-date { font-size:11px; color:#9ca3af; margin-bottom:3px; }
-    .show-comments-btn { font-size:12px; color:#8B0000; background:none; border:none; cursor:pointer; font-family:inherit; font-weight:600; padding:0; margin-top:8px; }
-
-    /* 전체 요약 표 */
-    .summary-table { width:100%; border-collapse:collapse; background:#fff; border-radius:12px; overflow:hidden; box-shadow:0 1px 4px rgba(0,0,0,.06); }
+    .summary-table { width:100%; border-collapse:collapse; background:#fff; border-radius:12px; overflow:hidden; box-shadow:0 1px 3px rgba(0,0,0,.06); }
     .summary-table th { background:#8B0000; color:#fff; font-size:12px; font-weight:700; padding:10px 14px; text-align:left; }
     .summary-table th:not(:first-child) { text-align:center; }
     .summary-table td { padding:10px 14px; font-size:13px; border-bottom:1px solid #f3f4f6; }
     .summary-table td:not(:first-child) { text-align:center; font-weight:700; }
     .summary-table tr:last-child td { border-bottom:none; }
     .score-chip { display:inline-block; padding:2px 8px; border-radius:20px; font-size:11px; font-weight:700; }
-    .score-high   { background:#dcfce7; color:#15803d; }
-    .score-mid    { background:#fef9c3; color:#854d0e; }
-    .score-low    { background:#fee2e2; color:#b91c1c; }
+    .score-high { background:#dcfce7; color:#15803d; }
+    .score-mid  { background:#fef9c3; color:#854d0e; }
+    .score-low  { background:#fee2e2; color:#b91c1c; }
 
-    .loading { text-align:center; padding:60px 20px; color:#9ca3af; font-size:14px; }
-    .empty   { text-align:center; padding:40px 20px; color:#9ca3af; font-size:14px; }
+    .presenter-card { background:#fff; border-radius:14px; padding:20px; margin-bottom:12px; box-shadow:0 1px 3px rgba(0,0,0,.06); }
+    .pc-header { display:flex; align-items:center; margin-bottom:14px; }
+    .pc-name { font-size:17px; font-weight:900; }
+    .pc-meta { font-size:12px; color:#9ca3af; margin-top:2px; }
+    .pc-avg  { margin-left:auto; font-size:22px; font-weight:900; color:#8B0000; }
+    .pc-avg-sub { font-size:11px; color:#9ca3af; text-align:right; }
+
+    .q-row { display:flex; align-items:center; gap:10px; margin-bottom:6px; }
+    .q-row-text { font-size:12px; color:#374151; flex:1; }
+    .q-bar-wrap { width:120px; height:7px; background:#f3f4f6; border-radius:4px; flex-shrink:0; }
+    .q-bar { height:7px; border-radius:4px; background:#8B0000; }
+    .q-score { font-size:12px; font-weight:700; width:28px; text-align:right; flex-shrink:0; }
+
+    .comment-list { margin-top:12px; border-top:1px solid #f3f4f6; padding-top:12px; }
+    .comment-item { background:#f9fafb; border-radius:8px; padding:10px 12px; margin-bottom:6px; font-size:12px; color:#374151; line-height:1.6; }
+    .comment-date { font-size:10px; color:#9ca3af; margin-bottom:3px; }
+    .toggle-btn { font-size:12px; color:#8B0000; background:none; border:none; cursor:pointer; font-family:inherit; font-weight:600; padding:0; margin-top:8px; }
+
+    .gate { display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:60vh; text-align:center; gap:12px; }
+    .gate-icon { font-size:48px; }
+    .gate-title { font-size:18px; font-weight:800; }
+    .gate-sub   { font-size:13px; color:#6b7280; }
   </style>
 </head>
 <body>
-
 <div class="topbar">
   <span class="topbar-logo">BNI 크라운챕터</span>
-  <span class="topbar-sub">피처 프레젠테이션 결과</span>
-  <span class="topbar-badge">공개 결과</span>
-  <a href="feature-feedback.html" class="topbar-link">+ 피드백 남기기</a>
+  <span class="topbar-sub">피처 피드백 결과</span>
+  <span class="topbar-badge">결과 공유링크</span>
 </div>
 
-<div class="container">
-  <div class="page-title">피처 프레젠테이션 피드백 결과</div>
-  <p class="page-sub">발표자별 평균 점수 및 코멘트 모아보기</p>
-
-  <div class="controls">
-    <select id="presenterFilter">
-      <option value="">전체 발표자</option>
-    </select>
-    <select id="periodFilter">
-      <option value="">전체 기간</option>
-      <option value="7">최근 7일</option>
-      <option value="30">최근 30일</option>
-      <option value="90">최근 90일</option>
-    </select>
-    <span class="pill-count" id="totalCount">—</span>
-    <span style="font-size:12px;color:#9ca3af">건</span>
-  </div>
-
-  <!-- 전체 요약 표 -->
-  <div class="section-title">📋 발표자별 평균 점수 요약</div>
-  <div id="summaryArea"><div class="loading">데이터 불러오는 중...</div></div>
-
-  <!-- 개인별 상세 -->
-  <div class="section-title" id="detailTitle">📌 발표자별 상세</div>
-  <div id="detailArea"></div>
+<div class="container" id="root">
+  <div class="gate"><div class="gate-icon">🔒</div><div class="gate-title">접근 권한 확인 중...</div></div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="/js/supabase-config.js"></script>
 <script>
-const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+const SHARE_TOKEN = 'bni-crown-star-ff';
+
+const params = new URLSearchParams(location.search);
+if (params.get('token') !== SHARE_TOKEN) {
+  document.getElementById('root').innerHTML = `
+    <div class="gate">
+      <div class="gate-icon">🔒</div>
+      <div class="gate-title">접근 권한이 없습니다</div>
+      <div class="gate-sub">결과는 공유링크를 통해서만 볼 수 있습니다.</div>
+    </div>`;
+} else {
+  init();
+}
 
 const QUESTIONS = [
-  { key:'q1', short:'명확한 이해', text:'무엇을 하는 사람인지 명확하게 이해됐다' },
-  { key:'q2', short:'고객 묘사',   text:'어떤 고객을 찾고 있는지 구체적으로 그려졌다' },
-  { key:'q3', short:'차별 강점',   text:'경쟁자와 다른 강점이 기억에 남는다' },
-  { key:'q4', short:'소개 요청',   text:'"이런 분 소개해 주세요"라는 요청이 분명했다' },
-  { key:'q5', short:'이름 떠오름', text:'소개하고 싶은 사람이 실제로 떠올랐다' },
-  { key:'q6', short:'신뢰',        text:'믿고 소개해도 되겠다는 신뢰가 느껴졌다' },
+  { key:'q1', text:'무엇을 하는 사람인지 명확하게 이해됐다', short:'명확한 이해' },
+  { key:'q2', text:'어떤 고객을 찾고 있는지 구체적으로 그려졌다', short:'고객 묘사' },
+  { key:'q3', text:'경쟁자와 다른 강점이 기억에 남는다', short:'차별 강점' },
+  { key:'q4', text:'"이런 분 소개해 주세요"라는 요청이 분명했다', short:'소개 요청' },
+  { key:'q5', text:'소개하고 싶은 사람이 실제로 떠올랐다', short:'이름 떠오름' },
+  { key:'q6', text:'믿고 소개해도 되겠다는 신뢰가 느껴졌다', short:'신뢰' },
 ];
 
-let allData = [];
-
-function scoreClass(v) {
-  if (v >= 4.2) return 'score-high';
-  if (v >= 3.0) return 'score-mid';
-  return 'score-low';
-}
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+let allFeedback = [];
 
 function avg(arr, key) {
-  const vals = arr.map(r => r[key]).filter(v => v != null);
+  const vals = arr.map(r=>r[key]).filter(v=>v!=null);
   return vals.length ? vals.reduce((s,v)=>s+v,0)/vals.length : null;
 }
-
-function fmt(v) { return v != null ? v.toFixed(1) : '—'; }
+function fmt(v) { return v!=null ? v.toFixed(1) : '—'; }
+function scoreClass(v) { return v>=4.2?'score-high':v>=3.0?'score-mid':'score-low'; }
 
 function groupByPresenter(data) {
   const map = {};
-  data.forEach(r => {
-    if (!map[r.presenter_name]) map[r.presenter_name] = [];
-    map[r.presenter_name].push(r);
-  });
+  data.forEach(r => { if(!map[r.presenter_name]) map[r.presenter_name]=[]; map[r.presenter_name].push(r); });
   return Object.entries(map).sort((a,b) => {
-    const avgA = avg(a[1], 'q1') + avg(a[1], 'q2') + avg(a[1], 'q3') + avg(a[1], 'q4') + avg(a[1], 'q5') + avg(a[1], 'q6');
-    const avgB = avg(b[1], 'q1') + avg(b[1], 'q2') + avg(b[1], 'q3') + avg(b[1], 'q4') + avg(b[1], 'q5') + avg(b[1], 'q6');
-    return avgB - avgA;
+    const sa=QUESTIONS.reduce((s,q)=>s+(avg(a[1],q.key)||0),0);
+    const sb2=QUESTIONS.reduce((s,q)=>s+(avg(b[1],q.key)||0),0);
+    return sb2-sa;
   });
+}
+
+function applyFilters() {
+  let filtered = allFeedback;
+  const pv = document.getElementById('pfFilter')?.value;
+  const period = document.getElementById('periodFilter')?.value;
+  if (pv) filtered = filtered.filter(r=>r.presenter_name===pv);
+  if (period) {
+    const cutoff = new Date(Date.now()-parseInt(period)*86400000).toISOString();
+    filtered = filtered.filter(r=>r.created_at>=cutoff);
+  }
+  document.getElementById('totalCount').textContent = filtered.length;
+  const grouped = groupByPresenter(filtered);
+  renderSummary(grouped);
+  renderCards(grouped);
 }
 
 function renderSummary(grouped) {
-  if (!grouped.length) { document.getElementById('summaryArea').innerHTML = '<div class="empty">데이터가 없습니다.</div>'; return; }
-  const html = `
-    <div style="overflow-x:auto">
-    <table class="summary-table">
-      <thead>
-        <tr>
-          <th>발표자</th>
-          <th>응답수</th>
-          ${QUESTIONS.map(q=>`<th>${q.short}</th>`).join('')}
-          <th>평균</th>
-        </tr>
-      </thead>
-      <tbody>
-        ${grouped.map(([name, recs]) => {
-          const avgs = QUESTIONS.map(q => avg(recs, q.key));
-          const total = avgs.filter(v=>v!=null).reduce((s,v)=>s+v,0) / avgs.filter(v=>v!=null).length;
-          return `<tr>
-            <td style="font-weight:700">${name}</td>
-            <td>${recs.length}</td>
-            ${avgs.map(v=>`<td><span class="score-chip ${scoreClass(v??0)}">${fmt(v)}</span></td>`).join('')}
-            <td><span class="score-chip ${scoreClass(total)}" style="font-size:13px">${fmt(total)}</span></td>
-          </tr>`;
-        }).join('')}
-      </tbody>
-    </table>
-    </div>
-  `;
-  document.getElementById('summaryArea').innerHTML = html;
+  const tbl = document.getElementById('summaryTbl');
+  if (!grouped.length) { tbl.innerHTML=''; return; }
+  tbl.innerHTML = `
+    <thead><tr><th>발표자</th><th>응답</th>${QUESTIONS.map(q=>`<th>${q.short}</th>`).join('')}<th>평균</th></tr></thead>
+    <tbody>${grouped.map(([name,recs]) => {
+      const avgs=QUESTIONS.map(q=>avg(recs,q.key));
+      const tot=avgs.filter(v=>v!=null);
+      const ov=tot.length?tot.reduce((s,v)=>s+v,0)/tot.length:null;
+      return `<tr><td style="font-weight:700">${name}</td><td>${recs.length}</td>
+        ${avgs.map(v=>`<td><span class="score-chip ${scoreClass(v??0)}">${fmt(v)}</span></td>`).join('')}
+        <td><span class="score-chip ${scoreClass(ov??0)}" style="font-size:13px">${fmt(ov)}</span></td></tr>`;
+    }).join('')}</tbody>`;
 }
 
-function renderDetail(grouped) {
-  const el = document.getElementById('detailArea');
-  if (!grouped.length) { el.innerHTML = ''; return; }
-  el.innerHTML = grouped.map(([name, recs]) => {
-    const avgs = QUESTIONS.map(q => avg(recs, q.key));
-    const total = avgs.filter(v=>v!=null).reduce((s,v)=>s+v,0) / avgs.filter(v=>v!=null).length;
-    const comments = recs.filter(r=>r.comment);
-
-    return `
-    <div class="presenter-card" id="card-${encodeURIComponent(name)}">
+function renderCards(grouped) {
+  document.getElementById('detailCards').innerHTML = grouped.map(([name,recs]) => {
+    const avgs=QUESTIONS.map(q=>avg(recs,q.key));
+    const tot=avgs.filter(v=>v!=null);
+    const ov=tot.length?tot.reduce((s,v)=>s+v,0)/tot.length:null;
+    const comments=recs.filter(r=>r.comment);
+    const eid=encodeURIComponent(name);
+    return `<div class="presenter-card">
       <div class="pc-header">
-        <div>
-          <div class="pc-name">${name}</div>
-          <div class="pc-meta">응답 ${recs.length}건</div>
-        </div>
-        <div style="margin-left:auto;text-align:right">
-          <div class="pc-avg">${fmt(total)}</div>
-          <div class="pc-avg-label">종합 평균 / 5.0</div>
-        </div>
+        <div><div class="pc-name">${name}</div><div class="pc-meta">응답 ${recs.length}건</div></div>
+        <div style="text-align:right"><div class="pc-avg">${fmt(ov)}</div><div class="pc-avg-sub">종합 / 5.0</div></div>
       </div>
-      <div class="q-rows">
-        ${QUESTIONS.map((q,i) => {
-          const v = avgs[i];
-          const barW = v != null ? Math.round(v/5*100) : 0;
-          return `<div class="q-row">
-            <div class="q-text">${q.text}</div>
-            <div class="q-bar-wrap"><div class="q-bar" style="width:${barW}%"></div></div>
-            <div class="q-score">${fmt(v)}</div>
-          </div>`;
-        }).join('')}
-      </div>
-      ${comments.length ? `
-        <div class="comments-section">
-          <button class="show-comments-btn" onclick="toggleComments(this, '${encodeURIComponent(name)}')">💬 코멘트 ${comments.length}건 보기</button>
-          <div id="comments-${encodeURIComponent(name)}" style="display:none;margin-top:8px">
-            ${comments.sort((a,b)=>b.created_at.localeCompare(a.created_at)).map(r=>`
-              <div class="comment-item">
-                <div class="comment-date">${r.created_at.slice(0,10)}</div>
-                ${r.comment}
-              </div>
-            `).join('')}
-          </div>
-        </div>
-      ` : ''}
+      ${QUESTIONS.map((q,i)=>{
+        const v=avgs[i], w=v!=null?Math.round(v/5*100):0;
+        return `<div class="q-row">
+          <div class="q-row-text">${q.text}</div>
+          <div class="q-bar-wrap"><div class="q-bar" style="width:${w}%"></div></div>
+          <div class="q-score">${fmt(v)}</div></div>`;
+      }).join('')}
+      ${comments.length?`<div class="comment-list">
+        <button class="toggle-btn" onclick="toggleComments(this,'${eid}')">💬 코멘트 ${comments.length}건 보기</button>
+        <div id="cmt-${eid}" style="display:none;margin-top:8px">
+          ${comments.map(r=>`<div class="comment-item"><div class="comment-date">${r.created_at.slice(0,10)}</div>${r.comment}</div>`).join('')}
+        </div></div>`:''}
     </div>`;
   }).join('');
 }
 
-window.toggleComments = function(btn, id) {
-  const el = document.getElementById('comments-'+id);
-  if (!el) return;
-  const hidden = el.style.display === 'none';
-  el.style.display = hidden ? 'block' : 'none';
-  btn.textContent = hidden ? '💬 코멘트 접기' : `💬 코멘트 ${el.querySelectorAll('.comment-item').length}건 보기`;
+window.toggleComments = (btn, id) => {
+  const el=document.getElementById('cmt-'+id);
+  const hidden=el.style.display==='none';
+  el.style.display=hidden?'block':'none';
+  btn.textContent=hidden?'💬 코멘트 접기':`💬 코멘트 ${el.querySelectorAll('.comment-item').length}건 보기`;
 };
 
-function applyFilters() {
-  const presenterVal = document.getElementById('presenterFilter').value;
-  const periodVal    = document.getElementById('periodFilter').value;
+async function init() {
+  const root = document.getElementById('root');
+  root.innerHTML = `
+    <div class="page-title">피처 프레젠테이션 피드백 결과</div>
+    <p class="page-sub">발표자별 평균 점수 및 코멘트</p>
+    <div class="controls">
+      <select id="pfFilter"><option value="">전체 발표자</option></select>
+      <select id="periodFilter">
+        <option value="">전체 기간</option>
+        <option value="7">최근 7일</option>
+        <option value="30">최근 30일</option>
+        <option value="90">최근 90일</option>
+      </select>
+      <span class="pill-count" id="totalCount">—</span>
+      <span style="font-size:12px;color:#9ca3af">건</span>
+    </div>
+    <div class="section-title">📋 발표자별 요약</div>
+    <div style="overflow-x:auto;margin-bottom:20px"><table class="summary-table" id="summaryTbl"></table></div>
+    <div class="section-title">📌 발표자별 상세</div>
+    <div id="detailCards"></div>
+  `;
 
-  let filtered = allData;
+  document.getElementById('pfFilter').addEventListener('change', applyFilters);
+  document.getElementById('periodFilter').addEventListener('change', applyFilters);
 
-  if (presenterVal) filtered = filtered.filter(r => r.presenter_name === presenterVal);
+  const { data } = await sb.from('feature_feedback').select('*').order('created_at', { ascending:false });
+  allFeedback = data || [];
 
-  if (periodVal) {
-    const cutoff = new Date(Date.now() - parseInt(periodVal)*24*60*60*1000).toISOString();
-    filtered = filtered.filter(r => r.created_at >= cutoff);
-  }
-
-  document.getElementById('totalCount').textContent = filtered.length;
-
-  const grouped = groupByPresenter(filtered);
-  renderSummary(grouped);
-  renderDetail(grouped);
-}
-
-async function load() {
-  const { data, error } = await sb.from('feature_feedback')
-    .select('*').order('created_at', { ascending:false });
-
-  if (error || !data) {
-    document.getElementById('summaryArea').innerHTML = '<div class="empty">데이터를 불러올 수 없습니다.</div>';
-    return;
-  }
-
-  allData = data;
-
-  // 필터 옵션 채우기
-  const names = [...new Set(data.map(r=>r.presenter_name))].sort();
-  const sel = document.getElementById('presenterFilter');
-  names.forEach(n => {
-    const o = document.createElement('option');
-    o.value = n; o.textContent = n;
-    sel.appendChild(o);
-  });
+  const names=[...new Set(allFeedback.map(r=>r.presenter_name))].sort();
+  const sel=document.getElementById('pfFilter');
+  names.forEach(n=>{ const o=document.createElement('option'); o.value=n; o.textContent=n; sel.appendChild(o); });
 
   applyFilters();
 }
-
-document.getElementById('presenterFilter').addEventListener('change', applyFilters);
-document.getElementById('periodFilter').addEventListener('change', applyFilters);
-
-load();
 </script>
 </body>
 </html>

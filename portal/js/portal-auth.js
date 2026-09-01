@@ -99,7 +99,7 @@ function getNavItems(session) {
     always: false,
   });
   if (canAccessFeatureFeedback(session)) {
-    items.push({ href: '/portal/feature-feedback-results.html', icon: '🎤', label: '피처 피드백', always: false });
+    items.push({ href: '/portal/feature-feedback.html', icon: '🎤', label: '피처 피드백', always: false });
   }
   items.push({ href: '/portal/handover.html', icon: '🤝', label: '인수인계',     always: true });
   items.push({ href: '/portal/history.html',  icon: '📜', label: '챕터 히스토리', always: true });
