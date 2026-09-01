@@ -145,8 +145,8 @@ function renderForm() {
           <div class="q-label">${i+1}. ${q.text}<span class="req">*</span></div>
           <div class="star-group">
             ${[5,4,3,2,1].map(v=>`
-              <label for="${q.key}-${v}">★</label>
-              <input type="radio" name="${q.key}" id="${q.key}-${v}" value="${v}">`).join('')}
+              <input type="radio" name="${q.key}" id="${q.key}-${v}" value="${v}">
+              <label for="${q.key}-${v}">★</label>`).join('')}
           </div>
           <div class="star-hint">1점(별로) ~ 5점(매우 그렇다)</div>
           <div class="err-msg" id="err-${q.key}">별점을 선택해 주세요.</div>
