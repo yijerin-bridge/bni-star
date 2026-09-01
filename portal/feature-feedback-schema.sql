@@ -20,3 +20,6 @@ CREATE POLICY "public insert" ON feature_feedback
 
 CREATE POLICY "public read" ON feature_feedback
   FOR SELECT TO anon USING (true);
+
+CREATE POLICY "public delete" ON feature_feedback
+  FOR DELETE TO anon USING (true);

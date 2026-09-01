@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>피처 피드백 — BNI 크라운챕터</title>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
+    body { font-family:'Noto Sans KR',sans-serif; background:#f3f4f6; color:#1a1a1a; min-height:100vh; }
+
+    .topbar { background:#8B0000; color:#fff; padding:14px 20px; display:flex; align-items:center; gap:10px; }
+    .topbar-logo { font-size:17px; font-weight:900; letter-spacing:-.5px; }
+    .topbar-sub  { font-size:12px; opacity:.7; }
+    .topbar-badge{ margin-left:auto; font-size:11px; background:rgba(255,255,255,.2); padding:3px 10px; border-radius:20px; }
+
+    .container { max-width:600px; margin:0 auto; padding:28px 16px 60px; }
+    .page-title { font-size:20px; font-weight:900; margin-bottom:4px; }
+    .page-sub   { font-size:13px; color:#6b7280; margin-bottom:24px; }
+
+    .card { background:#fff; border-radius:14px; padding:20px; margin-bottom:12px; box-shadow:0 1px 4px rgba(0,0,0,.06); }
+    .q-label { font-size:14px; font-weight:700; margin-bottom:14px; line-height:1.5; }
+    .q-label .req { color:#8B0000; margin-left:2px; }
+
+    .scale-row { display:flex; align-items:center; gap:8px; }
+    .scale-anchor { font-size:11px; color:#9ca3af; white-space:nowrap; flex-shrink:0; text-align:center; }
+    .scale-options { display:flex; flex:1; gap:4px; justify-content:space-between; }
+    .scale-opt { display:flex; flex-direction:column; align-items:center; gap:4px; cursor:pointer; flex:1; }
+    .scale-opt input[type=radio] { display:none; }
+    .scale-circle {
+      width:40px; height:40px; border-radius:50%;
+      border:2px solid #e5e7eb;
+      display:flex; align-items:center; justify-content:center;
+      font-size:14px; font-weight:700; color:#9ca3af; transition:.15s;
+    }
+    .scale-opt:has(input:checked) .scale-circle { border-color:#8B0000; background:#8B0000; color:#fff; }
+
+    select, textarea {
+      width:100%; border:1.5px solid #e5e7eb; border-radius:10px;
+      padding:10px 14px; font-size:14px; font-family:inherit; background:#fff; outline:none; transition:.15s;
+    }
+    select:focus, textarea:focus { border-color:#8B0000; }
+    textarea { resize:vertical; min-height:80px; }
+
+    .err-msg { color:#8B0000; font-size:12px; margin-top:6px; display:none; }
+    .err-msg.show { display:block; }
+
+    .submit-btn {
+      width:100%; padding:14px; background:#8B0000; color:#fff;
+      border:none; border-radius:12px; font-size:16px; font-weight:700;
+      font-family:inherit; cursor:pointer; margin-top:4px; transition:.15s;
+    }
+    .submit-btn:hover:not(:disabled) { background:#700000; }
+    .submit-btn:disabled { background:#d1d5db; cursor:not-allowed; }
+
+    .done-screen { text-align:center; padding:48px 20px; }
+    .done-icon  { font-size:56px; margin-bottom:16px; }
+    .done-title { font-size:20px; font-weight:900; margin-bottom:8px; }
+    .done-sub   { font-size:14px; color:#6b7280; margin-bottom:24px; }
+    .another-btn { padding:10px 28px; background:#8B0000; color:#fff; border:none; border-radius:10px; font-size:14px; font-weight:700; font-family:inherit; cursor:pointer; }
+  </style>
+</head>
+<body>
+<div class="topbar">
+  <span class="topbar-logo">BNI 크라운챕터</span>
+  <span class="topbar-sub">피처 프레젠테이션 피드백</span>
+  <span class="topbar-badge">공개 설문</span>
+</div>
+
+<div class="container">
+  <div id="formWrap">
+    <div class="page-title">피처 피드백</div>
+    <p class="page-sub">발표를 들으며 바로 체크해 주세요. 익명으로 제출됩니다.</p>
+
+    <form id="ffForm" novalidate>
+      <div class="card">
+        <div class="q-label">발표자 이름<span class="req">*</span></div>
+        <select id="presenterSel">
+          <option value="">-- 선택 --</option>
+        </select>
+        <div class="err-msg" id="err-presenter">발표자를 선택해 주세요.</div>
+      </div>
+
+      <div id="qContainer"></div>
+
+      <div class="card">
+        <div class="q-label">자유 의견 <span style="font-weight:400;color:#9ca3af">(선택)</span></div>
+        <textarea id="commentField" placeholder="인상 깊었던 점, 개선하면 좋을 점 등"></textarea>
+      </div>
+
+      <button type="submit" class="submit-btn" id="submitBtn">피드백 제출하기</button>
+    </form>
+  </div>
+
+  <div id="doneWrap" style="display:none">
+    <div class="done-screen">
+      <div class="done-icon">🎉</div>
+      <div class="done-title">피드백 감사합니다!</div>
+      <div class="done-sub">소중한 의견이 발표자에게 큰 도움이 됩니다.</div>
+      <button class="another-btn" onclick="resetForm()">다른 발표자 피드백 남기기</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="/js/supabase-config.js"></script>
+<script src="/js/members-data.js"></script>
+<script>
+const QUESTIONS = [
+  { key:'q1', text:'무엇을 하는 사람인지 명확하게 이해됐다' },
+  { key:'q2', text:'어떤 고객을 찾고 있는지 구체적으로 그려졌다' },
+  { key:'q3', text:'경쟁자와 다른 강점이 기억에 남는다' },
+  { key:'q4', text:'"이런 분 소개해 주세요"라는 요청이 분명했다' },
+  { key:'q5', text:'소개하고 싶은 사람이 실제로 떠올랐다' },
+  { key:'q6', text:'믿고 소개해도 되겠다는 신뢰가 느껴졌다' },
+];
+
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+
+// 멤버 로드
+(async () => {
+  const sel = document.getElementById('presenterSel');
+  try {
+    const { data } = await sb.from('members').select('name').eq('is_active', true).order('name');
+    const names = (data && data.length) ? data.map(m=>m.name) : MEMBERS_DEFAULT.map(m=>m.name);
+    names.forEach(n => { const o=document.createElement('option'); o.value=n; o.textContent=n; sel.appendChild(o); });
+  } catch {
+    MEMBERS_DEFAULT.forEach(m => { const o=document.createElement('option'); o.value=m.name; o.textContent=m.name; sel.appendChild(o); });
+  }
+})();
+
+// 질문 렌더
+document.getElementById('qContainer').innerHTML = QUESTIONS.map((q,i) => `
+  <div class="card">
+    <div class="q-label">${i+1}. ${q.text}<span class="req">*</span></div>
+    <div class="scale-row">
+      <span class="scale-anchor">전혀<br>아니다</span>
+      <div class="scale-options">
+        ${[1,2,3,4,5].map(v=>`
+          <label class="scale-opt">
+            <input type="radio" name="${q.key}" value="${v}">
+            <div class="scale-circle">${v}</div>
+          </label>`).join('')}
+      </div>
+      <span class="scale-anchor">매우<br>그렇다</span>
+    </div>
+    <div class="err-msg" id="err-${q.key}">점수를 선택해 주세요.</div>
+  </div>
+`).join('');
+
+document.getElementById('ffForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  let valid = true;
+
+  const presenter = document.getElementById('presenterSel').value;
+  const errP = document.getElementById('err-presenter');
+  if (!presenter) { errP.classList.add('show'); valid=false; } else errP.classList.remove('show');
+
+  const scores = {};
+  QUESTIONS.forEach(q => {
+    const checked = document.querySelector(`input[name="${q.key}"]:checked`);
+    const errEl = document.getElementById('err-'+q.key);
+    if (!checked) { errEl.classList.add('show'); valid=false; }
+    else { errEl.classList.remove('show'); scores[q.key] = parseInt(checked.value); }
+  });
+  if (!valid) return;
+
+  const btn = document.getElementById('submitBtn');
+  btn.disabled = true; btn.textContent = '제출 중...';
+
+  const { error } = await sb.from('feature_feedback').insert([{
+    presenter_name: presenter,
+    comment: document.getElementById('commentField').value.trim() || null,
+    ...scores,
+  }]);
+
+  if (error) {
+    alert('오류: ' + error.message);
+    btn.disabled = false; btn.textContent = '피드백 제출하기';
+    return;
+  }
+
+  document.getElementById('formWrap').style.display = 'none';
+  document.getElementById('doneWrap').style.display  = '';
+});
+
+function resetForm() {
+  document.getElementById('ffForm').reset();
+  document.getElementById('doneWrap').style.display  = 'none';
+  document.getElementById('formWrap').style.display  = '';
+  window.scrollTo(0, 0);
+}
+</script>
+</body>
+</html>

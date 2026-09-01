@@ -129,8 +129,13 @@ function switchTab(tab) {
 
 /* ── 피드백 폼 ── */
 function renderForm() {
+  const formShareUrl = `${location.origin}/portal/feature-feedback-form.html`;
   const fp = document.getElementById('panelForm');
   fp.innerHTML = `
+    <div style="display:flex;align-items:center;margin-bottom:16px;gap:10px">
+      <span style="font-size:13px;color:var(--text-muted)">멤버들에게 설문 링크를 공유하세요</span>
+      <button type="button" id="copyFormLinkBtn" style="margin-left:auto;padding:7px 14px;border:1.5px solid var(--border);border-radius:8px;background:#fff;cursor:pointer;font-size:12px;font-weight:600;font-family:inherit">🔗 설문 공유링크 복사</button>
+    </div>
     <form id="ffForm" novalidate>
       <div class="ff-card">
         <div class="q-label">발표자 이름<span class="req">*</span></div>
@@ -168,6 +173,14 @@ function renderForm() {
       <button type="submit" class="submit-btn" id="submitBtn">피드백 제출하기</button>
     </form>
   `;
+
+  // 설문 공유링크 복사 버튼
+  document.getElementById('copyFormLinkBtn')?.addEventListener('click', function() {
+    navigator.clipboard.writeText(formShareUrl).then(() => {
+      this.textContent = '✅ 복사됨!';
+      setTimeout(() => { this.textContent = '🔗 설문 공유링크 복사'; }, 2000);
+    });
+  });
 
   // 멤버 목록 로드
   (async () => {
@@ -340,7 +353,6 @@ function renderDetailCards(grouped) {
     const avgs = QUESTIONS.map(q=>avg(recs,q.key));
     const tot = avgs.filter(v=>v!=null);
     const overall = tot.length ? tot.reduce((s,v)=>s+v,0)/tot.length : null;
-    const comments = recs.filter(r=>r.comment);
     const eid = encodeURIComponent(name);
     return `
       <div class="presenter-card">
@@ -363,22 +375,45 @@ function renderDetailCards(grouped) {
             <div class="q-score">${fmt(v)}</div>
           </div>`;
         }).join('')}
-        ${comments.length ? `
-          <div class="comment-list">
-            <button class="toggle-btn" onclick="toggleComments(this,'${eid}')">💬 코멘트 ${comments.length}건 보기</button>
-            <div id="cmt-${eid}" style="display:none;margin-top:8px">
-              ${comments.map(r=>`<div class="comment-item"><div class="comment-date">${r.created_at.slice(0,10)}</div>${r.comment}</div>`).join('')}
-            </div>
-          </div>` : ''}
+        <div class="comment-list">
+          <button class="toggle-btn" onclick="toggleResponses(this,'resp-${eid}')">📋 개별 응답 ${recs.length}건 보기</button>
+          <div id="resp-${eid}" style="display:none;margin-top:8px">
+            ${recs.sort((a,b)=>b.created_at.localeCompare(a.created_at)).map(r=>`
+              <div class="comment-item" id="row-${r.id}" style="position:relative">
+                <div style="display:flex;align-items:center;margin-bottom:4px">
+                  <span class="comment-date">${r.created_at.slice(0,10)}</span>
+                  <span style="margin-left:8px;font-size:11px;color:#9ca3af">${QUESTIONS.map(q=>`${q.short.slice(0,2)}:${r[q.key]??'—'}`).join(' / ')}</span>
+                  <button onclick="deleteResponse(${r.id})" style="margin-left:auto;background:none;border:none;cursor:pointer;font-size:12px;color:#d1d5db;padding:0 2px" title="삭제">🗑️</button>
+                </div>
+                ${r.comment ? `<div style="color:#374151">${r.comment}</div>` : '<div style="color:#d1d5db;font-style:italic">코멘트 없음</div>'}
+              </div>`).join('')}
+          </div>
+        </div>
       </div>`;
   }).join('');
 }
+
+window.toggleResponses = (btn, id) => {
+  const el = document.getElementById(id);
+  const hidden = el.style.display==='none';
+  el.style.display = hidden ? 'block' : 'none';
+  const count = el.querySelectorAll('.comment-item').length;
+  btn.textContent = hidden ? `📋 개별 응답 접기` : `📋 개별 응답 ${count}건 보기`;
+};
 
 window.toggleComments = (btn, id) => {
   const el = document.getElementById('cmt-'+id);
   const hidden = el.style.display==='none';
   el.style.display = hidden ? 'block' : 'none';
   btn.textContent = hidden ? '💬 코멘트 접기' : `💬 코멘트 ${el.querySelectorAll('.comment-item').length}건 보기`;
+};
+
+window.deleteResponse = async (id) => {
+  if (!confirm('이 응답을 삭제할까요?')) return;
+  const { error } = await sb.from('feature_feedback').delete().eq('id', id);
+  if (error) { alert('삭제 오류: ' + error.message); return; }
+  allFeedback = allFeedback.filter(r => r.id !== id);
+  applyFilters();
 };
 
 /* ── 초기화 ── */
