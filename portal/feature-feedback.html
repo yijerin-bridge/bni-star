@@ -256,8 +256,6 @@ function renderResults() {
   const rp = document.getElementById('panelResults');
   if (!rp) return;
 
-  const shareUrl = `${location.origin}/portal/feature-feedback-results.html?token=${SHARE_TOKEN}`;
-
   rp.innerHTML = `
     <div class="share-bar">
       <select id="pfFilter"><option value="">전체 발표자</option></select>
@@ -269,20 +267,12 @@ function renderResults() {
       </select>
       <span class="pill-count" id="totalCount">—</span>
       <span style="font-size:12px;color:var(--text-muted)">건</span>
-      <button class="copy-link-btn" id="copyShareBtn">🔗 결과 공유링크 복사</button>
     </div>
     <div style="overflow-x:auto;margin-bottom:24px">
       <table class="summary-table" id="summaryTbl"></table>
     </div>
     <div id="detailCards"></div>
   `;
-
-  document.getElementById('copyShareBtn').addEventListener('click', function() {
-    navigator.clipboard.writeText(shareUrl).then(() => {
-      this.textContent = '✅ 복사됨!';
-      setTimeout(() => { this.textContent = '🔗 결과 공유링크 복사'; }, 2000);
-    });
-  });
 
   document.getElementById('pfFilter').addEventListener('change', applyFilters);
   document.getElementById('periodFilter').addEventListener('change', applyFilters);
