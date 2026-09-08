@@ -411,23 +411,26 @@ function renderMemberDetail(name) {
     <!-- AI 개인 피드백 -->
     <div id="det-ai" class="card" style="margin-bottom:16px;display:none"></div>
 
-    <!-- VP 리포트 붙여넣기 -->
-    <div class="card" style="margin-bottom:16px;${TL_READONLY ? 'display:none' : ''}"
+    <!-- PALMS 주간기록 붙여넣기 -->
+    <div class="card" style="margin-bottom:16px;${TL_READONLY ? 'display:none' : ''}">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
         <div>
-          <div class="card-title" style="margin:0">📋 VP 리포트 붙여넣기</div>
-          <div style="font-size:11px;color:#9ca3af;margin-top:2px">BNI Connect → 개인 부의장 리포트 → 날짜 행부터 전체 선택 후 Ctrl+C · 신규추천(스폰서)은 VP 리포트에 없으므로 별도 수동 입력 필요</div>
+          <div class="card-title" style="margin:0">📋 PALMS 주간기록 붙여넣기</div>
+          <div style="font-size:11px;color:#9ca3af;margin-top:2px">PALMS(BNI Connect) → 개인 부의장 리포트 → 날짜 행부터 전체 선택 후 Ctrl+C · 스폰서는 VP 리포트에 없으므로 별도 수동 입력</div>
         </div>
         <button class="btn btn-outline btn-sm" id="togglePaste" onclick="
           const a=document.getElementById('pasteSection');
           const show=a.style.display==='none';
           a.style.display=show?'':'none';
           this.textContent=show?'접기':'펼치기';
-        ">펼치기</button>
+        ">접기</button>
       </div>
-      <div id="pasteSection" style="display:none">
+      <div id="pasteSection">
+        <div style="font-size:11px;color:#6b7280;margin-bottom:6px;font-family:monospace;background:#f9fafb;padding:6px 10px;border-radius:6px;overflow-x:auto;white-space:nowrap">
+          미팅일 &nbsp;|&nbsp; 참석 &nbsp;|&nbsp; 준T1 &nbsp;|&nbsp; 준T2 &nbsp;|&nbsp; 받은T1 &nbsp;|&nbsp; 받은T2 &nbsp;|&nbsp; 비지터 &nbsp;|&nbsp; 1-2-1 &nbsp;|&nbsp; 감사장 &nbsp;|&nbsp; CEU
+        </div>
         <textarea id="vpPasteArea" class="form-input" rows="6"
-          placeholder="미팅일&#9;참석&#9;준 T1&#9;준 T2&#9;받은 T1&#9;받은 T2&#9;비지터&#9;1-2-1&#9;감사장&#9;CEU&#10;2026. 5. 20.&#9;출석&#9;1&#9;0&#9;0&#9;0&#9;0&#9;1&#9;0&#9;0"
+          placeholder="2026. 5. 20.&#9;출석&#9;1&#9;0&#9;0&#9;0&#9;0&#9;1&#9;0&#9;0&#10;2026. 5. 27.&#9;출석&#9;0&#9;1&#9;0&#9;0&#9;1&#9;2&#9;160000&#9;1"
           style="font-size:12px;font-family:monospace;margin-bottom:8px"></textarea>
         <div style="display:flex;gap:8px">
           <button class="btn btn-primary btn-sm" id="vpParseBtn">미리보기</button>
