@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>트래픽라이트 엑셀 템플릿</title>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
+    body { font-family:'Noto Sans KR',sans-serif; background:#f3f4f6; color:#1a1a1a; min-height:100vh; }
+    .topbar { background:#8B0000; color:#fff; padding:14px 20px; display:flex; align-items:center; gap:10px; }
+    .topbar-logo { font-size:17px; font-weight:900; }
+    .topbar-sub { font-size:12px; opacity:.7; }
+    .container { max-width:720px; margin:0 auto; padding:40px 20px 80px; }
+    h1 { font-size:22px; font-weight:900; margin-bottom:6px; }
+    .sub { font-size:14px; color:#6b7280; margin-bottom:32px; line-height:1.7; }
+    .card { background:#fff; border-radius:14px; padding:24px; margin-bottom:16px; box-shadow:0 1px 4px rgba(0,0,0,.06); }
+    .card-title { font-size:14px; font-weight:800; margin-bottom:14px; display:flex; align-items:center; gap:6px; }
+    .score-table { width:100%; border-collapse:collapse; font-size:12px; }
+    .score-table th { background:#f9fafb; padding:7px 12px; font-weight:700; text-align:left; border:1px solid #e5e7eb; }
+    .score-table td { padding:7px 12px; border:1px solid #e5e7eb; }
+    .score-table tr:nth-child(even) td { background:#fafafa; }
+    .light-row { display:flex; gap:8px; flex-wrap:wrap; margin-top:10px; }
+    .lchip { padding:5px 14px; border-radius:20px; font-size:13px; font-weight:700; }
+    .lgreen { background:#dcfce7; color:#15803d; }
+    .lamber { background:#fef9c3; color:#854d0e; }
+    .lred   { background:#fee2e2; color:#b91c1c; }
+    .lgray  { background:#f3f4f6; color:#6b7280; }
+    .dl-btn {
+      display:block; width:100%; padding:16px; background:#8B0000; color:#fff;
+      border:none; border-radius:12px; font-size:16px; font-weight:700;
+      font-family:inherit; cursor:pointer; text-align:center; margin-top:8px;
+    }
+    .dl-btn:hover { background:#700000; }
+    .note { font-size:12px; color:#9ca3af; text-align:center; margin-top:10px; }
+  </style>
+</head>
+<body>
+<div class="topbar">
+  <span class="topbar-logo">BNI STAR</span>
+  <span class="topbar-sub">트래픽라이트 엑셀 템플릿 생성기</span>
+</div>
+
+<div class="container">
+  <h1>트래픽라이트 엑셀 템플릿</h1>
+  <p class="sub">
+    다른 챕터가 활동 데이터를 입력하면 신호등(그린·앰버·레드·그레이)이<br>
+    자동으로 계산되는 엑셀 파일을 만들어 드립니다.
+  </p>
+
+  <!-- 채점 기준 설명 -->
+  <div class="card">
+    <div class="card-title">📊 채점 기준</div>
+    <table class="score-table">
+      <thead><tr><th>항목</th><th>기준</th><th>최대</th></tr></thead>
+      <tbody>
+        <tr><td>출석</td><td>출석률 95%↑→10점 / 88%↑→5점</td><td>10점</td></tr>
+        <tr><td>리퍼럴</td><td>주평균 1.25건↑→25점 (0.25단위 5점씩)</td><td>25점</td></tr>
+        <tr><td>비지터</td><td>5명↑→25점 / 4명→20점 / 3명→15점 / 2명→10점 / 1명→5점</td><td>25점</td></tr>
+        <tr><td>1:1</td><td>주평균 1.0회↑→20점 (0.25단위 5점씩)</td><td>20점</td></tr>
+        <tr><td>CEU</td><td>주평균 0.5↑→10점 / 0초과→5점</td><td>10점</td></tr>
+        <tr><td>TYFCB</td><td>연회비(160만원) 배수 기준 최대 5점</td><td>5점</td></tr>
+        <tr><td>스폰서</td><td>1명 이상→5점</td><td>5점</td></tr>
+      </tbody>
+    </table>
+    <div class="light-row" style="margin-top:14px">
+      <span class="lchip lgreen">🟢 그린 70점↑</span>
+      <span class="lchip lamber">🟡 앰버 50점↑</span>
+      <span class="lchip lred">🔴 레드 30점↑</span>
+      <span class="lchip lgray">⚫ 그레이 30점 미만</span>
+    </div>
+  </div>
+
+  <!-- 엑셀 구성 -->
+  <div class="card">
+    <div class="card-title">📋 엑셀 구성</div>
+    <ul style="font-size:13px;line-height:2;padding-left:18px;color:#374151">
+      <li><strong>① 안내</strong> — 채점 기준 및 입력 방법 설명</li>
+      <li><strong>② 데이터 입력</strong> — 멤버별 활동 통계 입력 (30명 공란)</li>
+      <li><strong>③ 트래픽라이트</strong> — 입력값 기반 자동 계산 결과</li>
+    </ul>
+  </div>
+
+  <button class="dl-btn" onclick="generateExcel()">📥 엑셀 템플릿 다운로드</button>
+  <p class="note">파일명: BNI_트래픽라이트_템플릿.xlsx</p>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script>
+function generateExcel() {
+  const wb = XLSX.utils.book_new();
+
+  /* ────────────────────────────────────────
+     Sheet 1: 안내
+  ──────────────────────────────────────── */
+  const guide = [
+    ['BNI 트래픽라이트 엑셀 템플릿'],
+    [''],
+    ['📌 사용법'],
+    ['1. "② 데이터입력" 시트에 멤버별 활동 수치를 입력하세요.'],
+    ['2. "③ 트래픽라이트" 시트에서 신호등 결과를 확인하세요.'],
+    ['3. 데이터는 특정 기간(예: 최근 24주) 기준 누적 합계를 입력합니다.'],
+    ['4. "측정기간(주)"는 리퍼럴·1:1·CEU 주평균 계산의 분모로 사용됩니다.'],
+    [''],
+    ['📊 채점 기준'],
+    ['항목', '계산 방식', '점수 기준', '최대'],
+    ['출석', '출석률 = (출석+지각) / (출석+지각+결석)', '95%↑→10점 / 88%↑→5점 / 미만→0점', '10점'],
+    ['리퍼럴', '주평균 = (T1+T2합계) / 측정기간(주)', '1.25↑→25점, 1.0↑→20점, 0.75↑→15점, 0.5↑→10점, 0.25↑→5점', '25점'],
+    ['비지터', '측정기간 내 총 비지터 수', '5명↑→25점, 4명→20점, 3명→15점, 2명→10점, 1명→5점', '25점'],
+    ['1:1', '주평균 = 1:1합계 / 측정기간(주)', '1.0↑→20점, 0.75↑→15점, 0.5↑→10점, 0.25↑→5점', '20점'],
+    ['CEU', '주평균 = CEU합계 / 측정기간(주)', '0.5↑→10점, 0초과→5점', '10점'],
+    ['TYFCB', 'TYFCB합계 / 연간멤버십비(160만원) 배수', '30배↑→5점, 15배↑→4점, 5배↑→3점, 2배↑→2점, 0초과→1점', '5점'],
+    ['스폰서', '신규추천 멤버 수', '1명 이상→5점', '5점'],
+    [''],
+    ['🚦 신호등 기준'],
+    ['🟢 그린', '70점 이상'],
+    ['🟡 앰버', '50점 이상'],
+    ['🔴 레드', '30점 이상'],
+    ['⚫ 그레이', '30점 미만 (활동 독려 필요)'],
+    [''],
+    ['⚠️  주의사항'],
+    ['• "② 데이터입력" 시트의 수치만 수정하세요. "③ 트래픽라이트"는 건드리지 마세요.'],
+    ['• 측정기간(주)는 실제 운영된 주 수를 입력하세요 (챕터 전체 동일).'],
+    ['• TYFCB는 원(₩) 단위로 입력하세요.'],
+  ];
+  const wsGuide = XLSX.utils.aoa_to_sheet(guide);
+  wsGuide['!cols'] = [{wch:20},{wch:45},{wch:45},{wch:8}];
+  XLSX.utils.book_append_sheet(wb, wsGuide, '① 안내');
+
+  /* ────────────────────────────────────────
+     Sheet 2: 데이터 입력
+  ──────────────────────────────────────── */
+  const inputHeaders = [
+    ['측정기간(주)', '', '', '', '', '', '', '', '', '', '', '', ''],
+    ['(챕터 전체 동일 기간 입력 → 예: 24)', '', '', '', '', '', '', '', '', '', '', '', ''],
+    [''],
+    ['멤버명', '회사명', '측정기간\n(주)', '출석\n(회)', '지각\n(회)', '결석\n(회)', '리퍼럴T1\n(건)', '리퍼럴T2\n(건)', '비지터\n(명)', '1:1\n(회)', 'TYFCB\n(원)', 'CEU\n(합계)', '스폰서\n(명)'],
+  ];
+  const exampleRow = ['예시: 홍길동', '예시업종', 24, 20, 2, 2, 15, 8, 3, 30, 3200000, 14, 1];
+  const emptyRows = Array.from({length:30}, () => Array(13).fill(''));
+
+  const inputData = [...inputHeaders, exampleRow, ...emptyRows];
+  const wsInput = XLSX.utils.aoa_to_sheet(inputData);
+  wsInput['!cols'] = [
+    {wch:14},{wch:14},{wch:8},{wch:7},{wch:7},{wch:7},
+    {wch:9},{wch:9},{wch:8},{wch:7},{wch:12},{wch:8},{wch:7}
+  ];
+  // 머지: 측정기간 안내
+  wsInput['!merges'] = [{ s:{r:0,c:0}, e:{r:0,c:12} }, { s:{r:1,c:0}, e:{r:1,c:12} }];
+  XLSX.utils.book_append_sheet(wb, wsInput, '② 데이터입력');
+
+  /* ────────────────────────────────────────
+     Sheet 3: 트래픽라이트 자동계산
+  ──────────────────────────────────────── */
+  // 참조: '② 데이터입력' sheet row 4(index 3) = header, row 5(index 4) = example, row 6~35 = members
+  // In Excel 1-based: header=row4, example=row5, members=row6..row35
+  // Our data rows in Sheet2: headerRow=4, exampleRow=5, memberRows=6..35
+
+  const resultHeaders = [
+    ['멤버명', '회사명', '출석점수\n(/10)', '리퍼럴점수\n(/25)', 'TYFCB점수\n(/5)', '비지터점수\n(/25)', '1:1점수\n(/20)', 'CEU점수\n(/10)', '스폰서점수\n(/5)', '총점\n(/100)', '신호등'],
+  ];
+
+  const src = "'② 데이터입력'!";
+  // rows 5..35 in Sheet2 (1-based Excel). Example=row5, members=row6..35
+  const resultRows = [];
+  for (let i = 5; i <= 35; i++) {
+    const A = `${src}A${i}`; // 멤버명
+    const B = `${src}B${i}`; // 회사명
+    const C = `${src}C${i}`; // 측정기간(주)
+    const D = `${src}D${i}`; // 출석
+    const E = `${src}E${i}`; // 지각
+    const F = `${src}F${i}`; // 결석
+    const G = `${src}G${i}`; // T1
+    const H = `${src}H${i}`; // T2
+    const Ic = `${src}I${i}`; // 비지터
+    const J = `${src}J${i}`; // 1:1
+    const K = `${src}K${i}`; // TYFCB
+    const L = `${src}L${i}`; // CEU
+    const M = `${src}M${i}`; // 스폰서
+
+    // 출석점수
+    const fAtt = `IF(${D}+${E}+${F}=0,0,IF((${D}+${E})/(${D}+${E}+${F})>=0.95,10,IF((${D}+${E})/(${D}+${E}+${F})>=0.88,5,0)))`;
+    // 리퍼럴점수
+    const fRef = `IF(${C}=0,0,IF((${G}+${H})/${C}<0.25,0,IF((${G}+${H})/${C}<0.5,5,IF((${G}+${H})/${C}<0.75,10,IF((${G}+${H})/${C}<1,15,IF((${G}+${H})/${C}<1.25,20,25))))))`;
+    // TYFCB점수
+    const fTyf = `IF(${K}<=0,0,IF(${K}/1600000<2,1,IF(${K}/1600000<5,2,IF(${K}/1600000<15,3,IF(${K}/1600000<30,4,5)))))`;
+    // 비지터점수
+    const fVis = `IF(${Ic}>=5,25,IF(${Ic}>=4,20,IF(${Ic}>=3,15,IF(${Ic}>=2,10,IF(${Ic}>=1,5,0)))))`;
+    // 1:1점수
+    const fOno = `IF(${C}=0,0,IF(${J}/${C}<0.25,0,IF(${J}/${C}<0.5,5,IF(${J}/${C}<0.75,10,IF(${J}/${C}<1,15,20)))))`;
+    // CEU점수
+    const fCeu = `IF(${C}=0,0,IF(${L}/${C}<=0,0,IF(${L}/${C}<0.5,5,10)))`;
+    // 스폰서점수
+    const fSpo = `IF(${M}>=1,5,0)`;
+
+    // 총점 (C~I 열 = 3~9열, 0-based)
+    const row = i - 4; // 결과시트 행 (1-based header=1, data starts=2)
+    const cAtt = `C${row+1}`, cRef = `D${row+1}`, cTyf = `E${row+1}`;
+    const cVis = `F${row+1}`, cOno = `G${row+1}`, cCeu = `H${row+1}`, cSpo = `I${row+1}`;
+    const fTot = `${cAtt}+${cRef}+${cTyf}+${cVis}+${cOno}+${cCeu}+${cSpo}`;
+    const fLight = `IF(${A}="","",IF(J${row+1}>=70,"🟢 그린",IF(J${row+1}>=50,"🟡 앰버",IF(J${row+1}>=30,"🔴 레드","⚫ 그레이"))))`;
+
+    resultRows.push([
+      {f: A},
+      {f: B},
+      {f: fAtt},
+      {f: fRef},
+      {f: fTyf},
+      {f: fVis},
+      {f: fOno},
+      {f: fCeu},
+      {f: fSpo},
+      {f: fTot},
+      {f: fLight},
+    ]);
+  }
+
+  const wsResult = XLSX.utils.aoa_to_sheet([...resultHeaders, ...resultRows]);
+  wsResult['!cols'] = [
+    {wch:14},{wch:14},{wch:9},{wch:10},{wch:9},{wch:10},{wch:9},{wch:9},{wch:9},{wch:8},{wch:10}
+  ];
+  XLSX.utils.book_append_sheet(wb, wsResult, '③ 트래픽라이트');
+
+  XLSX.writeFile(wb, 'BNI_트래픽라이트_템플릿.xlsx');
+}
+</script>
+</body>
+</html>
