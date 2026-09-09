@@ -801,13 +801,17 @@ function showMetricDetail(metricKey, ym) {
           const res = calcMemberScore(mr, weeks.length);
           return { name, val: res.total, sub: lightEmoji(res.light), hi: res.light === 'green' };
         }
+        case 'amber_plus_pct': {
+          const res = calcMemberScore(mr, weeks.length);
+          return { name, val: res.total, sub: lightEmoji(res.light), hi: res.light === 'green' || res.light === 'amber' };
+        }
         case 'member_count': return { name, val: 1, sub: '' };
         default: return { name, val: 0, sub: '' };
       }
     }).sort((a,b) => b.val - a.val);
 
-    const unitLabel = { attendance_rate:'%', referral_count:'건', visitor_count:'명', ono_count:'회', tyfcb_amount:'만원', ceu_count:'점', sponsored_count:'명', green_member_pct:'점' }[metricKey] || g.metric_unit;
-    const col2 = { attendance_rate:'출석/총', referral_count:'T1 / T2', ono_count:'총횟수', ceu_count:'총점 / 주평균', green_member_pct:'신호등' }[metricKey];
+    const unitLabel = { attendance_rate:'%', referral_count:'건', visitor_count:'명', ono_count:'회', tyfcb_amount:'만원', ceu_count:'점', sponsored_count:'명', green_member_pct:'점', amber_plus_pct:'점' }[metricKey] || g.metric_unit;
+    const col2 = { attendance_rate:'출석/총', referral_count:'T1 / T2', ono_count:'총횟수', ceu_count:'총점 / 주평균', green_member_pct:'신호등', amber_plus_pct:'신호등' }[metricKey];
 
     tableHtml = `
       <div style="overflow-x:auto;margin-bottom:10px">
