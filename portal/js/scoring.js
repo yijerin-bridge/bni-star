@@ -5,7 +5,7 @@
    채점 기준 변경 시 이 파일만 수정하면 됩니다.
    ============================================================ */
 
-const ANNUAL_MEMBERSHIP = 1600000; // 연간 멤버십 비용 (원)
+const ANNUAL_MEMBERSHIP = 1300000; // 연간 멤버십 비용 (원)
 
 /* ── 항목별 채점 함수 ── */
 function scoreAttendance(recs) { if (!recs.length) return 0; const rate = recs.filter(r => !r.absent).length / recs.length; return rate >= 0.95 ? 10 : rate >= 0.88 ? 5 : 0; }
