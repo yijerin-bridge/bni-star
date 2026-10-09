@@ -2,161 +2,188 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <meta name="theme-color" content="#CC0000">
-  <title>BNI STAR — 수원 비즈니스 전문가 플랫폼</title>
-  <meta name="description" content="BNI STAR 수원 — 세무, 금융, 부동산, IT 등 검증된 비즈니스 전문가를 만나보세요. 수원 사업가들의 전문가 파트너 플랫폼.">
-  <meta name="robots" content="index, follow">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#0b1220">
+  <title>STAR 웰스 파트너스 — 자산가를 위한 전문가 팀</title>
+  <meta name="description" content="상속·증여, 가업승계, 해외자산, 건물 매입, 법인 리스크, 은퇴 설계. 세무·법률·자산관리·부동산·보험 전문가가 한 팀으로 상담합니다.">
+  <!-- 이름 확정 전까지 검색 노출 보류. 확정 후 index, follow 로 변경 -->
+  <meta name="robots" content="noindex, follow">
   <link rel="canonical" href="https://bni-star.vercel.app/">
-  <meta property="og:title" content="BNI STAR — 수원 비즈니스 전문가 플랫폼">
-  <meta property="og:description" content="세무·금융·부동산·IT 등 검증된 전문가와 연결되세요. 수원 사업가들의 비즈니스 파트너를 찾아보세요.">
-  <meta property="og:image" content="https://bni-star.vercel.app/images/bni-logo.png">
-  <meta property="og:url" content="https://bni-star.vercel.app/">
+  <meta property="og:title" content="STAR 웰스 파트너스 — 자산가를 위한 전문가 팀">
+  <meta property="og:description" content="한 번의 상담으로 세무·법률·자산관리·부동산·보험 전문가가 한 팀으로 붙습니다.">
   <meta property="og:type" content="website">
-  <script type="application/ld+json">
-  {"@context":"https://schema.org","@type":"Organization","name":"BNI STAR 수원","url":"https://bni-star.vercel.app","description":"수원 비즈니스 전문가 플랫폼 — 세무, 금융, 부동산, IT 등 검증된 전문가 모임"}
-  </script>
+  <meta property="og:url" content="https://bni-star.vercel.app/">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&family=Noto+Serif+KR:wght@500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/landing.css">
 </head>
 <body>
 
-  <!-- ===== HEADER ===== -->
-  <header class="app-header">
-    <div class="header-inner">
-      <div class="logo">
-        <img src="images/bni-logo.png" alt="BNI" class="logo-img">
-        <span class="logo-star-text"><span class="logo-star-symbol">★</span> STAR</span>
-      </div>
-      <button class="search-btn" id="searchBtn" aria-label="검색">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
-          <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
-        </svg>
-      </button>
-    </div>
-  </header>
-
-  <!-- ===== SEARCH OVERLAY ===== -->
-  <div class="search-overlay" id="searchOverlay">
-    <div class="search-header">
-      <button class="search-close" id="searchClose">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
-          <path d="M19 12H5M12 5l-7 7 7 7"/>
-        </svg>
-      </button>
-      <input type="text" class="search-input" id="searchInput"
-        placeholder="이름, 전문분야, 업종 검색..." autocomplete="off">
-      <button class="search-clear" id="searchClear" aria-label="지우기">✕</button>
-    </div>
-    <div class="search-results" id="searchResults">
-      <div class="search-placeholder">
-        <div class="search-placeholder-icon">🔍</div>
-        <p>전문가 이름이나 전문분야를 검색해보세요</p>
-      </div>
-    </div>
+<header class="site-header" id="top">
+  <div class="wrap header-inner">
+    <a href="#top" class="brand" aria-label="STAR 웰스 파트너스 홈">
+      <span class="brand-star" aria-hidden="true">★</span>
+      <span class="brand-text">STAR<small>WEALTH PARTNERS</small></span>
+    </a>
+    <nav class="site-nav" aria-label="주 메뉴">
+      <a href="#concerns">고민별 상담</a>
+      <a href="#experts">전문가 팀</a>
+      <a href="#process">진행 방식</a>
+    </nav>
+    <a href="#consult" class="btn btn-gold btn-sm">통합 상담</a>
   </div>
+</header>
 
-  <!-- ===== HOME VIEW ===== -->
-  <main class="app-main" id="homeView">
+<main>
 
-    <!-- Hero Carousel -->
-    <section class="hero-section">
-      <div class="carousel-container" id="carouselContainer">
-        <div class="carousel-track" id="carouselTrack"></div>
-        <div class="carousel-dots" id="carouselDots"></div>
+  <section class="hero">
+    <div class="wrap hero-inner">
+      <p class="eyebrow">수원 · 경기 남부 자산가를 위한 전문가 팀</p>
+      <h1>자산이 커질수록,<br><em>한 사람의 조언</em>으로는 부족합니다</h1>
+      <p class="hero-sub">세무, 법률, 해외자산, 부동산, 보험. 각 분야 전문가가 한 팀으로 모여 대표님의 자산을 함께 설계합니다.</p>
+      <div class="hero-cta">
+        <a href="#consult" class="btn btn-gold">통합 상담 신청</a>
+        <a href="#experts" class="btn btn-ghost">전문가 팀 보기</a>
       </div>
-    </section>
-
-
-    <!-- Testimonials -->
-    <section class="testimonials-section" id="testimonialsSection" style="display:none">
-      <div class="section-header" style="padding: 0 16px;">
-        <h2 class="section-title">고객 후기</h2>
-        <span class="section-sub">검증된 전문가</span>
-      </div>
-      <div class="testimonials-track" id="testimonialsTrack"></div>
-    </section>
-
-    <!-- Category Grid -->
-    <section class="categories-section">
-      <div class="section-header">
-        <h2 class="section-title">전문분야별 찾기</h2>
-        <span class="section-sub">분야를 선택하세요</span>
-      </div>
-      <div class="category-grid" id="categoryGrid"></div>
-    </section>
-
-    <!-- All Members -->
-    <section class="members-section">
-      <div class="section-header">
-        <h2 class="section-title">전체 전문가</h2>
-        <span class="member-count" id="memberCount"></span>
-      </div>
-      <div class="members-grid" id="membersGrid"></div>
-    </section>
-
-  </main>
-
-  <!-- ===== CATEGORY VIEW (Slide-in) ===== -->
-  <div class="category-view" id="categoryView">
-    <div class="category-view-header" id="categoryViewHeader">
-      <button class="back-btn" id="backBtn" aria-label="뒤로">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
-          <path d="M19 12H5M12 5l-7 7 7 7"/>
-        </svg>
-      </button>
-      <h2 class="category-view-title" id="categoryViewTitle"></h2>
-      <span class="category-count" id="categoryCount"></span>
-      <button class="cat-close-btn" id="catCloseBtn" aria-label="닫기">✕</button>
+      <ul class="hero-points">
+        <li><strong>한 번의 상담</strong><span>여러 사무실을 따로 찾아다닐 필요가 없습니다</span></li>
+        <li><strong>6개 전문 분야</strong><span>세무 · 법률 · 해외자산 · 은퇴 · 리스크 · 부동산</span></li>
+        <li><strong>함께 보는 설계</strong><span>세금과 법률, 자산 배분을 한 자리에서 맞춥니다</span></li>
+      </ul>
     </div>
-    <div class="members-grid padded" id="categoryMembersGrid"></div>
-  </div>
+  </section>
 
-  <!-- ===== MEMBER MODAL (Bottom Sheet) ===== -->
-  <div class="modal-overlay" id="modalOverlay">
-    <div class="modal-sheet" id="modalSheet">
-      <div class="modal-handle"></div>
-      <button class="modal-close" id="modalClose" aria-label="닫기">✕</button>
-      <div class="modal-content" id="modalContent"></div>
+  <section class="section" id="concerns">
+    <div class="wrap">
+      <div class="section-head">
+        <p class="eyebrow dark">Concerns</p>
+        <h2>어떤 고민으로 오셨나요</h2>
+        <p>고민을 고르시면 해당 분야 전문가가 상담에 함께합니다.</p>
+      </div>
+      <div class="concern-grid" id="concernGrid"></div>
     </div>
-  </div>
+  </section>
 
-  <!-- ===== CHATBOT FAB ===== -->
-  <button class="cb-fab" id="cbFab" onclick="cbOpen()" aria-label="전문가 매칭">
-    <img src="images/star-bot.png" alt="매칭봇" class="cb-fab-img">
-  </button>
+  <section class="section section-alt" id="experts">
+    <div class="wrap">
+      <div class="section-head">
+        <p class="eyebrow dark">Experts</p>
+        <h2>전문가 팀</h2>
+        <p>통합 상담으로 팀을 만나셔도 되고, 필요한 전문가에게 바로 연락하셔도 됩니다.</p>
+      </div>
+      <div class="expert-grid" id="expertGrid"></div>
+    </div>
+  </section>
 
-  <!-- ===== CHATBOT PANEL ===== -->
-  <div class="cb-backdrop" id="cbBackdrop" onclick="cbClose()"></div>
-  <div class="cb-panel" id="cbPanel">
-    <div class="cb-header">
-      <div class="cb-header-info">
-        <div class="cb-avatar">⭐</div>
-        <div>
-          <div class="cb-name">스타 매칭</div>
-          <div class="cb-status">● 전문가를 찾아드려요</div>
+  <section class="section" id="process">
+    <div class="wrap">
+      <div class="section-head">
+        <p class="eyebrow dark">Process</p>
+        <h2>상담은 이렇게 진행됩니다</h2>
+      </div>
+      <ol class="steps">
+        <li>
+          <span class="step-no">01</span>
+          <h3>통합 상담 신청</h3>
+          <p>고민과 연락처를 남겨 주시면 통화 가능한 시간에 먼저 연락드립니다.</p>
+        </li>
+        <li>
+          <span class="step-no">02</span>
+          <h3>담당 전문가 배정</h3>
+          <p>고민에 맞는 전문가를 정합니다. 한 분야로 끝나지 않는 문제는 여러 전문가가 함께 봅니다.</p>
+        </li>
+        <li>
+          <span class="step-no">03</span>
+          <h3>공동 설계</h3>
+          <p>세금, 법률, 자산 배분이 서로 어긋나지 않도록 한 자리에서 방향을 맞춥니다.</p>
+        </li>
+      </ol>
+    </div>
+  </section>
+
+  <section class="section consult" id="consult">
+    <div class="wrap consult-inner">
+      <div class="consult-copy">
+        <p class="eyebrow">Consultation</p>
+        <h2>통합 상담 신청</h2>
+        <p>어느 전문가에게 물어야 할지 몰라도 괜찮습니다. 고민을 적어 주시면 맞는 전문가를 정해 연락드립니다.</p>
+        <p class="consult-phone">전화 상담 <a href="tel:010-3127-6765">010-3127-6765</a></p>
+      </div>
+
+      <form class="consult-form" id="consultForm" novalidate>
+        <input type="text" name="company" class="hp" tabindex="-1" autocomplete="off" aria-hidden="true">
+        <div class="field-row">
+          <label class="field">
+            <span>이름 <b>*</b></span>
+            <input type="text" name="name" required maxlength="40" autocomplete="name">
+          </label>
+          <label class="field">
+            <span>연락처 <b>*</b></span>
+            <input type="tel" name="phone" required maxlength="30" inputmode="tel" autocomplete="tel" placeholder="010-0000-0000">
+          </label>
         </div>
-      </div>
-      <button class="cb-close" onclick="cbClose()">✕</button>
-    </div>
-    <div class="cb-messages" id="cbMessages"></div>
-    <div class="cb-input-row">
-      <input type="text" id="cbInput" class="cb-input" placeholder="고민을 입력하세요..." autocomplete="off">
-      <button class="cb-send" id="cbSend">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-          <!-- 종이비행기 -->
-          <path d="M21.5 2.5L2.5 10l7.5 2.5 2.5 7.5 9-17.5z" fill="white"/>
-          <path d="M10 12.5l4-4" stroke="#DC2626" stroke-width="1.5" stroke-linecap="round"/>
-        </svg>
-      </button>
-    </div>
-  </div>
+        <label class="field">
+          <span>통화 가능 시간</span>
+          <input type="text" name="callTime" maxlength="80" placeholder="예) 평일 오후 2~5시">
+        </label>
+        <fieldset class="field">
+          <legend>관심 분야 <small>(여러 개 선택 가능)</small></legend>
+          <div class="chips" id="topicChips"></div>
+        </fieldset>
+        <label class="field">
+          <span>희망 전문가</span>
+          <select name="expert" id="expertSelect">
+            <option value="">팀에서 정해 주세요</option>
+          </select>
+        </label>
+        <label class="field">
+          <span>상담 내용</span>
+          <textarea name="message" rows="4" maxlength="2000" placeholder="현재 상황과 궁금한 점을 적어 주세요."></textarea>
+        </label>
+        <label class="consent">
+          <input type="checkbox" name="consent" id="consentBox">
+          <span><b>개인정보 수집·이용 동의 (필수)</b><br>수집 항목: 이름, 연락처, 상담 내용 · 이용 목적: 상담 진행 및 담당 전문가 연결 · 보유 기간: 상담 목적 달성 시까지. 동의를 거부하실 수 있으나 이 경우 상담 신청이 불가합니다.</span>
+        </label>
+        <p class="form-msg" id="formMsg" role="alert"></p>
+        <button type="submit" class="btn btn-gold btn-block" id="submitBtn">상담 신청하기</button>
+      </form>
 
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="js/supabase-config.js"></script>
-  <script src="js/members-data.js"></script>
-  <script src="js/app.js"></script>
+      <div class="consult-done" id="consultDone" hidden>
+        <div class="done-mark" aria-hidden="true">✓</div>
+        <h3>상담 신청이 접수되었습니다</h3>
+        <p>남겨 주신 연락처로 순서대로 연락드리겠습니다.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="section life" id="life">
+    <div class="wrap life-inner">
+      <img src="images/experts/moonhs.jpg" alt="문혜선" width="96" height="120" loading="lazy">
+      <div class="life-copy">
+        <p class="eyebrow dark">Life Partner</p>
+        <h2>자산을 지킨 다음의 시간</h2>
+        <p>은퇴 이후의 여행도 설계의 일부입니다. 크루즈 여행은 <strong>인크루즈 문혜선</strong> 파트너가 안내합니다.</p>
+      </div>
+      <div class="life-actions">
+        <a href="tel:010-9016-2122" class="btn btn-line btn-sm">전화</a>
+        <a href="https://open.kakao.com/o/sIDTmV5" target="_blank" rel="noopener" class="btn btn-line btn-sm">카카오톡</a>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <p class="footer-brand"><span aria-hidden="true">★</span> STAR WEALTH PARTNERS</p>
+    <p>각 전문가는 소속 회사에서 독립적으로 자문하며, 자문 계약과 책임은 해당 전문가와 고객 사이에 성립합니다.</p>
+    <p>본 사이트의 내용은 일반적인 정보 제공을 위한 것으로 투자 권유나 개별 세무·법률 자문이 아닙니다. 투자에 대한 최종 판단과 책임은 투자자 본인에게 있습니다.</p>
+  </div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/supabase-config.js"></script>
+<script src="js/landing.js"></script>
 </body>
 </html>

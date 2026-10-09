@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#CC0000">
+  <title>BNI STAR — 수원 비즈니스 전문가 플랫폼</title>
+  <meta name="description" content="BNI STAR 수원 — 세무, 금융, 부동산, IT 등 검증된 비즈니스 전문가를 만나보세요. 수원 사업가들의 전문가 파트너 플랫폼.">
+  <meta name="robots" content="noindex, follow">
+  <link rel="canonical" href="https://bni-star.vercel.app/members.html">
+  <meta property="og:title" content="BNI STAR — 수원 비즈니스 전문가 플랫폼">
+  <meta property="og:description" content="세무·금융·부동산·IT 등 검증된 전문가와 연결되세요. 수원 사업가들의 비즈니스 파트너를 찾아보세요.">
+  <meta property="og:image" content="https://bni-star.vercel.app/images/bni-logo.png">
+  <meta property="og:url" content="https://bni-star.vercel.app/">
+  <meta property="og:type" content="website">
+  <script type="application/ld+json">
+  {"@context":"https://schema.org","@type":"Organization","name":"BNI STAR 수원","url":"https://bni-star.vercel.app","description":"수원 비즈니스 전문가 플랫폼 — 세무, 금융, 부동산, IT 등 검증된 전문가 모임"}
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <!-- ===== HEADER ===== -->
+  <header class="app-header">
+    <div class="header-inner">
+      <div class="logo">
+        <img src="images/bni-logo.png" alt="BNI" class="logo-img">
+        <span class="logo-star-text"><span class="logo-star-symbol">★</span> STAR</span>
+      </div>
+      <button class="search-btn" id="searchBtn" aria-label="검색">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+          <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+        </svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- ===== SEARCH OVERLAY ===== -->
+  <div class="search-overlay" id="searchOverlay">
+    <div class="search-header">
+      <button class="search-close" id="searchClose">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+          <path d="M19 12H5M12 5l-7 7 7 7"/>
+        </svg>
+      </button>
+      <input type="text" class="search-input" id="searchInput"
+        placeholder="이름, 전문분야, 업종 검색..." autocomplete="off">
+      <button class="search-clear" id="searchClear" aria-label="지우기">✕</button>
+    </div>
+    <div class="search-results" id="searchResults">
+      <div class="search-placeholder">
+        <div class="search-placeholder-icon">🔍</div>
+        <p>전문가 이름이나 전문분야를 검색해보세요</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== HOME VIEW ===== -->
+  <main class="app-main" id="homeView">
+
+    <!-- Hero Carousel -->
+    <section class="hero-section">
+      <div class="carousel-container" id="carouselContainer">
+        <div class="carousel-track" id="carouselTrack"></div>
+        <div class="carousel-dots" id="carouselDots"></div>
+      </div>
+    </section>
+
+
+    <!-- Testimonials -->
+    <section class="testimonials-section" id="testimonialsSection" style="display:none">
+      <div class="section-header" style="padding: 0 16px;">
+        <h2 class="section-title">고객 후기</h2>
+        <span class="section-sub">검증된 전문가</span>
+      </div>
+      <div class="testimonials-track" id="testimonialsTrack"></div>
+    </section>
+
+    <!-- Category Grid -->
+    <section class="categories-section">
+      <div class="section-header">
+        <h2 class="section-title">전문분야별 찾기</h2>
+        <span class="section-sub">분야를 선택하세요</span>
+      </div>
+      <div class="category-grid" id="categoryGrid"></div>
+    </section>
+
+    <!-- All Members -->
+    <section class="members-section">
+      <div class="section-header">
+        <h2 class="section-title">전체 전문가</h2>
+        <span class="member-count" id="memberCount"></span>
+      </div>
+      <div class="members-grid" id="membersGrid"></div>
+    </section>
+
+  </main>
+
+  <!-- ===== CATEGORY VIEW (Slide-in) ===== -->
+  <div class="category-view" id="categoryView">
+    <div class="category-view-header" id="categoryViewHeader">
+      <button class="back-btn" id="backBtn" aria-label="뒤로">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+          <path d="M19 12H5M12 5l-7 7 7 7"/>
+        </svg>
+      </button>
+      <h2 class="category-view-title" id="categoryViewTitle"></h2>
+      <span class="category-count" id="categoryCount"></span>
+      <button class="cat-close-btn" id="catCloseBtn" aria-label="닫기">✕</button>
+    </div>
+    <div class="members-grid padded" id="categoryMembersGrid"></div>
+  </div>
+
+  <!-- ===== MEMBER MODAL (Bottom Sheet) ===== -->
+  <div class="modal-overlay" id="modalOverlay">
+    <div class="modal-sheet" id="modalSheet">
+      <div class="modal-handle"></div>
+      <button class="modal-close" id="modalClose" aria-label="닫기">✕</button>
+      <div class="modal-content" id="modalContent"></div>
+    </div>
+  </div>
+
+  <!-- ===== CHATBOT FAB ===== -->
+  <button class="cb-fab" id="cbFab" onclick="cbOpen()" aria-label="전문가 매칭">
+    <img src="images/star-bot.png" alt="매칭봇" class="cb-fab-img">
+  </button>
+
+  <!-- ===== CHATBOT PANEL ===== -->
+  <div class="cb-backdrop" id="cbBackdrop" onclick="cbClose()"></div>
+  <div class="cb-panel" id="cbPanel">
+    <div class="cb-header">
+      <div class="cb-header-info">
+        <div class="cb-avatar">⭐</div>
+        <div>
+          <div class="cb-name">스타 매칭</div>
+          <div class="cb-status">● 전문가를 찾아드려요</div>
+        </div>
+      </div>
+      <button class="cb-close" onclick="cbClose()">✕</button>
+    </div>
+    <div class="cb-messages" id="cbMessages"></div>
+    <div class="cb-input-row">
+      <input type="text" id="cbInput" class="cb-input" placeholder="고민을 입력하세요..." autocomplete="off">
+      <button class="cb-send" id="cbSend">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+          <!-- 종이비행기 -->
+          <path d="M21.5 2.5L2.5 10l7.5 2.5 2.5 7.5 9-17.5z" fill="white"/>
+          <path d="M10 12.5l4-4" stroke="#DC2626" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/supabase-config.js"></script>
+  <script src="js/members-data.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
