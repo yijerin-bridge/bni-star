@@ -174,7 +174,7 @@ function renderOverview() {
     const recs      = allRecs.filter(r => r.week_date >= effStart && r.week_date <= previewEnd);
     const denom     = Math.max(WEEKS_ALL.filter(w => w >= effStart && w <= previewEnd).length, new Set(recs.map(r=>r.week_date)).size, 1);
     const sc        = calcMemberScore(recs, denom);
-    return { ...m, ...sc, recs: allRecs };
+    return { ...m, ...sc, recs: allRecs, periodStart: effStart, periodEnd: previewEnd, denom };
   }).sort((a,b) => {
     const ord = { gray:0, red:1, amber:2, green:3 };
     return (ord[b.light]??0) - (ord[a.light]??0) || b.total - a.total;
@@ -207,7 +207,8 @@ function renderOverview() {
       <span class="score-badge amber">🟡 ${amber}명</span>
       <span class="score-badge red">🔴 ${red}명</span>
       <span class="score-badge gray">⚫ ${gray}명</span>
-      <button id="tlExcelBtn" style="margin-left:auto;padding:6px 14px;border:1.5px solid #e5e7eb;border-radius:8px;background:#fff;cursor:pointer;font-size:12px;font-weight:600;font-family:inherit">📥 엑셀 내보내기</button>
+      <button id="tlPdfBtn" style="margin-left:auto;padding:6px 14px;border:1.5px solid #e5e7eb;border-radius:8px;background:#fff;cursor:pointer;font-size:12px;font-weight:600;font-family:inherit">📄 개인별 PDF</button>
+      <button id="tlExcelBtn" style="padding:6px 14px;border:1.5px solid #e5e7eb;border-radius:8px;background:#fff;cursor:pointer;font-size:12px;font-weight:600;font-family:inherit">📥 엑셀 내보내기</button>
     </div>
 
     <div class="member-score-grid">
@@ -250,6 +251,125 @@ function renderOverview() {
     </div>
   `;
   document.getElementById('tlExcelBtn')?.addEventListener('click', () => exportTLExcel(memberScores));
+  document.getElementById('tlPdfBtn')?.addEventListener('click', e => exportTLPdf(memberScores, e.currentTarget));
+}
+
+/* ── 개인별 PDF: 멤버당 A4 1장 (개인 상세 + 점수 기준) ── */
+const TL_CRITERIA_ROWS = [
+  ['출석',   10, '출석률 95% 이상=10 / 88% 이상=5 / 미만=0 · 출석률=(P+L+M+S)÷(P+A+L+M+S)'],
+  ['리퍼럴', 25, '주평균 1.25건 이상=25 / 1.0 이상=20 / 0.75 이상=15 / 0.5 이상=10 / 0.25 이상=5 / 미만=0'],
+  ['비지터', 25, '6개월 총 5명 이상=25 / 4명=20 / 3명=15 / 2명=10 / 1명=5 / 0명=0'],
+  ['원투원', 20, '주평균 1.0회 이상=20 / 0.75 이상=15 / 0.5 이상=10 / 0.25 이상=5 / 미만=0'],
+  ['교육(CEU)', 10, '주평균 0.5 이상=10 / 0 초과=5 / 0=0'],
+  ['감사장', 5, `감사장÷연회비(${ANNUAL_MEMBERSHIP/10000}만원) 배수: 30배 이상=5 / 15배 이상=4 / 5배 이상=3 / 2배 이상=2 / 0초과=1 / 0=0`],
+  ['스폰서', 5, '6개월 내 신규 가입 추천: 1명 이상=5 / 0명=0'],
+];
+
+function buildMemberPdfPage(m) {
+  const color = {green:'#16a34a',amber:'#ca8a04',red:'#CC0000',gray:'#9ca3af'}[m.light] || '#9ca3af';
+  const lightName = {green:'그린',amber:'앰버',red:'레드',gray:'그레이'}[m.light] || '그레이';
+  const b = m.breakdown, s = m.stats || {};
+  const items = [
+    ['출석',   b.attendance, 10, `출석률 ${Math.round((s.attendRate ?? 1)*100)}% · 결석 ${s.absN||0}회`],
+    ['리퍼럴', b.referral,   25, `주평균 ${s.avgRef||'0.00'}건 · 총 ${s.totRef||0}건`],
+    ['비지터', b.visitor,    25, `총 ${s.totVis||0}명`],
+    ['원투원', b.ono,        20, `주평균 ${s.avgOno||'0.00'}회 · 총 ${s.totOno||0}회`],
+    ['교육(CEU)', b.ceu,     10, `주평균 ${s.avgCeu||'0.00'} · 총 ${s.totCeu||0}`],
+    ['감사장', b.tyfcb,       5, `${s.tyfcbMult||'0.0'}배 · ${fmtComma(s.totTyf||0)}원`],
+    ['스폰서', b.sponsored,   5, `${s.totSponsored||0}명`],
+  ];
+  const recMap = Object.fromEntries(m.recs.map(r => [r.week_date, r]));
+  const memWeeks = getMemberWeeks(m.joined_date);
+  const weeks = memWeeks.slice(-24);
+  const offset = memWeeks.length - weeks.length;
+  const td = 'padding:2px 6px;border-bottom:1px solid #eee;text-align:center';
+  const th = 'padding:4px 6px;background:#f3f4f6;font-weight:700;text-align:center';
+
+  const page = document.createElement('div');
+  page.style.cssText = "position:fixed;left:-10000px;top:0;width:794px;height:1123px;box-sizing:border-box;padding:30px 34px;background:#fff;color:#1a1a1a;font-family:'Noto Sans KR',sans-serif;overflow:hidden";
+  page.innerHTML = `
+    <div style="display:flex;align-items:center;gap:14px;border-bottom:3px solid ${color};padding-bottom:10px;margin-bottom:12px">
+      <div style="flex:1">
+        <div style="font-size:11px;color:#9ca3af">BNI 스타챕터 · 트래픽라이트 개인 상세</div>
+        <div style="font-size:22px;font-weight:900">${m.name} <span style="font-size:12px;font-weight:400;color:#6b7280">${m.company||''}</span></div>
+        <div style="font-size:11px;color:#6b7280">${m.periodStart} ~ ${m.periodEnd} · ${m.denom}주 기준</div>
+      </div>
+      <div style="text-align:right">
+        <div style="font-size:34px;font-weight:900;line-height:1;color:${color}">${m.total}<span style="font-size:13px;color:#9ca3af;font-weight:400"> /100</span></div>
+        <div style="display:inline-block;margin-top:4px;padding:2px 12px;border-radius:10px;background:${color};color:#fff;font-size:12px;font-weight:700">${lightName}</div>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-bottom:12px">
+      ${items.map(([label, score, max, detail]) => `
+        <div style="background:#f9fafb;border-radius:6px;padding:7px 6px;text-align:center">
+          <div style="font-size:10px;color:#6b7280">${label}</div>
+          <div style="font-size:17px;font-weight:900">${score}<span style="font-size:10px;font-weight:400;color:#9ca3af">/${max}</span></div>
+          <div style="font-size:8.5px;color:#6b7280;line-height:1.3">${detail}</div>
+        </div>`).join('')}
+    </div>
+
+    <div style="font-size:12px;font-weight:700;margin-bottom:4px">주간 기록</div>
+    <table style="width:100%;border-collapse:collapse;font-size:10px;margin-bottom:12px">
+      <thead><tr>
+        ${['주차','날짜','출결','준T1','준T2','받은T1','받은T2','비지터','1:1','감사장','CEU','스폰서'].map(h => `<th style="${th}">${h}</th>`).join('')}
+      </tr></thead>
+      <tbody>
+        ${weeks.map((w, i) => {
+          const r = recMap[w];
+          const att = r ? (r.absent?'결석': r.late?'지각/조퇴': r.substitute?'대리': r.sick?'병가':'출석') : '—';
+          const attColor = r?.absent ? '#CC0000' : r?.late ? '#ca8a04' : '#1a1a1a';
+          return `<tr style="${w > TODAY ? 'color:#c0c4cc' : ''}">
+            <td style="${td};color:#9ca3af">W${offset+i+1}</td><td style="${td}">${w}</td>
+            <td style="${td};color:${attColor};font-weight:600">${att}</td>
+            <td style="${td}">${r?.given_t1??'—'}</td><td style="${td}">${r?.given_t2??'—'}</td>
+            <td style="${td}">${r?.received_t1??'—'}</td><td style="${td}">${r?.received_t2??'—'}</td>
+            <td style="${td}">${r?.visitors??'—'}</td><td style="${td}">${r?.one_on_one??'—'}</td>
+            <td style="${td}">${r ? fmtComma(r.tyfcb||0) : '—'}</td><td style="${td}">${r?.ceu??'—'}</td><td style="${td}">${r?.sponsored||'—'}</td>
+          </tr>`;
+        }).join('')}
+      </tbody>
+    </table>
+
+    <div style="font-size:12px;font-weight:700;margin-bottom:4px">점수 기준 (합계 100점)</div>
+    <table style="width:100%;border-collapse:collapse;font-size:10px;margin-bottom:8px">
+      <thead><tr><th style="${th};text-align:left;width:70px">항목</th><th style="${th};width:36px">만점</th><th style="${th};text-align:left">기준</th></tr></thead>
+      <tbody>
+        ${TL_CRITERIA_ROWS.map(([k, max, rule]) => `<tr>
+          <td style="${td};text-align:left;font-weight:700">${k}</td><td style="${td}">${max}</td><td style="${td};text-align:left">${rule}</td>
+        </tr>`).join('')}
+      </tbody>
+    </table>
+    <div style="display:flex;gap:14px;font-size:10.5px;font-weight:700">
+      <span style="color:#16a34a">● 그린 70점 이상</span><span style="color:#ca8a04">● 앰버 50~69점</span>
+      <span style="color:#CC0000">● 레드 30~49점</span><span style="color:#9ca3af">● 그레이 30점 미만</span>
+    </div>
+  `;
+  return page;
+}
+
+async function exportTLPdf(memberScores, btn) {
+  const members = [...memberScores].sort((a, b) => a.name.localeCompare(b.name, 'ko'));
+  if (!members.length) return;
+  const label = btn.textContent;
+  btn.disabled = true;
+  try {
+    const pdf = new window.jspdf.jsPDF({ unit: 'mm', format: 'a4' });
+    for (let i = 0; i < members.length; i++) {
+      btn.textContent = `PDF 생성 중 ${i+1}/${members.length}`;
+      const page = buildMemberPdfPage(members[i]);
+      document.body.appendChild(page);
+      const canvas = await html2canvas(page, { scale: 2, backgroundColor: '#fff' });
+      page.remove();
+      if (i > 0) pdf.addPage();
+      pdf.addImage(canvas.toDataURL('image/jpeg', 0.92), 'JPEG', 0, 0, 210, 297);
+    }
+    pdf.save(`트래픽라이트_개인별_${TODAY}.pdf`);
+  } catch (e) {
+    alert('PDF 생성 실패: ' + e.message);
+  } finally {
+    btn.disabled = false; btn.textContent = label;
+  }
 }
 
 function exportTLExcel(memberScores) {
@@ -1882,7 +2002,7 @@ function renderCriteria() {
           <tr><td style="text-align:left;font-weight:600">비지터 (Visitors)</td><td>25</td><td style="text-align:left;font-size:12px">6개월 총 5명 이상=25 / 4명=20 / 3명=15 / 2명=10 / 1명=5 / 0명=0</td></tr>
           <tr><td style="text-align:left;font-weight:600">원투원 (1-2-1s)</td><td>20</td><td style="text-align:left;font-size:12px">주평균 1.0회 이상=20 / 0.75 이상=15 / 0.5 이상=10 / 0.25 이상=5 / 미만=0</td></tr>
           <tr><td style="text-align:left;font-weight:600">교육 (CEU)</td><td>10</td><td style="text-align:left;font-size:12px">주평균 0.5 이상=10 / 0 초과=5 / 0=0</td></tr>
-          <tr><td style="text-align:left;font-weight:600">감사장 (TYFCB)</td><td>5</td><td style="text-align:left;font-size:12px">감사장÷연회비(160만원) 배수: 30배 이상=5 / 15배 이상=4 / 5배 이상=3 / 2배 이상=2 / 0초과=1 / 0=0</td></tr>
+          <tr><td style="text-align:left;font-weight:600">감사장 (TYFCB)</td><td>5</td><td style="text-align:left;font-size:12px">감사장÷연회비(${ANNUAL_MEMBERSHIP/10000}만원) 배수: 30배 이상=5 / 15배 이상=4 / 5배 이상=3 / 2배 이상=2 / 0초과=1 / 0=0</td></tr>
           <tr><td style="text-align:left;font-weight:600">스폰서 (Members Sponsored)</td><td>5</td><td style="text-align:left;font-size:12px">6개월 내 신규 가입 추천: 1명 이상=5 / 0명=0</td></tr>
         </tbody>
       </table>
