@@ -68,7 +68,7 @@ fieldset { border: 0; min-width: 0; }
 .section { padding: 72px 0; }
 .section-alt { background: var(--paper); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
 .section-head { max-width: 620px; margin-bottom: 36px; }
-.section-head h2, .consult-copy h2, .life-copy h2 { margin-top: 10px; font: 700 clamp(24px, 4.4vw, 34px)/1.35 var(--serif); color: var(--ink); }
+.section-head h2, .consult-copy h2 { margin-top: 10px; font: 700 clamp(24px, 4.4vw, 34px)/1.35 var(--serif); color: var(--ink); }
 .section-head p:not(.eyebrow) { margin-top: 12px; color: var(--muted); font-size: 15px; }
 @media (min-width: 760px) { .section { padding: 96px 0; } }
 
@@ -139,16 +139,6 @@ fieldset { border: 0; min-width: 0; }
 @media (min-width: 620px) { .field-row { grid-template-columns: 1fr 1fr; } .consult-form { padding: 32px; } }
 @media (min-width: 900px) { .consult-inner { grid-template-columns: 5fr 6fr; gap: 56px; align-items: start; } .consult-copy { position: sticky; top: 96px; } }
 
-/* life partner */
-.life { padding: 56px 0; }
-.life-inner { display: grid; gap: 18px; align-items: center; }
-.life-inner img { width: 96px; height: 120px; object-fit: cover; border-radius: 4px; }
-.life-copy h2 { font-size: clamp(20px, 3.6vw, 26px); }
-.life-copy p:not(.eyebrow) { margin-top: 8px; font-size: 14.5px; color: var(--muted); }
-.life-copy strong { color: var(--ink); }
-.life-actions { display: flex; gap: 8px; }
-@media (min-width: 760px) { .life-inner { grid-template-columns: 96px 1fr auto; gap: 28px; } }
-
 /* footer */
 .site-footer { background: var(--ink); color: #8d95a8; padding: 40px 0 48px; font-size: 12.5px; line-height: 1.8; }
 .footer-brand { font: 700 14px var(--serif); letter-spacing: .18em; color: #fff; margin-bottom: 14px; }
@@ -156,3 +146,10 @@ fieldset { border: 0; min-width: 0; }
 .site-footer p + p { margin-top: 6px; }
 
 @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } * { transition: none !important; } }
+
+/* 전문 분야 카드 (개인 정보 비공개 버전) */
+.expert { display: block; padding: 24px; }
+.expert-no { font: 700 13px var(--sans); letter-spacing: .14em; color: var(--gold-ink); }
+.expert-name { margin-top: 8px; font-size: 18px; }
+.expert-desc { font-size: 14.5px; color: var(--muted); }
+@media (min-width: 960px) { .expert-grid { grid-template-columns: repeat(3, 1fr); } }

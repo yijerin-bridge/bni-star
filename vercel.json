@@ -1,24 +1,57 @@
 {
   "redirects": [
-    { "source": "/traffic",  "destination": "/portal/traffic-light.html", "permanent": false },
-    { "source": "/traffic/", "destination": "/portal/traffic-light.html", "permanent": false }
+    {
+      "source": "/traffic",
+      "destination": "/portal/traffic-light.html",
+      "permanent": false
+    },
+    {
+      "source": "/traffic/",
+      "destination": "/portal/traffic-light.html",
+      "permanent": false
+    },
+    {
+      "source": "/members.html",
+      "destination": "/",
+      "permanent": false
+    },
+    {
+      "source": "/members",
+      "destination": "/",
+      "permanent": false
+    }
   ],
   "rewrites": [
-    { "source": "/portal",  "destination": "/portal/index.html" },
-    { "source": "/portal/", "destination": "/portal/index.html" }
+    {
+      "source": "/portal",
+      "destination": "/portal/index.html"
+    },
+    {
+      "source": "/portal/",
+      "destination": "/portal/index.html"
+    }
   ],
   "headers": [
     {
       "source": "/portal/(.*)",
       "headers": [
-        { "key": "X-Robots-Tag",  "value": "noindex, nofollow" },
-        { "key": "Cache-Control", "value": "no-store" }
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex, nofollow"
+        },
+        {
+          "key": "Cache-Control",
+          "value": "no-store"
+        }
       ]
     },
     {
       "source": "/traffic/(.*)",
       "headers": [
-        { "key": "X-Robots-Tag", "value": "noindex, nofollow" }
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex, nofollow"
+        }
       ]
     }
   ]
