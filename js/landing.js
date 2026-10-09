@@ -20,15 +20,20 @@ const CONCERNS = [
 
 const $ = id => document.getElementById(id);
 const selectedTopics = new Set();
+const no = i => String(i + 1).padStart(2, '0');
 
 function renderConcerns() {
-  $('concernGrid').innerHTML = CONCERNS.map((c, i) => `
-    <button type="button" class="concern" data-i="${i}">
-      <span class="concern-topic">${c.topic}</span>
-      <span class="concern-q">${c.q}</span>
-      <span class="concern-who"><span>${c.who} 전문가</span><span>상담하기 →</span></span>
+  $('concernList').innerHTML = CONCERNS.map((c, i) => `
+    <button type="button" class="concern reveal" data-i="${i}">
+      <span class="num">${no(i)}</span>
+      <span>
+        <span class="concern-topic">${c.topic}</span>
+        <span class="concern-q">${c.q}</span>
+        <span class="concern-who">${c.who} 전문가</span>
+      </span>
+      <span class="concern-arrow" aria-hidden="true">→</span>
     </button>`).join('');
-  $('concernGrid').addEventListener('click', e => {
+  $('concernList').addEventListener('click', e => {
     const btn = e.target.closest('.concern');
     if (!btn) return;
     selectedTopics.add(CONCERNS[btn.dataset.i].topic);
@@ -38,11 +43,11 @@ function renderConcerns() {
 }
 
 function renderFields() {
-  $('expertGrid').innerHTML = FIELDS.map((x, i) => `
-    <article class="expert">
-      <span class="expert-no">${String(i + 1).padStart(2, '0')}</span>
-      <h3 class="expert-name">${x.role}</h3>
-      <p class="expert-desc">${x.desc}</p>
+  $('fieldGrid').innerHTML = FIELDS.map((x, i) => `
+    <article class="field-item reveal">
+      <span class="num">${no(i)}</span>
+      <h3>${x.role}</h3>
+      <p>${x.desc}</p>
     </article>`).join('');
 }
 
@@ -65,12 +70,13 @@ function syncChips() {
 
 function goToForm() {
   $('consult').scrollIntoView({ behavior: 'smooth' });
-  setTimeout(() => $('consultForm').elements.name.focus({ preventScroll: true }), 500);
+  setTimeout(() => $('consultForm').elements.name.focus({ preventScroll: true }), 600);
 }
 
 function initForm() {
   const form = $('consultForm'), msg = $('formMsg'), btn = $('submitBtn');
-  const fail = text => { msg.textContent = text; btn.disabled = false; btn.textContent = '상담 신청하기'; };
+  const label = btn.innerHTML;
+  const fail = text => { msg.textContent = text; btn.disabled = false; btn.innerHTML = label; };
 
   form.addEventListener('submit', async e => {
     e.preventDefault();
@@ -101,7 +107,18 @@ function initForm() {
   });
 }
 
+function initReveal() {
+  document.documentElement.classList.add('js');
+  const els = document.querySelectorAll('.reveal');
+  if (!('IntersectionObserver' in window)) { els.forEach(el => el.classList.add('in')); return; }
+  const io = new IntersectionObserver(entries => entries.forEach(en => {
+    if (en.isIntersecting) { en.target.classList.add('in'); io.unobserve(en.target); }
+  }), { rootMargin: '0px 0px -8% 0px' });
+  els.forEach(el => io.observe(el));
+}
+
 renderConcerns();
 renderFields();
 renderChips();
 initForm();
+initReveal();

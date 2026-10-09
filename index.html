@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="theme-color" content="#0b1220">
+  <meta name="theme-color" content="#f5f1e8">
   <title>STAR 웰스 파트너스 — 자산가를 위한 전문가 팀</title>
   <meta name="description" content="상속·증여, 가업승계, 해외자산, 건물 매입, 법인 리스크, 은퇴 설계. 세무·법률·자산관리·부동산·보험 전문가가 한 팀으로 상담합니다.">
   <!-- 이름 확정 전까지 검색 노출 보류. 확정 후 index, follow 로 변경 -->
@@ -15,7 +15,9 @@
   <meta property="og:url" content="https://bni-star.vercel.app/">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&family=Noto+Serif+KR:wght@500;700&display=swap" rel="stylesheet">
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;1,500&family=Noto+Serif+KR:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css" rel="stylesheet">
   <link rel="stylesheet" href="css/landing.css">
 </head>
 <body>
@@ -23,91 +25,100 @@
 <header class="site-header" id="top">
   <div class="wrap header-inner">
     <a href="#top" class="brand" aria-label="STAR 웰스 파트너스 홈">
-      <span class="brand-star" aria-hidden="true">★</span>
-      <span class="brand-text">STAR<small>WEALTH PARTNERS</small></span>
+      <span class="brand-name">STAR</span>
+      <span class="brand-sub">Wealth Partners</span>
     </a>
     <nav class="site-nav" aria-label="주 메뉴">
       <a href="#concerns">고민별 상담</a>
-      <a href="#experts">전문 분야</a>
+      <a href="#fields">전문 분야</a>
       <a href="#process">진행 방식</a>
     </nav>
-    <a href="#consult" class="btn btn-gold btn-sm">통합 상담</a>
+    <a href="#consult" class="header-cta">상담 신청</a>
   </div>
 </header>
 
 <main>
 
   <section class="hero">
-    <div class="wrap hero-inner">
-      <p class="eyebrow">수원 · 경기 남부 자산가를 위한 전문가 팀</p>
-      <h1>자산이 커질수록,<br><em>한 사람의 조언</em>으로는 부족합니다</h1>
-      <p class="hero-sub">세무, 법률, 해외자산, 부동산, 보험. 각 분야 전문가가 한 팀으로 모여 대표님의 자산을 함께 설계합니다.</p>
-      <div class="hero-cta">
-        <a href="#consult" class="btn btn-gold">통합 상담 신청</a>
-        <a href="#experts" class="btn btn-ghost">전문 분야 보기</a>
+    <div class="wrap hero-grid">
+      <div class="hero-copy">
+        <p class="label">수원 · 경기 남부 자산가를 위한 전문가 팀</p>
+        <h1>자산이 커질수록,<br>한 사람의 조언으로는<br>부족합니다.</h1>
+        <p class="hero-sub">세무, 법률, 해외자산, 부동산, 보험.<br>각 분야 전문가가 한 팀으로 모여 대표님의 자산을 함께 설계합니다.</p>
+        <div class="hero-cta">
+          <a href="#consult" class="btn btn-ink">통합 상담 신청<span aria-hidden="true">→</span></a>
+          <a href="#fields" class="text-link">전문 분야 보기</a>
+        </div>
       </div>
-      <ul class="hero-points">
-        <li><strong>한 번의 상담</strong><span>여러 사무실을 따로 찾아다닐 필요가 없습니다</span></li>
-        <li><strong>6개 전문 분야</strong><span>세무 · 법률 · 해외자산 · 은퇴 · 리스크 · 부동산</span></li>
-        <li><strong>함께 보는 설계</strong><span>세금과 법률, 자산 배분을 한 자리에서 맞춥니다</span></li>
-      </ul>
+      <figure class="hero-figure">
+        <img src="images/landing/tower.jpg" alt="" width="900" height="975" fetchpriority="high">
+        <figcaption>Tax · Legal · Global Assets · Retirement · Risk · Real Estate</figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <section class="statement">
+    <div class="wrap">
+      <p class="statement-text reveal">세금은 세무사에게, 분쟁은 변호사에게, 투자는 자산관리사에게 묻습니다. 그런데 각자의 옳은 답이 서로 어긋나면, 그 비용은 고스란히 자산가의 몫이 됩니다.</p>
+      <p class="statement-foot reveal">그래서 처음부터 한 자리에서 함께 봅니다.</p>
     </div>
   </section>
 
   <section class="section" id="concerns">
-    <div class="wrap">
-      <div class="section-head">
-        <p class="eyebrow dark">Concerns</p>
-        <h2>어떤 고민으로 오셨나요</h2>
-        <p>고민을 고르시면 해당 분야 전문가가 상담에 함께합니다.</p>
+    <div class="wrap split">
+      <div class="split-head">
+        <p class="label">Concerns</p>
+        <h2>어떤 고민으로<br>오셨습니까</h2>
+        <p class="lead">고민을 고르시면 해당 분야 전문가가 상담에 함께합니다.</p>
       </div>
-      <div class="concern-grid" id="concernGrid"></div>
+      <div class="concern-list" id="concernList"></div>
     </div>
   </section>
 
-  <section class="section section-alt" id="experts">
+  <section class="section section-paper" id="fields">
     <div class="wrap">
       <div class="section-head">
-        <p class="eyebrow dark">Experts</p>
-        <h2>전문 분야</h2>
-        <p>분야별 전문가가 한 팀으로 상담에 함께합니다. 담당 전문가는 상담 과정에서 안내드립니다.</p>
+        <p class="label">Practice</p>
+        <h2>여섯 개의 전문 분야,<br>하나의 팀</h2>
+        <p class="lead">분야별 전문가가 한 팀으로 상담에 함께합니다. 담당 전문가는 상담 과정에서 안내드립니다.</p>
       </div>
-      <div class="expert-grid" id="expertGrid"></div>
+      <div class="field-grid" id="fieldGrid"></div>
     </div>
   </section>
 
   <section class="section" id="process">
-    <div class="wrap">
-      <div class="section-head">
-        <p class="eyebrow dark">Process</p>
-        <h2>상담은 이렇게 진행됩니다</h2>
+    <div class="wrap process-grid">
+      <figure class="process-figure reveal">
+        <img src="images/landing/concrete.jpg" alt="" width="900" height="1125" loading="lazy">
+      </figure>
+      <div>
+        <p class="label">Process</p>
+        <h2>상담은 이렇게<br>진행됩니다</h2>
+        <ol class="steps">
+          <li class="reveal">
+            <span class="num">01</span>
+            <div><h3>통합 상담 신청</h3><p>고민과 연락처를 남겨 주시면 통화 가능한 시간에 먼저 연락드립니다.</p></div>
+          </li>
+          <li class="reveal">
+            <span class="num">02</span>
+            <div><h3>담당 전문가 배정</h3><p>고민에 맞는 전문가를 정합니다. 한 분야로 끝나지 않는 문제는 여러 전문가가 함께 봅니다.</p></div>
+          </li>
+          <li class="reveal">
+            <span class="num">03</span>
+            <div><h3>공동 설계</h3><p>세금, 법률, 자산 배분이 서로 어긋나지 않도록 한 자리에서 방향을 맞춥니다.</p></div>
+          </li>
+        </ol>
       </div>
-      <ol class="steps">
-        <li>
-          <span class="step-no">01</span>
-          <h3>통합 상담 신청</h3>
-          <p>고민과 연락처를 남겨 주시면 통화 가능한 시간에 먼저 연락드립니다.</p>
-        </li>
-        <li>
-          <span class="step-no">02</span>
-          <h3>담당 전문가 배정</h3>
-          <p>고민에 맞는 전문가를 정합니다. 한 분야로 끝나지 않는 문제는 여러 전문가가 함께 봅니다.</p>
-        </li>
-        <li>
-          <span class="step-no">03</span>
-          <h3>공동 설계</h3>
-          <p>세금, 법률, 자산 배분이 서로 어긋나지 않도록 한 자리에서 방향을 맞춥니다.</p>
-        </li>
-      </ol>
     </div>
   </section>
 
-  <section class="section consult" id="consult">
-    <div class="wrap consult-inner">
+  <section class="consult" id="consult">
+    <div class="wrap consult-grid">
       <div class="consult-copy">
-        <p class="eyebrow">Consultation</p>
+        <p class="label">Consultation</p>
         <h2>통합 상담 신청</h2>
-        <p>어느 전문가에게 물어야 할지 몰라도 괜찮습니다. 고민을 적어 주시면 맞는 전문가를 정해 연락드립니다.</p>
+        <p class="lead">어느 전문가에게 물어야 할지 몰라도 괜찮습니다. 고민을 적어 주시면 맞는 전문가를 정해 연락드립니다.</p>
+        <p class="consult-note">남겨 주신 정보는 상담 목적으로만 사용합니다.</p>
       </div>
 
       <form class="consult-form" id="consultForm" novalidate>
@@ -127,37 +138,38 @@
           <input type="text" name="callTime" maxlength="80" placeholder="예) 평일 오후 2~5시">
         </label>
         <fieldset class="field">
-          <legend>관심 분야 <small>(여러 개 선택 가능)</small></legend>
+          <legend>관심 분야 <small>여러 개 선택 가능</small></legend>
           <div class="chips" id="topicChips"></div>
         </fieldset>
         <label class="field">
           <span>상담 내용</span>
-          <textarea name="message" rows="4" maxlength="2000" placeholder="현재 상황과 궁금한 점을 적어 주세요."></textarea>
+          <textarea name="message" rows="3" maxlength="2000" placeholder="현재 상황과 궁금한 점을 적어 주세요."></textarea>
         </label>
         <label class="consent">
           <input type="checkbox" name="consent" id="consentBox">
-          <span><b>개인정보 수집·이용 동의 (필수)</b><br>수집 항목: 이름, 연락처, 상담 내용 · 이용 목적: 상담 진행 및 담당 전문가 연결 · 보유 기간: 상담 목적 달성 시까지. 동의를 거부하실 수 있으나 이 경우 상담 신청이 불가합니다.</span>
+          <span><b>개인정보 수집·이용 동의 (필수)</b> 수집 항목: 이름, 연락처, 상담 내용 · 이용 목적: 상담 진행 및 담당 전문가 연결 · 보유 기간: 상담 목적 달성 시까지. 동의를 거부하실 수 있으나 이 경우 상담 신청이 불가합니다.</span>
         </label>
         <p class="form-msg" id="formMsg" role="alert"></p>
-        <button type="submit" class="btn btn-gold btn-block" id="submitBtn">상담 신청하기</button>
+        <button type="submit" class="btn btn-ivory" id="submitBtn">상담 신청하기<span aria-hidden="true">→</span></button>
       </form>
 
       <div class="consult-done" id="consultDone" hidden>
-        <div class="done-mark" aria-hidden="true">✓</div>
+        <p class="num">Thank you</p>
         <h3>상담 신청이 접수되었습니다</h3>
         <p>남겨 주신 연락처로 순서대로 연락드리겠습니다.</p>
       </div>
     </div>
   </section>
 
-
 </main>
 
 <footer class="site-footer">
-  <div class="wrap">
-    <p class="footer-brand"><span aria-hidden="true">★</span> STAR WEALTH PARTNERS</p>
-    <p>각 전문가는 소속 회사에서 독립적으로 자문하며, 자문 계약과 책임은 해당 전문가와 고객 사이에 성립합니다.</p>
-    <p>본 사이트의 내용은 일반적인 정보 제공을 위한 것으로 투자 권유나 개별 세무·법률 자문이 아닙니다. 투자에 대한 최종 판단과 책임은 투자자 본인에게 있습니다.</p>
+  <div class="wrap footer-inner">
+    <p class="brand"><span class="brand-name">STAR</span><span class="brand-sub">Wealth Partners</span></p>
+    <div class="footer-legal">
+      <p>각 전문가는 소속 회사에서 독립적으로 자문하며, 자문 계약과 책임은 해당 전문가와 고객 사이에 성립합니다.</p>
+      <p>본 사이트의 내용은 일반적인 정보 제공을 위한 것으로 투자 권유나 개별 세무·법률 자문이 아닙니다. 투자에 대한 최종 판단과 책임은 투자자 본인에게 있습니다.</p>
+    </div>
   </div>
 </footer>
 
