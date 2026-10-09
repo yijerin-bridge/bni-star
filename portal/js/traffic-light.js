@@ -1882,7 +1882,7 @@ function renderCriteria() {
           <tr><td style="text-align:left;font-weight:600">비지터 (Visitors)</td><td>25</td><td style="text-align:left;font-size:12px">6개월 총 5명 이상=25 / 4명=20 / 3명=15 / 2명=10 / 1명=5 / 0명=0</td></tr>
           <tr><td style="text-align:left;font-weight:600">원투원 (1-2-1s)</td><td>20</td><td style="text-align:left;font-size:12px">주평균 1.0회 이상=20 / 0.75 이상=15 / 0.5 이상=10 / 0.25 이상=5 / 미만=0</td></tr>
           <tr><td style="text-align:left;font-weight:600">교육 (CEU)</td><td>10</td><td style="text-align:left;font-size:12px">주평균 0.5 이상=10 / 0 초과=5 / 0=0</td></tr>
-          <tr><td style="text-align:left;font-weight:600">감사장 (TYFCB)</td><td>5</td><td style="text-align:left;font-size:12px">감사장÷연회비(160만원) 배수: 30배 이상=5 / 15배 이상=4 / 5배 이상=3 / 2배 이상=2 / 0초과=1 / 0=0</td></tr>
+          <tr><td style="text-align:left;font-weight:600">감사장 (TYFCB)</td><td>5</td><td style="text-align:left;font-size:12px">감사장÷연회비(${ANNUAL_MEMBERSHIP/10000}만원) 배수: 30배 이상=5 / 15배 이상=4 / 5배 이상=3 / 2배 이상=2 / 0초과=1 / 0=0</td></tr>
           <tr><td style="text-align:left;font-weight:600">스폰서 (Members Sponsored)</td><td>5</td><td style="text-align:left;font-size:12px">6개월 내 신규 가입 추천: 1명 이상=5 / 0명=0</td></tr>
         </tbody>
       </table>
