@@ -1,8 +1,8 @@
 /* 비공개 보관용 — 배포되지 않음(.vercelignore). 공개 전환 시 js/landing.js 로 되돌려 사용 */
 
 const EXPERTS = [
-  { id: 'yijerin', name: '이재린', role: '해외자산 · 달러 분산', firm: '브릿지자산관리',
-    desc: '14년 경력의 투자·자산관리 전문가. 해외보험과 해외투자로 원화에 치우친 자산을 나눕니다.',
+  { id: 'yijerin', name: '이재린', role: '역외투자 · 달러 분산', firm: '브릿지자산관리',
+    desc: '14년 경력의 투자·자산관리 전문가. 역외보험과 역외투자로 원화에 치우친 자산을 나눕니다.',
     photo: '_private/experts-photos/yijerin.jpg', phone: '010-3127-6765', kakao: 'https://open.kakao.com/me/yijerin' },
   { id: 'leemj', name: '이명재', role: '상속 · 증여 · 가업승계 세무', firm: '세무법인 건율',
     desc: '증여와 상속, 가업승계에서 생기는 세금을 미리 설계합니다.',
