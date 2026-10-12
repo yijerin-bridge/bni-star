@@ -10,7 +10,7 @@ const EXPERTS = [
   { id: 'kangjh', name: '강종현', role: '상속 분쟁 · 자산 보호 법률', firm: '법무법인 청목',
     desc: '변호사. 상속과 승계 과정의 분쟁을 예방하고, 분쟁이 생기면 대응합니다.',
     photo: '', phone: '010-9178-5274', kakao: '' },
-  { id: 'jungyj', name: '정영준', role: '은퇴 · 상속 재원 설계', firm: '와이즈앤밸류',
+  { id: 'jungyj', name: '정영준', role: '은퇴 · 상속 재정관리', firm: '와이즈앤밸류',
     desc: '생명보험과 재무설계로 은퇴 이후의 현금 흐름과 상속세 납부 재원을 준비합니다.',
     photo: '_private/experts-photos/jungyj.jpg', phone: '010-2599-1901', kakao: 'https://open.kakao.com/o/sVdeyYli' },
   { id: 'nasy', name: '나성연', role: '법인 · 사업체 리스크', firm: '와이즈앤밸류',
