@@ -91,7 +91,6 @@ h2 { font-size: clamp(28px, 4.2vw, 46px); line-height: 1.32; }
 .concern .num { padding-top: 7px; }
 .concern-topic { display: block; font: 500 clamp(21px, 2.3vw, 27px)/1.35 var(--serif); letter-spacing: -.02em; }
 .concern-q { display: block; margin-top: 8px; color: var(--muted); font-size: 15.5px; }
-.concern-who { display: block; margin-top: 12px; font-size: 13px; letter-spacing: .02em; color: var(--brass); }
 .concern-arrow { padding-top: 6px; font-size: 20px; color: var(--muted); transition: transform .3s, color .3s; }
 .concern:hover { padding-left: 14px; padding-right: 14px; background: rgba(255,255,255,.55); }
 .concern:hover .concern-arrow { transform: translateX(6px); color: var(--ink); }

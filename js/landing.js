@@ -10,12 +10,12 @@ const FIELDS = [
 ];
 
 const CONCERNS = [
-  { topic: '상속 · 증여',   q: '자녀에게 언제, 어떻게 넘겨야 세금이 줄어들까요?',     who: '세무 · 재정관리' },
-  { topic: '가업승계',      q: '회사를 물려주려는데 지분과 세금이 걱정됩니다.',        who: '세무 · 법률' },
-  { topic: '해외자산 분산', q: '자산이 전부 원화와 국내 부동산에 묶여 있습니다.',      who: '역외투자' },
-  { topic: '건물 매입',     q: '임대 수익이 나오는 건물을 사고 싶습니다.',             who: '부동산 · 세무' },
-  { topic: '법인 리스크',   q: '사고나 소송 한 번에 회사가 흔들릴까 걱정됩니다.',      who: '리스크 · 법률' },
-  { topic: '은퇴 · 노후',   q: '은퇴 후에도 지금의 생활을 유지하고 싶습니다.',         who: '은퇴 설계 · 역외투자' },
+  { topic: '상속 · 증여',   q: '자녀에게 언제, 어떻게 넘겨야 세금이 줄어들까요?' },
+  { topic: '가업승계',      q: '회사를 물려주려는데 지분과 세금이 걱정됩니다.' },
+  { topic: '해외자산 분산', q: '자산이 전부 원화와 국내 부동산에 묶여 있습니다.' },
+  { topic: '건물 매입',     q: '임대 수익이 나오는 건물을 사고 싶습니다.' },
+  { topic: '법인 리스크',   q: '사고나 소송 한 번에 회사가 흔들릴까 걱정됩니다.' },
+  { topic: '은퇴 · 노후',   q: '은퇴 후에도 지금의 생활을 유지하고 싶습니다.' },
 ];
 
 const $ = id => document.getElementById(id);
@@ -29,7 +29,6 @@ function renderConcerns() {
       <span>
         <span class="concern-topic">${c.topic}</span>
         <span class="concern-q">${c.q}</span>
-        <span class="concern-who">${c.who} 전문가</span>
       </span>
       <span class="concern-arrow" aria-hidden="true">→</span>
     </button>`).join('');
