@@ -30,7 +30,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     <div class="page-header">
       <div><h1>멤버 관리</h1><p>역할 및 임기 관리 · 의장단 전용</p></div>
       <div style="display:flex;gap:8px">
-        <button class="btn btn-outline btn-sm" id="importBtn">기존 데이터 가져오기</button>
         <button class="btn btn-primary" id="addMemberBtn">+ 멤버 추가</button>
       </div>
     </div>
@@ -54,7 +53,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   });
 
   document.getElementById('addMemberBtn').addEventListener('click', () => showAddMemberForm());
-  document.getElementById('importBtn').addEventListener('click', () => importFromLegacy());
 
   loadView('active');
 });
@@ -73,7 +71,7 @@ async function loadView(view) {
   }
 
   if (!data?.length) {
-    el.innerHTML = `<div class="empty-state"><div class="es-icon">👥</div><p>멤버가 없습니다</p><p style="margin-top:8px;font-size:12px">"기존 데이터 가져오기"로 members-data.js의 멤버를 불러오세요</p></div>`;
+    el.innerHTML = `<div class="empty-state"><div class="es-icon">👥</div><p>멤버가 없습니다</p><p style="margin-top:8px;font-size:12px">"+ 멤버 추가"로 멤버를 등록하세요</p></div>`;
     return;
   }
 
@@ -355,22 +353,6 @@ window.editMember = async (id) => {
   });
 };
 
-async function importFromLegacy() {
-  if (!confirm('members-data.js의 멤버를 Supabase members 테이블에 가져옵니다.\n이미 존재하는 멤버(legacy_id 기준)는 건너뜁니다.\n계속하시겠습니까?')) return;
-  const payload = (MEMBERS_DEFAULT || []).map(m => ({
-    legacy_id:   m.id,
-    name:        m.name,
-    company:     m.company || null,
-    category:    m.category || null,
-    phone:       m.phone || null,
-    email:       m.email || null,
-    is_active:   true,
-    photo_url:   m.photoUrl || null,
-  }));
-  const { error } = await getSb().from('members').upsert(payload, { onConflict: 'legacy_id', ignoreDuplicates: true });
-  if (error) alert('오류: ' + error.message);
-  else { alert(`${payload.length}명 가져오기 완료`); location.reload(); }
-}
 </script>
 </body>
 </html>
