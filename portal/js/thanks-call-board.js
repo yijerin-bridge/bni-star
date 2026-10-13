@@ -2,7 +2,16 @@
 (async function () {
   const layout = renderPortalLayout({ title: '감사콜' });
   if (!layout) return;
-  const { bodyEl } = layout;
+  const { session, bodyEl } = layout;
+  if (!canAccessThanksCall(session)) {
+    bodyEl.innerHTML = `
+      <div class="page-header"><div><h1>감사콜</h1></div></div>
+      <div class="empty-state"><div class="es-icon">🔒</div>
+        <p>감사콜 전체 현황은 의장단과 이벤트 코디네이터만 볼 수 있습니다.</p>
+        <a class="btn btn-primary" style="margin-top:16px;display:inline-block" href="/portal/thanks-call-form.html">내 감사콜 기록하기</a>
+      </div>`;
+    return;
+  }
   const formUrl = `${location.origin}/portal/thanks-call-form.html`;
 
   bodyEl.innerHTML = `

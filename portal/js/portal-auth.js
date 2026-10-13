@@ -78,6 +78,13 @@ function canAccessFeatureFeedback(s) {
   if (s.roleType === 'leader' && s.roleName && s.roleName.includes('PR')) return true;
   return false;
 }
+// 감사콜 전체 현황 — 의장단 또는 이벤트 코디네이터
+function canAccessThanksCall(s) {
+  if (!s) return false;
+  if (s.roleType === 'board') return true;
+  if (s.roleType === 'leader' && s.roleName && s.roleName.includes('이벤트')) return true;
+  return false;
+}
 
 /* ---------- Nav Items by Role ---------- */
 function getNavItems(session) {
@@ -101,7 +108,9 @@ function getNavItems(session) {
   if (canAccessFeatureFeedback(session)) {
     items.push({ href: '/portal/feature-feedback.html', icon: '🎤', label: '피처 피드백', always: false });
   }
-  items.push({ href: '/portal/thanks-call.html', icon: '📞', label: '감사콜', always: true });
+  if (canAccessThanksCall(session)) {
+    items.push({ href: '/portal/thanks-call.html', icon: '📞', label: '감사콜', always: false });
+  }
   items.push({ href: '/portal/handover.html', icon: '🤝', label: '인수인계',     always: true });
   items.push({ href: '/portal/history.html',  icon: '📜', label: '챕터 히스토리', always: true });
   if (t === 'board') {
