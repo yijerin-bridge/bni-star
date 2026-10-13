@@ -136,7 +136,6 @@ function buildDashboard(session, el, members, weekly) {
       <div style="display:flex;gap:8px;flex-wrap:wrap">
         <button class="btn btn-outline btn-sm" onclick="copyShareLink()">🔗 공유 링크</button>
         <button class="btn btn-outline btn-sm" onclick="saveAsImage()">📸 이미지 저장</button>
-        ${isLeader ? `<a href="/portal/traffic-light.html" class="btn btn-primary btn-sm">트래픽라이트 →</a>` : ''}
       </div>
     </div>
 
