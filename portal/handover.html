@@ -136,6 +136,12 @@ const ROLE_ICON = {
 
 let allRoles = [], allRecords = [], allItems = [];
 let currentSession = null;
+let myRoleIds = new Set();   // 로그인한 멤버가 현재 맡고 있는 역할
+
+// 의장단은 전체 폴더, 그 외에는 본인이 현재 맡은 역할의 폴더만
+function canSeeRole(role) {
+  return canManageMembers(currentSession) || myRoleIds.has(role.id);
+}
 
 document.addEventListener('DOMContentLoaded', async () => {
   const layout = renderPortalLayout({ title: '인수인계' });
@@ -158,14 +164,24 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 async function loadAll() {
-  const [rolesRes, recordsRes, itemsRes] = await Promise.all([
+  const [rolesRes, recordsRes, itemsRes, myRes] = await Promise.all([
     getSb().from('roles').select('*').order('tier').order('id'),
     getSb().from('handover_records').select('*').order('term_start', { ascending: false }),
     getSb().from('handover_items').select('*'),
+    getSb().from('member_roles').select('role_id, members(id, legacy_id)').eq('is_current', true),
   ]);
   allRoles   = rolesRes.data   || [];
   allRecords = recordsRes.data || [];
   allItems   = itemsRes.data   || [];
+
+  // 로그인 세션의 memberId 는 legacy_id(없으면 id) 기준
+  myRoleIds = new Set((myRes.data || [])
+    .filter(mr => mr.members && (mr.members.legacy_id ?? mr.members.id) === currentSession.memberId)
+    .map(mr => mr.role_id));
+  // 임기 표에서 못 찾으면 로그인 때 받은 역할 이름으로 보완
+  if (!myRoleIds.size && currentSession.roleName) {
+    allRoles.filter(r => r.name === currentSession.roleName).forEach(r => myRoleIds.add(r.id));
+  }
 }
 
 /* ── 그리드 뷰 ── */
@@ -182,7 +198,7 @@ function renderGrid() {
 
   // tier별로 그룹핑 (board → membership → leader)
   const groups = { board: [], membership: [], leader: [] };
-  allRoles.filter(r => r.role_type !== 'member').forEach(role => {
+  allRoles.filter(r => r.role_type !== 'member' && canSeeRole(r)).forEach(role => {
     groups[role.role_type]?.push(role);
   });
 
@@ -215,7 +231,9 @@ function renderGrid() {
       </div>`;
   }).join('');
 
-  el.innerHTML = html || `<div class="empty-state"><div class="es-icon">🤝</div><p>역할 데이터가 없습니다.<br>Supabase에서 roles-update.sql을 먼저 실행해주세요.</p></div>`;
+  el.innerHTML = html || (allRoles.length
+    ? `<div class="empty-state"><div class="es-icon">🔒</div><p>현재 맡고 계신 역할의 인수인계 폴더가 없습니다.<br><small style="color:#9ca3af">역할이 지정되어 있는데도 보이지 않으면 의장단에게 문의해 주세요.</small></p></div>`
+    : `<div class="empty-state"><div class="es-icon">🤝</div><p>역할 데이터가 없습니다.<br>Supabase에서 roles-update.sql을 먼저 실행해주세요.</p></div>`);
 }
 
 /* ── 상세 뷰 ── */
@@ -226,9 +244,9 @@ async function openDetail(roleId) {
   detailEl.innerHTML = '<div style="text-align:center;padding:48px;color:#9ca3af">불러오는 중...</div>';
 
   const role = allRoles.find(r => r.id === roleId);
-  if (!role) return;
+  if (!role || !canSeeRole(role)) { renderGrid(); return; }
 
-  const canEdit = canManageMembers(currentSession) || currentSession.roleType === role.role_type;
+  const canEdit = canSeeRole(role);
 
   let records = allRecords.filter(r => r.role_id === roleId)
     .sort((a, b) => b.term_start?.localeCompare(a.term_start || ''));
