@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>감사콜 기록 — 스타챕터</title>
+  <meta name="robots" content="noindex, nofollow">
+  <meta property="og:title" content="감사콜 30주 기록 — 스타챕터">
+  <meta property="og:description" content="감사콜 하셨어요? 이번 주 감사콜을 기록해 주세요.">
+  <meta property="og:type" content="website">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
+    body { font-family:'Noto Sans KR',sans-serif; background:#f3f4f6; color:#1a1a1a; min-height:100vh; line-height:1.6; word-break:keep-all; }
+    button, input, select { font-family:inherit; }
+    .topbar { background:#8B0000; color:#fff; padding:14px 20px; display:flex; align-items:center; gap:10px; }
+    .topbar-logo { font-size:17px; font-weight:900; }
+    .topbar-sub { font-size:12px; opacity:.75; }
+    .container { max-width:640px; margin:0 auto; padding:20px 14px 72px; }
+    .card { background:#fff; border-radius:14px; padding:18px; margin-bottom:12px; box-shadow:0 1px 4px rgba(0,0,0,.06); }
+    .card-title { font-size:14px; font-weight:700; margin-bottom:10px; }
+
+    .hero { background:#8B0000; color:#fff; border-radius:14px; padding:22px 18px; margin-bottom:12px; }
+    .hero-q { font-size:20px; font-weight:900; line-height:1.4; }
+    .hero-q span { opacity:.75; font-weight:500; }
+    .hero-sub { font-size:12.5px; opacity:.85; margin-top:8px; }
+
+    select, input[type=text], input[type=date] { width:100%; border:1.5px solid #e5e7eb; border-radius:10px; padding:11px 12px; font-size:15px; background:#fff; outline:none; }
+    select:focus, input:focus { border-color:#8B0000; }
+
+    .stats { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; }
+    .stat { background:#f9fafb; border-radius:10px; padding:10px 6px; text-align:center; }
+    .stat b { display:block; font-size:19px; font-weight:900; }
+    .stat span { font-size:11px; color:#6b7280; }
+    .badge { display:inline-block; padding:2px 10px; border-radius:20px; font-size:12px; font-weight:700; }
+    .crit { font-size:12px; color:#6b7280; margin-top:10px; }
+
+    details.guide summary { cursor:pointer; font-size:14px; font-weight:700; list-style:none; display:flex; justify-content:space-between; }
+    details.guide summary::after { content:'펼치기'; font-size:12px; font-weight:500; color:#9ca3af; }
+    details.guide[open] summary::after { content:'접기'; }
+    .guide-body { margin-top:12px; font-size:13.5px; color:#374151; }
+    .guide-body ol { padding-left:0; list-style:none; display:grid; gap:8px; }
+    .guide-body li b { color:#8B0000; margin-right:4px; }
+    .guide-who { margin-top:12px; padding-top:12px; border-top:1px solid #f0f0f0; font-size:12.5px; color:#6b7280; }
+
+    .wk { border:1.5px solid #e5e7eb; border-radius:12px; margin-bottom:8px; background:#fff; overflow:hidden; }
+    .wk.cur { border-color:#8B0000; }
+    .wk.future { opacity:.45; }
+    .wk-head { display:flex; align-items:center; gap:10px; width:100%; padding:13px 14px; background:none; border:0; text-align:left; cursor:pointer; font-size:14px; }
+    .wk.future .wk-head { cursor:default; }
+    .wk-no { font-weight:900; min-width:38px; }
+    .wk-date { font-size:12px; color:#9ca3af; min-width:40px; }
+    .wk-sum { flex:1; min-width:0; font-size:13px; color:#374151; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .wk-sum.miss { color:#CC0000; }
+    .wk-sum.todo { color:#9ca3af; }
+    .wk-mark { font-size:12px; font-weight:700; white-space:nowrap; }
+    .wk-body { display:none; padding:4px 14px 14px; border-top:1px solid #f3f4f6; }
+    .wk.open .wk-body { display:block; }
+    .slot + .slot { margin-top:14px; padding-top:14px; border-top:1px dashed #e5e7eb; }
+    .slot-title { font-size:12px; font-weight:700; color:#8B0000; margin:10px 0 6px; }
+    .row2 { display:grid; grid-template-columns:130px 1fr; gap:8px; }
+    .checks { display:flex; gap:8px; margin-top:8px; }
+    .check { flex:1; display:flex; align-items:center; justify-content:center; gap:6px; padding:10px; border:1.5px solid #e5e7eb; border-radius:10px; font-size:13.5px; font-weight:500; cursor:pointer; user-select:none; }
+    .check input { width:16px; height:16px; accent-color:#8B0000; }
+    .check:has(input:checked) { border-color:#8B0000; background:#fff5f5; color:#8B0000; font-weight:700; }
+    .actions { display:flex; gap:8px; margin-top:10px; }
+    .btn { flex:1; padding:12px; border:none; border-radius:10px; font-size:14.5px; font-weight:700; cursor:pointer; background:#8B0000; color:#fff; }
+    .btn:disabled { background:#d1d5db; cursor:not-allowed; }
+    .btn-del { flex:0 0 auto; padding:12px 16px; background:#fff; color:#CC0000; border:1.5px solid #fca5a5; }
+    .sect { font-size:12px; font-weight:700; color:#6b7280; margin:20px 4px 8px; }
+    .notice { background:#fff7ed; border:1.5px solid #fdba74; color:#9a3412; border-radius:12px; padding:14px; font-size:13.5px; margin-bottom:12px; }
+    .toast { position:fixed; left:50%; bottom:24px; transform:translateX(-50%); background:#1a1a1a; color:#fff; padding:10px 20px; border-radius:24px; font-size:13.5px; opacity:0; pointer-events:none; transition:opacity .2s; z-index:50; }
+    .toast.show { opacity:1; }
+    .empty { text-align:center; color:#9ca3af; font-size:14px; padding:28px 0; }
+    .more-btn { width:100%; padding:12px; background:#fff; border:1.5px dashed #d1d5db; border-radius:12px; font-size:13px; color:#6b7280; cursor:pointer; }
+  </style>
+</head>
+<body>
+<div class="topbar">
+  <span class="topbar-logo">스타챕터</span>
+  <span class="topbar-sub">감사콜 캠페인 · 30주 기록지</span>
+</div>
+
+<div class="container">
+  <div class="hero">
+    <div class="hero-q">"감사콜 하셨어요?"<br><span>"감사콜 했습니다!"</span></div>
+    <div class="hero-sub">한 통의 감사가 한 사람을 부릅니다. 매주 한 통, 나를 도와준 분께 감사를 되돌려 드립니다.</div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">이름</div>
+    <select id="memberSel"><option value="">-- 본인 이름을 선택하세요 --</option></select>
+  </div>
+
+  <div id="errBox"></div>
+
+  <div id="mine" hidden>
+    <div class="card">
+      <div class="card-title" style="display:flex;justify-content:space-between;align-items:center">
+        <span>나의 진행 현황</span><span class="badge" id="stBadge"></span>
+      </div>
+      <div class="stats" id="stats"></div>
+      <div class="crit" id="crit"></div>
+    </div>
+
+    <details class="card guide">
+      <summary>감사콜 3분, 이렇게 하시면 됩니다</summary>
+      <div class="guide-body">
+        <ol>
+          <li><b>① 감사</b>"지난번 도움 정말 감사했습니다"</li>
+          <li><b>② 근황</b>"요즘 사업은 어떠십니까" — 여기서는 듣기만</li>
+          <li><b>③ 제안</b>"제가 도울 일이 있을까요"</li>
+          <li><b>④ 초청</b>"한번 뵙고 싶습니다. 조찬에 모시고 싶습니다"</li>
+        </ol>
+        <div class="guide-who"><b>누구에게 걸까</b> — ① 나를 도와준 분 ② 리퍼럴 주신 분 ③ 오래 못 뵌 고객 ④ 예전 비지터 ⑤ 나의 가디언<br>이것은 영업이 아니라 감사입니다.</div>
+      </div>
+    </details>
+
+    <div id="weeks"></div>
+  </div>
+
+  <div class="empty" id="pickHint">이름을 선택하면 기록표가 열립니다.</div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="/js/supabase-config.js"></script>
+<script src="/js/members-data.js"></script>
+<script src="/portal/js/thanks-call-core.js"></script>
+<script src="/portal/js/thanks-call-form.js"></script>
+</body>
+</html>
