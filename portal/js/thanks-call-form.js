@@ -94,10 +94,14 @@ function slotForm(w, slot, row) {
   return `
     <div class="slot" data-slot="${slot}">
       ${w.slots > 1 ? `<div class="slot-title">${slot}번째 통화</div>` : '<div style="height:10px"></div>'}
-      <div class="row2">
-        <input type="date" class="f-date" value="${date}" min="${w.start}" max="${w.end}" aria-label="통화 날짜">
-        <input type="text" class="f-callee" value="${tcEsc(row?.callee || '')}" maxlength="40" placeholder="감사 드린 분 (성함)" aria-label="감사 드린 분">
-      </div>
+      <label class="fl">
+        <span>통화 날짜</span>
+        <input type="date" class="f-date" value="${date}" min="${w.start}" max="${w.end}">
+      </label>
+      <label class="fl">
+        <span>감사 드린 분 (성함)</span>
+        <input type="text" class="f-callee" value="${tcEsc(row?.callee || '')}" maxlength="40" placeholder="예) 홍길동 대표님">
+      </label>
       <div class="checks">
         <label class="check"><input type="checkbox" class="f-meeting" ${row?.meeting ? 'checked' : ''}>만남 약속</label>
         <label class="check"><input type="checkbox" class="f-visitor" ${row?.visitor ? 'checked' : ''}>비지터 초청</label>
