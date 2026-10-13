@@ -49,15 +49,11 @@ async function reload() {
 
 function render() {
   const p = tcProgress(myRows);
-  const st = TC_STATUS[p.status];
-  const badge = $('stBadge');
-  badge.textContent = st.label; badge.style.color = st.color; badge.style.background = st.bg;
   const elapsed = Math.min(p.cur, TC_TOTAL_WEEKS);
   $('stats').innerHTML = [
     [`${p.weeks}<small style="font-size:12px;color:#9ca3af;font-weight:500">/${elapsed}</small>`, '기록 주차'],
     [p.calls, '감사콜'], [p.meetings, '만남 약속'], [p.visitors, '비지터 초청'],
   ].map(([v, l]) => `<div class="stat"><b>${v}</b><span>${l}</span></div>`).join('');
-  $('crit').textContent = `16주 중간 확인(12.20) 기준: 14주 이상 기록 + 연속 3주 공백 없음 · 지금까지 빠진 주 ${p.missedMid}주, 최장 공백 ${p.maxGap}주`;
 
   if (openWeek === null && p.cur > 0 && !p.doneThisWeek) openWeek = p.cur;
 

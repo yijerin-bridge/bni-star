@@ -47,7 +47,6 @@
 
   const sum = (f) => stats.reduce((s, x) => s + f(x.p), 0);
   const doneNow = stats.filter(x => x.p.doneThisWeek).length;
-  const okCnt = stats.filter(x => x.p.status === 'ok').length;
 
   const cell = (x, w) => {
     const rows = x.rows.filter(r => r.week_no === w.no).sort((a, b) => a.slot - b.slot);
@@ -70,7 +69,6 @@
       <div class="tc-sum-card"><div class="tc-sum-num">${sum(p => p.calls)}<small> 통</small></div><div class="tc-sum-label">누적 감사콜</div></div>
       <div class="tc-sum-card"><div class="tc-sum-num">${sum(p => p.meetings)}<small> 건</small></div><div class="tc-sum-label">🤝 만남 약속</div></div>
       <div class="tc-sum-card"><div class="tc-sum-num">${sum(p => p.visitors)}<small> 건</small></div><div class="tc-sum-label">🙋 비지터 초청</div></div>
-      <div class="tc-sum-card"><div class="tc-sum-num">${okCnt}<small> / ${names.length}명</small></div><div class="tc-sum-label">중간 확인 기준 순항</div></div>
     </div>
     ${linkBar}
     <div class="tc-wrap">
@@ -78,15 +76,14 @@
         <thead><tr>
           <th class="name">멤버</th>
           ${cols.map(w => `<th class="${w.no === cur ? 'cur' : ''}">W${w.no}<small>${w.label}</small></th>`).join('')}
-          <th>기록 주</th><th>통화</th><th>만남</th><th>비지터</th><th>상태</th>
+          <th>기록 주</th><th>통화</th><th>만남</th><th>비지터</th>
         </tr></thead>
         <tbody>
-          ${stats.map(x => { const st = TC_STATUS[x.p.status]; return `<tr>
+          ${stats.map(x => `<tr>
             <td class="name"><a href="${formUrl}?m=${encodeURIComponent(x.name)}" target="_blank" rel="noopener" title="${tcEsc(x.name)} 기록 화면 열기">${tcEsc(x.name)}</a></td>
             ${cols.map(w => `<td>${cell(x, w)}</td>`).join('')}
             <td><b>${x.p.weeks}</b></td><td>${x.p.calls}</td><td>${x.p.meetings}</td><td>${x.p.visitors}</td>
-            <td><span class="tc-badge" style="color:${st.color};background:${st.bg}" title="빠진 주 ${x.p.missedMid}주 · 최장 공백 ${x.p.maxGap}주">${st.label}</span></td>
-          </tr>`; }).join('')}
+          </tr>`).join('')}
         </tbody>
       </table>
     </div>
@@ -94,7 +91,6 @@
       <span><i class="tc-cell done">✓</i>기록</span><span><i class="tc-cell half">1</i>더블 위크 1통만</span>
       <span><i class="tc-cell miss">×</i>미기록</span><span><i class="tc-cell wait">–</i>이번 주 대기</span>
       <span>🤝 만남 약속 · 🙋 비지터 초청 · 칸에 마우스를 올리면 감사 드린 분이 보입니다</span>
-      <span>기준: W1~W16 중 14주 이상 기록 + 연속 3주 공백 없음 (W1 더블 포함 총 17통)</span>
     </div>
     <div class="card">
       <div class="card-title" style="margin-bottom:12px">최근 기록 ${recent.length ? `<span style="font-size:11px;font-weight:400;color:#9ca3af">· 최근 ${recent.length}건</span>` : ''}</div>
