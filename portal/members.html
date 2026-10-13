@@ -106,6 +106,9 @@ async function loadView(view) {
   };
 }
 
+// 현재 임기 — 기수가 바뀌면 여기와 아래 org-badge 표기만 고치면 됩니다
+const TERM = { label: '2기', start: '2026-10-01', end: '2027-03-31' };
+
 async function loadRolesView(el, members) {
   const { data: memberRoles } = await getSb().from('member_roles')
     .select('*, roles(name,tier,role_type), members(name,company)')
@@ -163,7 +166,7 @@ async function loadRolesView(el, members) {
       .general-co { font-size:11px;color:#9ca3af; }
     </style>
     <div class="org-header">
-      <span class="org-badge">1기 2026.05~</span>
+      <span class="org-badge">2기 2026.10 ~ 2027.03</span>
       <button class="btn btn-outline btn-sm" onclick="showAddRoleAssign()">+ 역할 배정</button>
     </div>
     <div class="org-wrap">
@@ -222,7 +225,7 @@ async function loadRolesView(el, members) {
         await getSb().from('member_roles').update({ is_current: false, term_end: new Date().toISOString().slice(0,10) }).eq('id', cur.mrId);
       }
       if (memberId) {
-        const { error } = await getSb().from('member_roles').insert({ member_id: memberId, role_id: roleId, term_start: '2026-05-13', is_current: true });
+        const { error } = await getSb().from('member_roles').insert({ member_id: memberId, role_id: roleId, term_start: TERM.start, term_end: TERM.end, notes: TERM.label, is_current: true });
         if (error) { alert('오류: ' + error.message); return; }
       }
       overlay.remove();
@@ -258,7 +261,7 @@ async function loadRolesView(el, members) {
     overlay.querySelector('#arConfirm').addEventListener('click', async () => {
       const member_id = Number(overlay.querySelector('#arMember').value);
       const role_id   = Number(overlay.querySelector('#arRole').value);
-      const { error } = await getSb().from('member_roles').insert({ member_id, role_id, term_start: '2026-05-13', is_current: true });
+      const { error } = await getSb().from('member_roles').insert({ member_id, role_id, term_start: TERM.start, term_end: TERM.end, notes: TERM.label, is_current: true });
       if (error) alert('오류: ' + error.message);
       else { overlay.remove(); location.reload(); }
     });
