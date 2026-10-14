@@ -97,7 +97,7 @@ const BUILTIN_METRICS = [
   { key:'attendance_rate',  name:'출석률',          unit:'%',   icon:'✅', autoCompute:true },
   { key:'referral_count',   name:'리퍼럴',          unit:'건',  icon:'🤝', autoCompute:true },
   { key:'visitor_count',    name:'비지터 초대',      unit:'명',  icon:'🙋', autoCompute:true },
-  { key:'ono_count',        name:'원투원 (챕터 주간 합계)', unit:'회', icon:'☕', autoCompute:true },
+  { key:'ono_count',        name:'원투원 챕터 합계 (주평균)', unit:'회', icon:'☕', autoCompute:true },
   { key:'tyfcb_amount',     name:'감사장 금액',      unit:'만원',icon:'💰', autoCompute:true },
   { key:'ceu_count',        name:'교육점수 만점자 비율', unit:'%', icon:'📚', autoCompute:true },
   { key:'sponsored_count',  name:'스폰서 (신규추천)',unit:'명',  icon:'⭐', autoCompute:true },
@@ -217,7 +217,7 @@ function showMetricDetail(metricKey, ym) {
         case 'visitor_count':   return { name, val:mr.reduce((s,r)=>s+(r.visitors||0),0), sub:'' };
         case 'ono_count': {
           const tot=mr.reduce((s,r)=>s+(r.one_on_one||0),0);
-          return { name, val:tot, sub:`주평균 ${weeks.length?Math.round(tot/weeks.length*10)/10:0}회` };
+          return { name, val: weeks.length ? Math.round(tot/weeks.length*10)/10 : 0, sub: `월 ${tot}회` };
         }
         case 'tyfcb_amount':   return { name, val:Math.round(mr.reduce((s,r)=>s+Number(r.tyfcb||0),0)/10000), sub:'' };
         case 'ceu_count': {
@@ -236,15 +236,30 @@ function showMetricDetail(metricKey, ym) {
     }).sort((a,b)=>b.val-a.val);
 
     const unitLabel = {attendance_rate:'%',referral_count:'건',visitor_count:'명',ono_count:'회',tyfcb_amount:'만원',ceu_count:'점',sponsored_count:'명',green_member_pct:'점'}[metricKey]||g.metric_unit;
-    const col2 = {attendance_rate:'출석/총',referral_count:'T1 / T2',ono_count:'주평균',ceu_count:'총점 / 주평균',green_member_pct:'신호등'}[metricKey];
+    const col2 = {attendance_rate:'출석/총',referral_count:'T1 / T2',ono_count:'월 합계',ceu_count:'총점 / 주평균',green_member_pct:'신호등'}[metricKey];
     const fmtYM2 = ym2 => { const [y,mo]=ym2.split('-'); return `${y}년 ${Number(mo)}월`; };
 
-    tableHtml = `
+    // 원투원: 카드 숫자(주평균)가 어떻게 나왔는지 주별 챕터 합계로 보여줌
+    const onoWeekly = metricKey !== 'ono_count' ? '' : (() => {
+      const per = weeks.map(w => ({ w, tot: recs.filter(r => r.week_date === w).reduce((s, r) => s + (r.one_on_one || 0), 0) }));
+      const monthTot = per.reduce((s, x) => s + x.tot, 0);
+      return `
+      <div style="background:#f9fafb;border-radius:8px;padding:12px 14px;margin-bottom:12px">
+        <div style="font-size:12px;font-weight:700;margin-bottom:8px">주별 챕터 전체 원투원</div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px">
+          ${per.map(x => `<span style="background:#fff;border:1px solid #e5e7eb;border-radius:6px;padding:4px 10px;font-size:12px">${Number(x.w.slice(5,7))}/${Number(x.w.slice(8,10))} 주 <b>${x.tot}회</b></span>`).join('')}
+        </div>
+        <div style="font-size:12px;color:#6b7280;margin-top:8px">월 합계 ${monthTot}회 ÷ ${per.length}주 = <b style="color:#1a1a1a">주평균 ${per.length ? Math.round(monthTot / per.length) : 0}회</b> (카드에 표시되는 숫자)</div>
+      </div>`;
+    })();
+    const colHead = metricKey === 'ono_count' ? '멤버 주평균' : g.metric_name;
+
+    tableHtml = `${onoWeekly}
       <div style="overflow-x:auto;margin-bottom:10px">
         <table style="width:100%;border-collapse:collapse;font-size:13px">
           <thead><tr style="background:#f9fafb">
             <th style="padding:8px 12px;border:1px solid #e5e7eb;text-align:left">멤버</th>
-            <th style="padding:8px 12px;border:1px solid #e5e7eb;text-align:right">${g.metric_name}</th>
+            <th style="padding:8px 12px;border:1px solid #e5e7eb;text-align:right">${colHead}</th>
             ${col2?`<th style="padding:8px 12px;border:1px solid #e5e7eb;text-align:center;color:#9ca3af;font-size:11px;font-weight:400">${col2}</th>`:''}
           </tr></thead>
           <tbody>
