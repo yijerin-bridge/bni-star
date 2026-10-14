@@ -97,7 +97,7 @@ const BUILTIN_METRICS = [
   { key:'attendance_rate',  name:'출석률',          unit:'%',   icon:'✅', autoCompute:true },
   { key:'referral_count',   name:'리퍼럴',          unit:'건',  icon:'🤝', autoCompute:true },
   { key:'visitor_count',    name:'비지터 초대',      unit:'명',  icon:'🙋', autoCompute:true },
-  { key:'ono_count',        name:'원투원 주2회 달성률', unit:'%', icon:'☕', autoCompute:true },
+  { key:'ono_count',        name:'원투원 (챕터 주간 합계)', unit:'회', icon:'☕', autoCompute:true },
   { key:'tyfcb_amount',     name:'감사장 금액',      unit:'만원',icon:'💰', autoCompute:true },
   { key:'ceu_count',        name:'교육점수 만점자 비율', unit:'%', icon:'📚', autoCompute:true },
   { key:'sponsored_count',  name:'스폰서 (신규추천)',unit:'명',  icon:'⭐', autoCompute:true },
@@ -127,11 +127,10 @@ function computeActual(key, ym) {
     case 'referral_count':  return recs.length ? recs.reduce((s,r)=>s+(r.given_t1||0)+(r.given_t2||0),0) : null;
     case 'visitor_count':   return recs.length ? recs.reduce((s,r)=>s+(r.visitors||0),0) : null;
     case 'ono_count': {
-      if(!recs.length) return null;
-      const wks=[...new Set(recs.map(r=>r.week_date))];
-      const mids=[...new Set(recs.map(r=>r.member_id))];
-      const cnt=mids.filter(mid=>{const tot=recs.filter(r=>r.member_id===mid).reduce((s,r)=>s+(r.one_on_one||0),0);return wks.length?tot/wks.length>=2:false;}).length;
-      return Math.round(cnt/mids.length*100);
+      if (!recs.length) return null;
+      const wks = new Set(recs.map(r => r.week_date)).size;
+      const tot = recs.reduce((s, r) => s + (r.one_on_one || 0), 0);
+      return Math.round(tot / wks);   // 챕터 전체 합계의 주평균
     }
     case 'tyfcb_amount':    return recs.length ? Math.round(recs.reduce((s,r)=>s+Number(r.tyfcb||0),0)/10000) : null;
     case 'ceu_count': {
@@ -218,7 +217,7 @@ function showMetricDetail(metricKey, ym) {
         case 'visitor_count':   return { name, val:mr.reduce((s,r)=>s+(r.visitors||0),0), sub:'' };
         case 'ono_count': {
           const tot=mr.reduce((s,r)=>s+(r.one_on_one||0),0);
-          return { name, val:weeks.length?Math.round(tot/weeks.length*10)/10:0, sub:`총 ${tot}회` };
+          return { name, val:tot, sub:`주평균 ${weeks.length?Math.round(tot/weeks.length*10)/10:0}회` };
         }
         case 'tyfcb_amount':   return { name, val:Math.round(mr.reduce((s,r)=>s+Number(r.tyfcb||0),0)/10000), sub:'' };
         case 'ceu_count': {
@@ -237,7 +236,7 @@ function showMetricDetail(metricKey, ym) {
     }).sort((a,b)=>b.val-a.val);
 
     const unitLabel = {attendance_rate:'%',referral_count:'건',visitor_count:'명',ono_count:'회',tyfcb_amount:'만원',ceu_count:'점',sponsored_count:'명',green_member_pct:'점'}[metricKey]||g.metric_unit;
-    const col2 = {attendance_rate:'출석/총',referral_count:'T1 / T2',ono_count:'총횟수',ceu_count:'총점 / 주평균',green_member_pct:'신호등'}[metricKey];
+    const col2 = {attendance_rate:'출석/총',referral_count:'T1 / T2',ono_count:'주평균',ceu_count:'총점 / 주평균',green_member_pct:'신호등'}[metricKey];
     const fmtYM2 = ym2 => { const [y,mo]=ym2.split('-'); return `${y}년 ${Number(mo)}월`; };
 
     tableHtml = `
