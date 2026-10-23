@@ -91,7 +91,7 @@ const enterBtn   = document.getElementById('enterBtn');
     const o = document.createElement('option');
     o.value = m.legacy_id ?? m.id;
     o.dataset.roleName = roleNameMap[m.id] || '';
-    o.textContent = `${m.name} · ${m.company || ''}`;
+    o.textContent = m.name;
     memberSel.appendChild(o);
   });
 })();
@@ -120,7 +120,7 @@ enterBtn.addEventListener('click', () => {
     roleType:   selectedRole,
     tier:       meta.tier,
     memberId:   Number(memberSel.value),
-    memberName: selOpt.textContent.split(' · ')[0],
+    memberName: selOpt.textContent,
     roleName:   selOpt.dataset.roleName || null,
     enteredAt:  Date.now(),
   });

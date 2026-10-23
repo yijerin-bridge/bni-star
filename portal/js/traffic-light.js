@@ -87,7 +87,7 @@ let TL_READONLY = false; // true = 일반 멤버 개인 뷰 (수정 불가)
 
 async function loadAll() {
   const [memRes, recRes] = await Promise.all([
-    getSb().from('members').select('id,legacy_id,name,company,joined_date').eq('is_active', true).order('name'),
+    getSb().from('members').select('id,legacy_id,name,joined_date').eq('is_active', true).order('name'),
     getSb().from('weekly_records').select('*').order('week_date'),
   ]);
   allMembers    = (memRes.data || []).map(m => ({ ...m, uid: m.legacy_id ?? m.id }));
@@ -254,11 +254,10 @@ function renderOverview() {
 
 function exportTLExcel(memberScores) {
   const today = new Date().toISOString().slice(0,10);
-  const headers = ['멤버명','소속','신호등','종합점수','출석점수','리퍼럴점수','TYFCB점수','비지터점수','1:1점수','CEU점수','스폰서점수','출석률(%)','리퍼럴(건)','비지터(명)','1:1(회)','TYFCB(만원)','CEU','스폰서(명)','결석(회)','지각(회)'];
+  const headers = ['멤버명','신호등','종합점수','출석점수','리퍼럴점수','TYFCB점수','비지터점수','1:1점수','CEU점수','스폰서점수','출석률(%)','리퍼럴(건)','비지터(명)','1:1(회)','TYFCB(만원)','CEU','스폰서(명)','결석(회)','지각(회)'];
   const lightLabel = {green:'🟢 그린', amber:'🟡 앰버', red:'🔴 레드', gray:'⚫ 그레이'};
   const rows = memberScores.map(m => [
     m.name,
-    m.company || '',
     lightLabel[m.light] || m.light,
     m.recs.length ? m.total : '',
     m.breakdown?.attendance ?? '',
@@ -279,7 +278,7 @@ function exportTLExcel(memberScores) {
     m.stats?.lateN ?? '',
   ]);
   const ws = XLSX.utils.aoa_to_sheet([headers, ...rows]);
-  const colWidths = [10,14,8,8,8,8,8,8,6,6,8,8,8,8,8,10,6,8,6,6].map(w=>({wch:w}));
+  const colWidths = [10,8,8,8,8,8,8,6,6,8,8,8,8,8,10,6,8,6,6].map(w=>({wch:w}));
   ws['!cols'] = colWidths;
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, '트래픽라이트');

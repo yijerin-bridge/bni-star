@@ -134,8 +134,8 @@ async function loadPortalMembers() {
   } catch {}
   // fallback to static members-data.js
   return (typeof MEMBERS_DEFAULT !== 'undefined') ? MEMBERS_DEFAULT.map(m => ({
-    id: m.id, legacy_id: m.id, name: m.name, company: m.company,
-    category: m.category, phone: m.phone, email: m.email, is_active: true,
+    id: m.id, legacy_id: m.id, name: m.name,
+    category: m.category, email: m.email, is_active: true,
     photo_url: m.photoUrl,
   })) : [];
 }

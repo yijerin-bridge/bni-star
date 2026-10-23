@@ -39,7 +39,6 @@
   <div class="hdr">
     <span class="hdr-logo">BNI ★ STAR</span>
     <span class="hdr-name" id="hdrName">—</span>
-    <span class="hdr-co" id="hdrCo"></span>
     <span class="ro-tag">🔒 읽기 전용</span>
     <button onclick="saveMemberImage()" style="margin-left:8px;padding:4px 12px;font-size:12px;border:1.5px solid #e5e7eb;border-radius:20px;background:#fff;cursor:pointer;font-family:inherit" id="imgBtn">📸 이미지 저장</button>
   </div>
@@ -140,13 +139,12 @@ function genAITips(name, sc) {
 
   const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
   const [{ data: members }, { data: recs }] = await Promise.all([
-    sb.from('members').select('name,company,joined_date').eq('name', decodeURIComponent(name)).limit(1),
+    sb.from('members').select('name,joined_date').eq('name', decodeURIComponent(name)).limit(1),
     sb.from('weekly_records').select('*').eq('member_name', decodeURIComponent(name)).order('week_date'),
   ]);
 
   const nm      = decodeURIComponent(name);
   const member  = members?.[0];
-  document.getElementById('hdrCo').textContent = member?.company || '';
 
   const win6     = get6MonthWindow();
   const effStart = [win6.start, CHAPTER_LAUNCH, member?.joined_date || CHAPTER_LAUNCH].sort().reverse()[0];

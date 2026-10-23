@@ -83,7 +83,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   const [mRes, minRes, memRes, attRes, roleRes] = await Promise.all([
     getSb().from('meetings').select('*').eq('id', meetingId).single(),
     getSb().from('meeting_minutes').select('*').eq('meeting_id', meetingId).single(),
-    getSb().from('members').select('id,legacy_id,name,company').eq('is_active', true),
+    getSb().from('members').select('id,legacy_id,name').eq('is_active', true),
     getSb().from('meeting_attendees').select('*').eq('meeting_id', meetingId),
     getSb().from('member_roles').select('member_id,roles(role_type)').eq('is_current', true),
   ]);
@@ -103,7 +103,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   allMembers = rawMembers.map(m => ({
     id: m.legacy_id ?? m.id,
     name: m.name,
-    company: m.company,
     _pri: roleMap[m.id] ?? 5,
   })).sort((a, b) => a._pri - b._pri || a.name.localeCompare(b.name, 'ko'));
 

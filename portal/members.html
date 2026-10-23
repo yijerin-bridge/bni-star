@@ -78,13 +78,11 @@ async function loadView(view) {
   el.innerHTML = `
     <div style="overflow-x:auto">
     <table class="data-table">
-      <thead><tr><th>이름</th><th>회사</th><th>직군</th><th>연락처</th><th>가입일</th><th>상태</th><th></th></tr></thead>
+      <thead><tr><th>이름</th><th>직군</th><th>가입일</th><th>상태</th><th></th></tr></thead>
       <tbody>${data.map(m => `
         <tr>
           <td><strong>${m.name}</strong></td>
-          <td>${m.company||''}</td>
           <td>${m.category||''}</td>
-          <td>${m.phone||''}</td>
           <td>${m.joined_date||''}</td>
           <td>${m.is_active ? '<span class="badge badge-membership">활동중</span>' : '<span class="badge badge-member">탈퇴</span>'}</td>
           <td>
@@ -109,14 +107,14 @@ const TERM = { label: '2기', start: '2026-10-01', end: '2027-03-31' };
 
 async function loadRolesView(el, members) {
   const { data: memberRoles } = await getSb().from('member_roles')
-    .select('*, roles(name,tier,role_type), members(name,company)')
+    .select('*, roles(name,tier,role_type), members(name)')
     .eq('is_current', true).order('created_at');
   const { data: roles } = await getSb().from('roles').select('*').order('tier').order('name');
 
   // role_id → assigned member info
   const roleMap = {};
   (memberRoles||[]).forEach(mr => {
-    roleMap[mr.role_id] = { name: mr.members?.name||'', company: mr.members?.company||'', mrId: mr.id, memberId: mr.member_id };
+    roleMap[mr.role_id] = { name: mr.members?.name||'', mrId: mr.id, memberId: mr.member_id };
   });
 
   // role_type=member 또는 이름이 '일반멤버'인 역할은 조직도에서 제외
@@ -179,7 +177,7 @@ async function loadRolesView(el, members) {
                 return `<div class="role-card ${asgn?'filled':''}" onclick="editRoleCard(${r.id},'${r.name.replace(/'/g,"\\'")}')">
                   <div class="rc-title">${r.name}</div>
                   ${asgn
-                    ? `<div class="rc-name">${asgn.name}</div><div class="rc-co">${asgn.company}</div>`
+                    ? `<div class="rc-name">${asgn.name}</div>`
                     : `<div class="rc-empty">미배정</div>`}
                 </div>`;
               }).join('')}
@@ -190,7 +188,7 @@ async function loadRolesView(el, members) {
           <div class="general-title">일반멤버 (${generalMembers.length})</div>
           ${generalMembers.length === 0
             ? '<div style="color:#d1d5db;font-size:12px">없음</div>'
-            : generalMembers.map(m => `<div class="general-item">${m.name}<div class="general-co">${m.company||''}</div></div>`).join('')}
+            : generalMembers.map(m => `<div class="general-item">${m.name}</div>`).join('')}
         </div>
       </div>
     </div>
@@ -207,7 +205,7 @@ async function loadRolesView(el, members) {
         <div class="form-group">
           <select id="erMember" class="form-input">
             <option value="">미배정</option>
-            ${members.map(m => `<option value="${m.id}"${cur?.memberId===m.id?' selected':''}>${m.name} · ${m.company||''}</option>`).join('')}
+            ${members.map(m => `<option value="${m.id}"${cur?.memberId===m.id?' selected':''}>${m.name}</option>`).join('')}
           </select>
         </div>
         <div style="display:flex;gap:10px;justify-content:flex-end">
@@ -240,7 +238,7 @@ async function loadRolesView(el, members) {
         <div class="form-group">
           <label class="form-label">멤버</label>
           <select id="arMember" class="form-input">
-            ${members.map(m => `<option value="${m.id}">${m.name} · ${m.company||''}</option>`).join('')}
+            ${members.map(m => `<option value="${m.id}">${m.name}</option>`).join('')}
           </select>
         </div>
         <div class="form-group">
@@ -281,11 +279,7 @@ function showAddMemberForm() {
       <h2 style="font-size:16px;font-weight:700;margin-bottom:20px">멤버 추가</h2>
       <div class="form-row2">
         <div class="form-group"><label class="form-label">이름 *</label><input type="text" id="nm_name" class="form-input"></div>
-        <div class="form-group"><label class="form-label">회사</label><input type="text" id="nm_company" class="form-input"></div>
-      </div>
-      <div class="form-row2">
         <div class="form-group"><label class="form-label">직군</label><input type="text" id="nm_category" class="form-input"></div>
-        <div class="form-group"><label class="form-label">전화</label><input type="tel" id="nm_phone" class="form-input"></div>
       </div>
       <div class="form-group"><label class="form-label">이메일</label><input type="email" id="nm_email" class="form-input"></div>
       <div class="form-group"><label class="form-label">가입일</label><input type="date" id="nm_joined" class="form-input" value="${new Date().toISOString().slice(0,10)}"></div>
@@ -301,9 +295,7 @@ function showAddMemberForm() {
     if (!name) return;
     const payload = {
       name, is_active: true,
-      company:     form.querySelector('#nm_company').value.trim() || null,
       category:    form.querySelector('#nm_category').value.trim() || null,
-      phone:       form.querySelector('#nm_phone').value.trim() || null,
       email:       form.querySelector('#nm_email').value.trim() || null,
       joined_date: form.querySelector('#nm_joined').value || null,
     };
@@ -323,11 +315,7 @@ window.editMember = async (id) => {
       <h2 style="font-size:16px;font-weight:700;margin-bottom:20px">${m.name} 편집</h2>
       <div class="form-row2">
         <div class="form-group"><label class="form-label">이름</label><input type="text" id="em_name" class="form-input" value="${m.name}"></div>
-        <div class="form-group"><label class="form-label">회사</label><input type="text" id="em_company" class="form-input" value="${m.company||''}"></div>
-      </div>
-      <div class="form-row2">
         <div class="form-group"><label class="form-label">직군</label><input type="text" id="em_category" class="form-input" value="${m.category||''}"></div>
-        <div class="form-group"><label class="form-label">전화</label><input type="tel" id="em_phone" class="form-input" value="${m.phone||''}"></div>
       </div>
       <div class="form-group"><label class="form-label">이메일</label><input type="email" id="em_email" class="form-input" value="${m.email||''}"></div>
       <div class="form-group"><label class="form-label">입회일</label><input type="date" id="em_joined" class="form-input" value="${m.joined_date||''}"></div>
@@ -341,9 +329,7 @@ window.editMember = async (id) => {
   form.querySelector('#confirmEditMember').addEventListener('click', async () => {
     const payload = {
       name:        form.querySelector('#em_name').value.trim(),
-      company:     form.querySelector('#em_company').value.trim() || null,
       category:    form.querySelector('#em_category').value.trim() || null,
-      phone:       form.querySelector('#em_phone').value.trim() || null,
       email:       form.querySelector('#em_email').value.trim() || null,
       joined_date: form.querySelector('#em_joined').value || null,
     };
