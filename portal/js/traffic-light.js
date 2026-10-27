@@ -758,7 +758,7 @@ async function loadWeekInput(weekDate, weekNum) {
           <tbody>
             ${allMembers.map(m => {
               const r = recMap[m.name];
-              const av = r ? (r.absent?'absent':r.late?'late':'present') : 'present';
+              const av = r ? (r.absent?'absent':r.late?'late':r.substitute?'substitute':r.sick?'sick':'present') : 'present';
               return `<tr>
                 <td style="text-align:left;font-weight:600">${m.name}</td>
                 <td>
@@ -766,6 +766,8 @@ async function loadWeekInput(weekDate, weekNum) {
                     <option value="present" ${av==='present'?'selected':''}>✅ 출석</option>
                     <option value="late"    ${av==='late'?'selected':''}>⚠️ 지각</option>
                     <option value="absent"  ${av==='absent'?'selected':''}>❌ 결석</option>
+                    <option value="substitute" ${av==='substitute'?'selected':''}>🔄 대리인</option>
+                    <option value="sick"    ${av==='sick'?'selected':''}>🏥 병가</option>
                   </select>
                 </td>
                 <td><input type="number" class="edit-input bulk-t1"  data-name="${m.name}" value="${r?.given_t1||0}" min="0"></td>
@@ -790,9 +792,7 @@ async function loadWeekInput(weekDate, weekNum) {
         member_id:   m.id,
         member_name: m.name,
         week_date:   weekDate,
-        attended:    av !== 'absent',
-        absent:      av === 'absent',
-        late:        av === 'late',
+        ...attendFlags(av),
         given_t1:    Number(el.querySelector(`.bulk-t1[data-name="${m.name}"]`)?.value||0),
         given_t2:    Number(el.querySelector(`.bulk-t2[data-name="${m.name}"]`)?.value||0),
         visitors:    Number(el.querySelector(`.bulk-vis[data-name="${m.name}"]`)?.value||0),
@@ -932,17 +932,28 @@ function parseVPReport(text) {
   return result;
 }
 
+// BNI Connect 출결 표기 → present / late / absent / substitute / sick
+function parseAttend(str) {
+  const a = String(str || '').trim(), u = a.toUpperCase();
+  if (a.includes('대리') || /SUBSTITUTE/.test(u) || u === 'S') return 'substitute';
+  if (a.includes('병가') || a.includes('의료') || /MEDICAL|SICK/.test(u) || u === 'M') return 'sick';
+  if (a.includes('결석') || /ABSENT/.test(u) || u === 'A') return 'absent';
+  if (a.includes('지각') || a.includes('조퇴') || /LATE|LEFT EARLY/.test(u) || u === 'L') return 'late';
+  return 'present';
+}
+// 출결 값 → DB 플래그 (출석률은 결석만 빼고 모두 출석 인정: P·L·S·M)
+function attendFlags(av) {
+  return { attended: av !== 'absent', absent: av === 'absent', late: av === 'late', substitute: av === 'substitute', sick: av === 'sick' };
+}
+
 function buildVPRow(dateStr, attendStr, val) {
   const date = parseDateKR(dateStr);
   if (!date) return null;
-  const a     = (attendStr||'').trim();
-  const absent  = a.includes('결석') || a.toUpperCase() === 'A';
-  const late    = a.includes('지각') || a.toUpperCase() === 'L';
   const n = i => Math.max(0, Number(String(val(i)||'').replace(/,/g,''))||0);
   return {
     week_date:     snapToNearestWeek(date),
     original_date: date,
-    attended: !absent, absent, late,
+    ...attendFlags(parseAttend(attendStr)),
     given_t1:    n(2), given_t2:    n(3),
     received_t1: n(4), received_t2: n(5),
     visitors:    n(6), one_on_one:  n(7),
@@ -1005,6 +1016,8 @@ function showVPPreview(text, memberName) {
       attended:    r.attended,
       absent:      r.absent,
       late:        r.late,
+      substitute:  r.substitute,
+      sick:        r.sick,
       given_t1:    r.given_t1,
       given_t2:    r.given_t2,
       received_t1: r.received_t1,
