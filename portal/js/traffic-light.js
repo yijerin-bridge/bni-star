@@ -489,8 +489,8 @@ function renderWeekTable(name, recs, weeksList = WEEKS_ALL) {
   if (!tbody) return;
   const recMap = Object.fromEntries(recs.map(r=>[r.week_date, r]));
 
-  // 24주 초과분 = 숨김 대상 (오래된 주차)
-  const hiddenCount = Math.max(0, weeksList.length - 24);
+  // 점수 기간(직전 6개월) 이전 주차 = 숨김 대상
+  const hiddenCount = weeksList.filter(w => w < WIN6.start).length;
 
   const makeRow = (w, i, hidden) => {
     const r     = recMap[w];
@@ -518,7 +518,7 @@ function renderWeekTable(name, recs, weeksList = WEEKS_ALL) {
     <tr id="week-toggle-row">
       <td colspan="10" style="text-align:center;padding:8px;background:#f9fafb;cursor:pointer;font-size:12px;color:#6b7280;user-select:none"
           onclick="toggleOldWeeks(this)">
-        ▶ 이전 ${hiddenCount}주 보기
+        ▶ 점수 기간 이전 ${hiddenCount}주 보기
       </td>
     </tr>` : '';
 
@@ -532,8 +532,8 @@ window.toggleOldWeeks = function(cell) {
   hidden.forEach(r => r.style.display = isHidden ? '' : 'none');
   const count = hidden.length;
   cell.innerHTML = isHidden
-    ? `▼ 이전 ${count}주차 숨기기 (W1~W${count})`
-    : `▶ 이전 ${count}주차 보기 (W1~W${count})`;
+    ? `▼ 점수 기간 이전 ${count}주 숨기기 (W1~W${count})`
+    : `▶ 점수 기간 이전 ${count}주 보기 (W1~W${count})`;
 };
 
 /* ── 주간 데이터 편집 모달 ── */
