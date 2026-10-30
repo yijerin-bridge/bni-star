@@ -401,7 +401,7 @@ function calcMemberStats(memberName, weekly, weeks, joinedDate) {
   const visitors   = wRecs.reduce((s,w) => s + (w.visitors||0), 0);
   const referrals  = wRecs.reduce((s,w) => s + (w.given_t1||0) + (w.given_t2||0), 0);
 
-  // 트래픽라이트 색상: traffic-light.js와 동일한 effStart + 예상점수 로직
+  // 트래픽라이트 색상: traffic-light.js와 동일한 effStart 로직
   const win6     = _get6MonthWindow();
   const effStart = [win6.start, _CHAPTER_LAUNCH, joinedDate || _CHAPTER_LAUNCH].sort().reverse()[0];
   const allRecs  = weekly.filter(w => w.member_name === memberName);

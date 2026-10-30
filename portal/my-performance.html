@@ -189,7 +189,7 @@ function calcStats(name, weekly, weeks, joinedDate) {
   const visitors   = recs.reduce((s,w) => s + (w.visitors||0), 0);
   const tyfcb      = recs.reduce((s,w) => s + (Number(w.tyfcb)||0), 0);
 
-  // light: traffic-light.js와 동일한 effStart + 예상점수 로직
+  // light: traffic-light.js와 동일한 effStart 로직
   const win6     = _get6MonthWindow();
   const effStart = [win6.start, '2026-05-13', joinedDate || '2026-05-13'].sort().reverse()[0];
   const extraRecs = weekly.filter(w => w.week_date > win6.end);

@@ -163,7 +163,7 @@ window.initTrafficLightPersonal = initTrafficLightPersonal;
 function renderOverview() {
   const el = document.getElementById('tl-overview');
 
-  // 멤버별 점수 계산 — renderMemberDetail과 동일한 effStart + 예상점수 로직
+  // 멤버별 점수 계산 — renderMemberDetail과 동일한 effStart 로직
   const memberScores = allMembers.map(m => {
     const allRecs   = allWeeklyRecs.filter(r => r.member_name === m.name);
     const effStart  = [WIN6.start, CHAPTER_LAUNCH, m.joined_date || CHAPTER_LAUNCH].sort().reverse()[0];
@@ -357,11 +357,9 @@ function renderMemberDetail(name) {
 
   // 실제 유효 시작일: 챕터런칭·입회일 중 늦은 날짜 (WIN6.start보다 최신이면 6개월 미만)
   const effStart = [WIN6.start, CHAPTER_LAUNCH, member?.joined_date || CHAPTER_LAUNCH].sort().reverse()[0];
-  const isShort  = effStart > WIN6.start;  // 챕터/멤버 6개월 미만
 
   const extraRecs = allRecs.filter(r => r.week_date > WIN6.end);
   const hasExtra  = extraRecs.length > 0;
-  const isPreview = hasExtra || isShort;
 
   const lastExtraDate = hasExtra ? extraRecs.map(r => r.week_date).sort().reverse()[0] : WIN6.end;
   const previewEnd   = hasExtra ? (lastExtraDate > TODAY ? lastExtraDate : TODAY) : WIN6.end;
@@ -380,7 +378,6 @@ function renderMemberDetail(name) {
         <span style="font-size:20px">${lEmoji}</span>
         <span style="font-size:13px;color:#6b7280">
           ${effStart} ~ ${previewEnd} · ${previewDenom}주 기준
-          ${isPreview ? '<span style="background:#fef9c3;color:#713f12;font-size:11px;padding:2px 7px;border-radius:10px;margin-left:4px">예상 점수</span>' : ''}
         </span>
       </div>
       <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px">
