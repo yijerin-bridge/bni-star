@@ -436,10 +436,10 @@ function renderMemberDetail(name) {
     <div class="card">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
         <div class="card-title" style="margin:0">
-          ${isNew ? `개인 ${memWeeks.length}주 기록` : '24주 주간 기록'}
+          ${isNew ? `개인 ${memWeeks.length}주 기록` : '주간 기록'}
           ${isNew ? `<span style="font-size:11px;font-weight:400;color:#9ca3af;margin-left:6px">가입일 기준</span>` : ''}
         </div>
-        <span style="font-size:11px;color:#9ca3af">미래 주차 예상치 입력 가능</span>
+        <span style="font-size:11px;color:#9ca3af"><span class="score-legend"></span>점수 반영 ${effStart} ~ ${previewEnd} (${previewDenom}주) · 미래 주차 예상치 입력 가능</span>
       </div>
       <div style="overflow-x:auto">
         <table class="detail-table" id="week-table">
@@ -471,7 +471,7 @@ function renderMemberDetail(name) {
       ${aiFb.map(t=>`<div class="ai-tip ${t.type}" style="margin-bottom:6px"><span>${t.icon}</span><span>${t.text}</span></div>`).join('')}`;
   }
 
-  renderWeekTable(name, allRecs, memWeeks);
+  renderWeekTable(name, allRecs, memWeeks, { start: effStart, end: previewEnd });
 
   // VP 리포트 붙여넣기
   document.getElementById('vpParseBtn')?.addEventListener('click', () => {
@@ -481,19 +481,25 @@ function renderMemberDetail(name) {
   });
 }
 
-function renderWeekTable(name, recs, weeksList = WEEKS_ALL) {
+function renderWeekTable(name, recs, weeksList = WEEKS_ALL, scoreRange = null) {
   const tbody = document.getElementById('week-tbody');
   if (!tbody) return;
   const recMap = Object.fromEntries(recs.map(r=>[r.week_date, r]));
 
   // 점수 기간(직전 6개월) 이전 주차 = 숨김 대상
-  const hiddenCount = weeksList.filter(w => w < WIN6.start).length;
+  const scoreStart = scoreRange?.start || WIN6.start;
+  const hiddenCount = weeksList.filter(w => w < scoreStart).length;
+  // 점수 반영 주차 = 테두리 표시
+  const inScore = w => scoreRange && w >= scoreRange.start && w <= scoreRange.end;
+  const scoreWeeks = weeksList.filter(inScore);
+  const firstScore = scoreWeeks[0], lastScore = scoreWeeks[scoreWeeks.length - 1];
 
   const makeRow = (w, i, hidden) => {
     const r     = recMap[w];
     const past  = w <= TODAY;
     const label = r ? (r.absent?'❌ 결석': r.late?'⚠️ 지각/조퇴': r.substitute?'🔄 대리인': r.sick?'🏥 병가':'✅ 출석') : '—';
-    const rowCls = [past ? '' : 'projected-row', hidden ? 'week-hidden' : ''].join(' ').trim();
+    const rowCls = [past ? '' : 'projected-row', hidden ? 'week-hidden' : '',
+      inScore(w) ? 'score-row' : '', w === firstScore ? 'score-first' : '', w === lastScore ? 'score-last' : ''].join(' ').trim();
     return `
     <tr class="${rowCls}" id="wr-${i}" ${hidden ? 'style="display:none"' : ''}>
       <td style="text-align:left;font-weight:700;color:#9ca3af">W${i+1}</td>
@@ -513,7 +519,7 @@ function renderWeekTable(name, recs, weeksList = WEEKS_ALL) {
   // 숨김 주차 토글 행
   const toggleRow = hiddenCount > 0 ? `
     <tr id="week-toggle-row">
-      <td colspan="10" style="text-align:center;padding:8px;background:#f9fafb;cursor:pointer;font-size:12px;color:#6b7280;user-select:none"
+      <td colspan="13" style="text-align:center;padding:8px;background:#f9fafb;cursor:pointer;font-size:12px;color:#6b7280;user-select:none"
           onclick="toggleOldWeeks(this)">
         ▶ 점수 기간 이전 ${hiddenCount}주 보기
       </td>

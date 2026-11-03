@@ -59,6 +59,13 @@
     .detail-table tr:hover td { background:#fafafa; }
     .detail-table td.period-col { text-align:left;font-weight:600; }
     .projected-row td { color:#9ca3af;font-style:italic; }
+    /* 점수 반영 주차 테두리 */
+    .detail-table tr.score-row td { background:#f0fdf4; }
+    .detail-table tr.score-row td:first-child { border-left:2px solid #16a34a; }
+    .detail-table tr.score-row td:last-child { border-right:2px solid #16a34a; }
+    .detail-table tr.score-first td { border-top:2px solid #16a34a; }
+    .detail-table tr.score-last td { border-bottom:2px solid #16a34a; }
+    .score-legend { display:inline-block;width:10px;height:10px;border:2px solid #16a34a;background:#f0fdf4;border-radius:2px;margin-right:4px;vertical-align:-1px; }
     .edit-input { width:60px;padding:4px 6px;border:1.5px solid #d1d5db;border-radius:6px;
       text-align:center;font-size:12px;font-family:inherit; }
     .edit-input:focus { outline:none;border-color:#2563eb; }
