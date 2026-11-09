@@ -72,6 +72,15 @@ function get6MonthWindow() {
 }
 const WIN6 = get6MonthWindow(); // 페이지 로드 시 한 번 계산
 
+// 미래 주차 예상치까지 넣었을 때: 마지막 주가 속한 달 기준으로 6개월 시작일도 함께 이동
+// (예: 12/2까지 입력 → 6/1부터. 오늘 기준 WIN6.start보다 앞으로 가지는 않음)
+function winStartFor(endDate) {
+  const [y, m] = endDate.split('-').map(Number);
+  const d = new Date(y, m - 1 - 6, 1);
+  const s = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-01`;
+  return s > WIN6.start ? s : WIN6.start;
+}
+
 // 윈도우 내 실제 회의 주수 (분모)
 function windowDenom(memberJoinDate) {
   const effStart = [WIN6.start, CHAPTER_LAUNCH, memberJoinDate || CHAPTER_LAUNCH].sort().reverse()[0];
@@ -166,11 +175,11 @@ function renderOverview() {
   // 멤버별 점수 계산 — renderMemberDetail과 동일한 effStart 로직
   const memberScores = allMembers.map(m => {
     const allRecs   = allWeeklyRecs.filter(r => r.member_name === m.name);
-    const effStart  = [WIN6.start, CHAPTER_LAUNCH, m.joined_date || CHAPTER_LAUNCH].sort().reverse()[0];
     const extraRecs = allRecs.filter(r => r.week_date > WIN6.end);
     const hasExtra  = extraRecs.length > 0;
     const lastExtra = hasExtra ? extraRecs.map(r => r.week_date).sort().reverse()[0] : WIN6.end;
     const previewEnd = hasExtra ? (lastExtra > TODAY ? lastExtra : TODAY) : WIN6.end;
+    const effStart  = [winStartFor(previewEnd), CHAPTER_LAUNCH, m.joined_date || CHAPTER_LAUNCH].sort().reverse()[0];
     const recs      = allRecs.filter(r => r.week_date >= effStart && r.week_date <= previewEnd);
     const denom     = Math.max(WEEKS_ALL.filter(w => w >= effStart && w <= previewEnd).length, new Set(recs.map(r=>r.week_date)).size, 1);
     const sc        = calcMemberScore(recs, denom);
@@ -355,14 +364,14 @@ function renderMemberDetail(name) {
 
   const allRecs  = allWeeklyRecs.filter(r => r.member_name === name);
 
-  // 실제 유효 시작일: 챕터런칭·입회일 중 늦은 날짜 (WIN6.start보다 최신이면 6개월 미만)
-  const effStart = [WIN6.start, CHAPTER_LAUNCH, member?.joined_date || CHAPTER_LAUNCH].sort().reverse()[0];
-
   const extraRecs = allRecs.filter(r => r.week_date > WIN6.end);
   const hasExtra  = extraRecs.length > 0;
 
   const lastExtraDate = hasExtra ? extraRecs.map(r => r.week_date).sort().reverse()[0] : WIN6.end;
   const previewEnd   = hasExtra ? (lastExtraDate > TODAY ? lastExtraDate : TODAY) : WIN6.end;
+
+  // 실제 유효 시작일: 6개월 시작·챕터런칭·입회일 중 늦은 날짜
+  const effStart = [winStartFor(previewEnd), CHAPTER_LAUNCH, member?.joined_date || CHAPTER_LAUNCH].sort().reverse()[0];
   const previewRecs  = allRecs.filter(r => r.week_date >= effStart && r.week_date <= previewEnd);
   const previewDenom = Math.max(WEEKS_ALL.filter(w => w >= effStart && w <= previewEnd).length, new Set(previewRecs.map(r=>r.week_date)).size, 1);
   const denom        = previewDenom;
