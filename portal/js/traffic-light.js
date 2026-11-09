@@ -14,9 +14,9 @@ function getAllWeeks() {
   // 최소 24주 끝 날짜
   const min24End = new Date('2026-05-13T00:00:00Z');
   min24End.setUTCDate(min24End.getUTCDate() + 23 * 7);
-  // 오늘 이후 1주 (현재 주차 포함)
+  // 오늘 이후 4주 (한 달치 예상치 입력용)
   const todayNext = new Date(TODAY + 'T00:00:00Z');
-  todayNext.setUTCDate(todayNext.getUTCDate() + 7);
+  todayNext.setUTCDate(todayNext.getUTCDate() + 28);
   // 둘 중 더 큰 날짜까지 생성
   const cutoff = todayNext > min24End ? todayNext : min24End;
   let d = new Date(start);
