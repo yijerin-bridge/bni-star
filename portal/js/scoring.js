@@ -55,16 +55,28 @@ function calcMemberScore(recs, pastWeeks) {
              tyfcbMult:(totTyf/ANNUAL_MEMBERSHIP).toFixed(1) } };
 }
 
+/* 트래픽라이트 점수 기간 시작일
+   - 달이 마감된 상태(끝 = 전월 말): 마감된 6개월의 1일부터
+   - 이번 달 기록이 있어 마감 전(끝 > 전월 말): 끝 날짜에서 날짜로 6개월 전 다음 날부터 (주 단위로 끊김) */
+function tlWinStart(end, closedEnd, closedStart) {
+  if (end <= closedEnd) return closedStart;
+  const d = new Date(end + 'T00:00:00Z');
+  d.setUTCMonth(d.getUTCMonth() - 6);
+  d.setUTCDate(d.getUTCDate() + 1);
+  return d.toISOString().slice(0, 10);
+}
+
 /* ── 월별 트래픽라이트 (목표관리용) ──
-   트래픽라이트 페이지와 같은 기준: 그 달 말(이번 달이면 오늘)에 본 6개월 점수.
-   시작 = (해당 월 - 6)월 1일 · 챕터런칭 · 입회일 중 늦은 날 / 이번 달 기록이 없으면 전월 말까지 */
+   트래픽라이트 페이지와 같은 기준: 마감된 달은 그 달까지 6개월(1일~말일),
+   이번 달(마감 전)은 오늘에서 날짜로 6개월. 그 달 기록이 없으면 전월 말까지 마감 기준 */
 function tlMonthScores(ym, members, weekly) {
   const LAUNCH = '2026-05-13';
   const fmt = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
   const today = fmt(new Date());
   const [y, m] = ym.split('-').map(Number);
-  const winStart = fmt(new Date(y, m - 1 - 6, 1));
-  const prevEnd  = fmt(new Date(y, m - 1, 0));
+  const prevStart = fmt(new Date(y, m - 1 - 6, 1));   // 전월까지 6개월의 시작
+  const prevEnd   = fmt(new Date(y, m - 1, 0));
+  const monthStart6 = fmt(new Date(y, m - 1 - 5, 1)); // 이번 달까지 6개월의 시작
   const monthEnd = fmt(new Date(y, m, 0));
   if (`${ym}-01` > today) return [];
   const isCurrent = monthEnd >= today;
@@ -74,6 +86,7 @@ function tlMonthScores(ym, members, weekly) {
     const own = weekly.filter(r => r.member_name === mb.name);
     const hasMonth = own.some(r => r.week_date > prevEnd && r.week_date <= monthEnd);
     const end = !hasMonth ? prevEnd : isCurrent ? today : monthEnd;
+    const winStart = !hasMonth ? prevStart : isCurrent ? tlWinStart(end, prevEnd, prevStart) : monthStart6;
     const start = [winStart, LAUNCH, mb.joined_date || LAUNCH].sort().reverse()[0];
     const recs = own.filter(r => r.week_date >= start && r.week_date <= end);
     const denom = Math.max(wedsUpTo(end).filter(w => w >= start).length, new Set(recs.map(r => r.week_date)).size, 1);

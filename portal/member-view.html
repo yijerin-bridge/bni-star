@@ -147,11 +147,11 @@ function genAITips(name, sc) {
   const member  = members?.[0];
 
   const win6     = get6MonthWindow();
-  const effStart = [win6.start, CHAPTER_LAUNCH, member?.joined_date || CHAPTER_LAUNCH].sort().reverse()[0];
   const allRecs  = recs || [];
   const extraRecs = allRecs.filter(r => r.week_date > win6.end);
   const hasExtra  = extraRecs.length > 0;
   const previewEnd = hasExtra ? TODAY : win6.end;
+  const effStart = [tlWinStart(previewEnd, win6.end, win6.start), CHAPTER_LAUNCH, member?.joined_date || CHAPTER_LAUNCH].sort().reverse()[0];
   const winRecs  = allRecs.filter(r => r.week_date >= effStart && r.week_date <= previewEnd);
   const memWeeks = getMemberWeeks(member?.joined_date);
   const denom    = Math.max(WEEKS_ALL.filter(w => w >= effStart && w <= previewEnd).length, new Set(winRecs.map(r=>r.week_date)).size, 1);

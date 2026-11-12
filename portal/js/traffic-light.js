@@ -72,14 +72,8 @@ function get6MonthWindow() {
 }
 const WIN6 = get6MonthWindow(); // 페이지 로드 시 한 번 계산
 
-// 미래 주차 예상치까지 넣었을 때: 마지막 주가 속한 달 기준으로 6개월 시작일도 함께 이동
-// (예: 12/2까지 입력 → 6/1부터. 오늘 기준 WIN6.start보다 앞으로 가지는 않음)
-function winStartFor(endDate) {
-  const [y, m] = endDate.split('-').map(Number);
-  const d = new Date(y, m - 1 - 6, 1);
-  const s = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-01`;
-  return s > WIN6.start ? s : WIN6.start;
-}
+// 점수 기간 시작: 마감 전이면 끝 날짜에서 날짜로 6개월 (예: 11/12까지 → 5/13부터, 12/2까지 → 6/3부터)
+function winStartFor(endDate) { return tlWinStart(endDate, WIN6.end, WIN6.start); }
 
 // 윈도우 내 실제 회의 주수 (분모)
 function windowDenom(memberJoinDate) {

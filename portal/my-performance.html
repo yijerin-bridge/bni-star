@@ -191,9 +191,12 @@ function calcStats(name, weekly, weeks, joinedDate) {
 
   // light: traffic-light.js와 동일한 effStart 로직
   const win6     = _get6MonthWindow();
-  const effStart = [win6.start, '2026-05-13', joinedDate || '2026-05-13'].sort().reverse()[0];
   const extraRecs = weekly.filter(w => w.week_date > win6.end);
   const previewEnd = extraRecs.length > 0 ? new Date().toISOString().slice(0,10) : win6.end;
+  // 마감 전이면 끝 날짜에서 날짜로 6개월 (트래픽라이트와 동일)
+  let winStart = win6.start;
+  if (previewEnd > win6.end) { const d = new Date(previewEnd + 'T00:00:00Z'); d.setUTCMonth(d.getUTCMonth() - 6); d.setUTCDate(d.getUTCDate() + 1); winStart = d.toISOString().slice(0, 10); }
+  const effStart = [winStart, '2026-05-13', joinedDate || '2026-05-13'].sort().reverse()[0];
   const winRecs  = weekly.filter(w => w.week_date >= effStart && w.week_date <= previewEnd);
   if (!winRecs.length) return { attendance, ono, givenRef, recvRef, visitors, tyfcb, light: 'gray', recorded };
 
