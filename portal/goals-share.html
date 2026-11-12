@@ -94,6 +94,7 @@
 <script src="/portal/js/scoring.js"></script>
 <script>
 const BUILTIN_METRICS = [
+  { key:'member_count',     name:'멤버수',          unit:'명',  icon:'👥', autoCompute:true },
   { key:'attendance_rate',  name:'출석률',          unit:'%',   icon:'✅', autoCompute:true },
   { key:'referral_count',   name:'리퍼럴',          unit:'건',  icon:'🤝', autoCompute:true },
   { key:'visitor_count',    name:'비지터 초대',      unit:'명',  icon:'🙋', autoCompute:true },
@@ -102,7 +103,6 @@ const BUILTIN_METRICS = [
   { key:'ceu_count',        name:'교육점수 만점자 비율', unit:'%', icon:'📚', autoCompute:true },
   { key:'sponsored_count',  name:'스폰서 (신규추천)',unit:'명',  icon:'⭐', autoCompute:true },
   { key:'green_member_pct', name:'Green 멤버 비율', unit:'%',   icon:'🟢', autoCompute:true },
-  { key:'member_count',     name:'멤버수',          unit:'명',  icon:'👥', autoCompute:true },
   { key:'renewal_rate',     name:'멤버 갱신율',     unit:'%',   icon:'🔄', autoCompute:false },
   { key:'amber_plus_pct',   name:'앰버 이상 비율',  unit:'%',   icon:'🟡', autoCompute:true },
 ];
@@ -133,33 +133,12 @@ function computeActual(key, ym) {
       return Math.round(tot / wks);   // 챕터 전체 합계의 주평균
     }
     case 'tyfcb_amount':    return recs.length ? Math.round(recs.reduce((s,r)=>s+Number(r.tyfcb||0),0)/10000) : null;
-    case 'ceu_count': {
-      if(!recs.length) return null;
-      const weeks=[...new Set(recs.map(r=>r.week_date))];
-      const mids=[...new Set(recs.map(r=>r.member_id))];
-      const full=mids.filter(mid=>{
-        const tot=recs.filter(r=>r.member_id===mid).reduce((s,r)=>s+(r.ceu||0),0);
-        return scoreCeu(tot/weeks.length)>=10;
-      }).length;
-      return Math.round(full/mids.length*100);
-    }
+    case 'ceu_count': return tlPct(ym, 'ceu_count');
     case 'sponsored_count': return recs.length ? recs.reduce((s,r)=>s+(r.sponsored||0),0) : null;
-    case 'green_member_pct': {
-      if(!recs.length) return null;
-      const weeks = [...new Set(recs.map(r=>r.week_date))];
-      const mids = [...new Set(recs.map(r=>r.member_id))];
-      const green = mids.filter(mid => calcMemberScore(recs.filter(r=>r.member_id===mid), weeks.length).light==='green').length;
-      return Math.round(green/mids.length*100);
-    }
+    case 'green_member_pct': return tlPct(ym, 'green_member_pct');
     case 'member_count': return membersAll.length || null;
     case 'renewal_rate': return null;
-    case 'amber_plus_pct': {
-      if(!recs.length) return null;
-      const wks=[...new Set(recs.map(r=>r.week_date))];
-      const mids=[...new Set(recs.map(r=>r.member_id))];
-      const cnt=mids.filter(mid=>{const l=calcMemberScore(recs.filter(r=>r.member_id===mid),wks.length).light;return l==='green'||l==='amber';}).length;
-      return Math.round(cnt/mids.length*100);
-    }
+    case 'amber_plus_pct': return tlPct(ym, 'amber_plus_pct');
     default: return null;
   }
 }
@@ -184,6 +163,49 @@ function createModal(html) {
   return m;
 }
 
+/* 트래픽라이트와 같은 6개월 누적 점수 기준 비율 (활성 멤버 전체 대비) */
+const TL_PRED = {
+  green_member_pct: x => x.light === 'green',
+  amber_plus_pct:   x => x.light === 'green' || x.light === 'amber',
+  ceu_count:        x => x.breakdown.ceu >= 10,
+};
+function tlPct(ym, key) {
+  const sc = tlMonthScores(ym, membersAll, weeklyAll);
+  if (!sc.length) return null;
+  return Math.round(sc.filter(TL_PRED[key]).length / sc.length * 100);
+}
+
+/* Green·앰버·교육점수 상세: 트래픽라이트와 같은 6개월 누적으로 멤버별 표시 */
+function tlDetailTable(metricKey, ym) {
+  const ok = TL_PRED[metricKey];
+  const isCeu = metricKey === 'ceu_count';
+  const sc = tlMonthScores(ym, membersAll, weeklyAll)
+    .sort((a, b) => isCeu ? (b.stats.totCeu||0)/(b.stats.totalWeeks||1) - (a.stats.totCeu||0)/(a.stats.totalWeeks||1) : b.total - a.total);
+  if (!sc.length) return '<p style="color:#6b7280;font-size:13px;padding:16px 0">아직 집계할 기록이 없습니다.</p>';
+  const hit = sc.filter(ok).length;
+  const s0 = sc[0];
+  const td = 'padding:8px 12px;border:1px solid #e5e7eb';
+  return `
+      <div style="overflow-x:auto;margin-bottom:10px">
+        <table style="width:100%;border-collapse:collapse;font-size:13px">
+          <thead><tr style="background:#f9fafb">
+            <th style="${td};text-align:left">멤버</th>
+            <th style="${td};text-align:right">${isCeu ? '교육점수' : '트래픽라이트 점수'}</th>
+            <th style="${td};text-align:center;color:#9ca3af;font-size:11px;font-weight:400">${isCeu ? '총 CEU / 주평균' : '신호등'}</th>
+          </tr></thead>
+          <tbody>
+            ${sc.map((d, i) => { const hi = ok(d); const st = d.stats || {}; return `
+            <tr style="${hi ? 'background:#f0fdf4' : i%2===1 ? 'background:#fafafa' : ''}">
+              <td style="${td};font-weight:${hi?700:400}">${d.name}</td>
+              <td style="${td};text-align:right;font-weight:700">${isCeu ? d.breakdown.ceu : d.total}<span style="font-size:11px;color:#9ca3af;font-weight:400"> 점</span></td>
+              <td style="${td};text-align:center;color:#6b7280;font-size:12px">${isCeu ? `${st.totCeu||0} / ${st.avgCeu||0}` : lightEmoji(d.light)}</td>
+            </tr>`; }).join('')}
+          </tbody>
+        </table>
+      </div>
+      <p style="font-size:11px;color:#9ca3af">트래픽라이트와 같은 기준 · 직전 6개월 누적 ÷ 주수 (${s0.start} ~ ${s0.end}) · 활성 멤버 ${sc.length}명 중 ${hit}명</p>`;
+}
+
 function showMetricDetail(metricKey, ym) {
   const g  = goalsAll.find(g2 => g2.metric_key === metricKey && g2.year_month === ym);
   const bm = BUILTIN_METRICS.find(b => b.key === metricKey);
@@ -199,7 +221,9 @@ function showMetricDetail(metricKey, ym) {
   const light  = getLightFromRate(rate);
 
   let tableHtml = '';
-  if (!bm || g.is_custom) {
+  if (TL_PRED[metricKey]) {
+    tableHtml = tlDetailTable(metricKey, ym);
+  } else if (!bm || g.is_custom) {
     tableHtml = `<p style="color:#6b7280;font-size:13px;padding:16px 0">커스텀 지표 — 실적: <b>${g.actual_value ?? '미입력'} ${g.metric_unit}</b></p>`;
   } else {
     const rows = mids.map(mid => {
@@ -455,9 +479,11 @@ function render() {
   const [gRes, wRes, mRes] = await Promise.all([
     getSb().from('chapter_goals').select('*').order('sort_order').order('created_at'),
     getSb().from('weekly_records').select('*'),
-    getSb().from('members').select('id,name').eq('is_active', true),
+    getSb().from('members').select('id,name,joined_date').eq('is_active', true),
   ]);
   goalsAll   = gRes.data || [];
+  // 멤버수가 가장 중요한 지표 → 항상 맨 위
+  goalsAll.sort((x, y) => (y.metric_key === 'member_count') - (x.metric_key === 'member_count'));
   weeklyAll  = wRes.data || [];
   membersAll = mRes.data || [];
   render();

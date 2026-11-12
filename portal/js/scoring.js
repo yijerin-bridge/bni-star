@@ -54,3 +54,29 @@ function calcMemberScore(recs, pastWeeks) {
              avgOno:(totOno/totalWeeks).toFixed(2), avgCeu:(totCeu/totalWeeks).toFixed(2),
              tyfcbMult:(totTyf/ANNUAL_MEMBERSHIP).toFixed(1) } };
 }
+
+/* ── 월별 트래픽라이트 (목표관리용) ──
+   트래픽라이트 페이지와 같은 기준: 그 달 말(이번 달이면 오늘)에 본 6개월 점수.
+   시작 = (해당 월 - 6)월 1일 · 챕터런칭 · 입회일 중 늦은 날 / 이번 달 기록이 없으면 전월 말까지 */
+function tlMonthScores(ym, members, weekly) {
+  const LAUNCH = '2026-05-13';
+  const fmt = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  const today = fmt(new Date());
+  const [y, m] = ym.split('-').map(Number);
+  const winStart = fmt(new Date(y, m - 1 - 6, 1));
+  const prevEnd  = fmt(new Date(y, m - 1, 0));
+  const monthEnd = fmt(new Date(y, m, 0));
+  if (`${ym}-01` > today) return [];
+  const isCurrent = monthEnd >= today;
+  const wedsUpTo = end => { const a = []; const d = new Date(LAUNCH + 'T00:00:00Z');
+    while (d.toISOString().slice(0,10) <= end) { a.push(d.toISOString().slice(0,10)); d.setUTCDate(d.getUTCDate() + 7); } return a; };
+  return members.map(mb => {
+    const own = weekly.filter(r => r.member_name === mb.name);
+    const hasMonth = own.some(r => r.week_date > prevEnd && r.week_date <= monthEnd);
+    const end = !hasMonth ? prevEnd : isCurrent ? today : monthEnd;
+    const start = [winStart, LAUNCH, mb.joined_date || LAUNCH].sort().reverse()[0];
+    const recs = own.filter(r => r.week_date >= start && r.week_date <= end);
+    const denom = Math.max(wedsUpTo(end).filter(w => w >= start).length, new Set(recs.map(r => r.week_date)).size, 1);
+    return { name: mb.name, start, end, ...calcMemberScore(recs, denom) };
+  });
+}
