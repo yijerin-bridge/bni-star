@@ -80,3 +80,12 @@ function tlMonthScores(ym, members, weekly) {
     return { name: mb.name, start, end, ...calcMemberScore(recs, denom) };
   });
 }
+
+/* 해당 월 말(이번 달이면 오늘) 기준 재적 멤버 — 입회일 ≤ 기준일, 탈퇴일 없거나 기준일 이후 */
+function membersAt(ym, members) {
+  const fmt = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  const [y, m] = ym.split('-').map(Number);
+  const today = fmt(new Date()), monthEnd = fmt(new Date(y, m, 0));
+  const at = monthEnd < today ? monthEnd : today;
+  return members.filter(mb => (mb.joined_date || '2026-05-13') <= at && (!mb.left_date || mb.left_date >= at));
+}

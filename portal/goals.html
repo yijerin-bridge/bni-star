@@ -109,7 +109,7 @@
 <script>
 /* ── 기본 내장 지표 정의 ── */
 const BUILTIN_METRICS = [
-  { key:'member_count',     name:'멤버수',           unit:'명',  icon:'👥', desc:'현재 활성 멤버 수 (members 테이블 기준)', autoCompute: true },
+  { key:'member_count',     name:'멤버수',           unit:'명',  icon:'👥', desc:'그 달 말 재적 멤버 수 (입회일·탈퇴일 기준)', autoCompute: true },
   { key:'attendance_rate',  name:'출석률',          unit:'%',   icon:'✅', desc:'월간 출석 기록 기준 (P+L+M+S / 전체)', autoCompute: true },
   { key:'referral_count',   name:'리퍼럴',          unit:'건',  icon:'🤝', desc:'월간 준 T1+T2 합계',                   autoCompute: true },
   { key:'visitor_count',    name:'비지터 초대',      unit:'명',  icon:'🙋', desc:'월간 비지터 합계',                     autoCompute: true },
@@ -122,7 +122,7 @@ const BUILTIN_METRICS = [
   { key:'amber_plus_pct',   name:'앰버 이상 비율',   unit:'%',   icon:'🟡', desc:'트래픽라이트 앰버+그린 멤버 비율 (6개월 누적 점수 기준)', autoCompute: true },
 ];
 
-let currentYM = '', weeklyAll = [], goalsAll = [], membersAll = [], rolesAll = [], canEdit = false;
+let currentYM = '', weeklyAll = [], goalsAll = [], membersAll = [], membersEver = [], rolesAll = [], canEdit = false;
 let viewMode = 'trend'; // 'cards' | 'trend'
 function currentFiscalYear() { const d = new Date(); return d.getMonth() >= 4 ? d.getFullYear() : d.getFullYear() - 1; }
 let trendYear = currentFiscalYear();
@@ -154,7 +154,7 @@ function computeActual(key, ym) {
     case 'ceu_count':       return tlPct(ym, 'ceu_count');
     case 'sponsored_count': return recs.length ? recs.reduce((s,r)=>s+(r.sponsored||0),0) : null;
     case 'green_member_pct': return tlPct(ym, 'green_member_pct');
-    case 'member_count':    return membersAll.length || null;
+    case 'member_count':    return membersAt(ym, membersEver).length || null;
     case 'renewal_rate':    return null; // 수동 입력
     case 'amber_plus_pct':  return tlPct(ym, 'amber_plus_pct');
     default: return null;
@@ -168,7 +168,7 @@ const TL_PRED = {
   ceu_count:        x => x.breakdown.ceu >= 10,
 };
 function tlPct(ym, key) {
-  const sc = tlMonthScores(ym, membersAll, weeklyAll);
+  const sc = tlMonthScores(ym, membersAt(ym, membersEver), weeklyAll);
   if (!sc.length) return null;
   return Math.round(sc.filter(TL_PRED[key]).length / sc.length * 100);
 }
@@ -723,7 +723,7 @@ function showMetricDetail(metricKey, ym) {
   const recs  = weeklyAll.filter(r => r.week_date?.startsWith(ym));
   const weeks = [...new Set(recs.map(r => r.week_date))].sort();
   const mids  = [...new Set(recs.map(r => r.member_id))];
-  const getName = mid => membersAll.find(m => m.id === mid)?.name || mid;
+  const getName = mid => membersEver.find(m => m.id === mid)?.name || mid;
 
   const actual = (bm?.autoCompute && g.actual_value == null) ? computeActual(metricKey, ym) : (g.actual_value ?? null);
   const rate   = (actual !== null && g.target_value > 0) ? Math.round(actual / g.target_value * 100) : null;
@@ -731,7 +731,7 @@ function showMetricDetail(metricKey, ym) {
 
   let tableHtml = '';
   if (metricKey === 'member_count') {
-    const names = membersAll.map(m => m.name);
+    const names = membersAt(ym, membersEver).map(m => m.name);
     tableHtml = `
       <div style="overflow-x:auto;margin-bottom:10px">
         <table style="width:100%;border-collapse:collapse;font-size:13px">
@@ -743,7 +743,7 @@ function showMetricDetail(metricKey, ym) {
           </tbody>
         </table>
       </div>
-      <p style="font-size:11px;color:#9ca3af">현재 활성 멤버 기준</p>`;
+      <p style="font-size:11px;color:#9ca3af">${fmtYM(ym)} 말 재적 기준 (이번 달은 오늘 기준)</p>`;
   } else if (TL_PRED[metricKey]) {
     tableHtml = tlDetailTable(metricKey, ym);
   } else if (!bm || g.is_custom) {
@@ -862,7 +862,7 @@ window.showMetricDetail = showMetricDetail;
 function tlDetailTable(metricKey, ym) {
   const ok = TL_PRED[metricKey];
   const isCeu = metricKey === 'ceu_count';
-  const sc = tlMonthScores(ym, membersAll, weeklyAll)
+  const sc = tlMonthScores(ym, membersAt(ym, membersEver), weeklyAll)
     .sort((a, b) => isCeu ? (b.stats.totCeu||0)/(b.stats.totalWeeks||1) - (a.stats.totCeu||0)/(a.stats.totalWeeks||1) : b.total - a.total);
   if (!sc.length) return '<p style="color:#6b7280;font-size:13px;padding:16px 0">아직 집계할 기록이 없습니다.</p>';
   const hit = sc.filter(ok).length;
@@ -894,14 +894,15 @@ async function reload() {
   const [gRes, wRes, mRes, rRes] = await Promise.all([
     getSb().from('chapter_goals').select('*').order('sort_order').order('created_at'),
     getSb().from('weekly_records').select('*'),
-    getSb().from('members').select('id,name,joined_date').eq('is_active', true),
+    getSb().from('members').select('id,name,joined_date,left_date,is_active'),
     getSb().from('roles').select('name,tier,role_type').order('tier').order('name'),
   ]);
   goalsAll   = gRes.data || [];
   // 멤버수가 가장 중요한 지표 → 항상 맨 위
   goalsAll.sort((x, y) => (y.metric_key === 'member_count') - (x.metric_key === 'member_count'));
   weeklyAll  = wRes.data || [];
-  membersAll = mRes.data || [];
+  membersEver = mRes.data || [];   // 탈퇴자 포함 (월별 재적 계산용)
+  membersAll  = membersEver.filter(m => m.is_active);
   rolesAll   = rRes.data || [];
 }
 
