@@ -29,6 +29,8 @@
   }
   const names = (mRes.data || []).map(m => m.name);
   const byName = Object.fromEntries((iRes.data || []).map(r => [r.member_name, r]));
+  // 멤버는 아니지만 인터뷰어로 참여하는 분
+  const GUESTS = [{ name: '박선주', label: '디렉터' }, { name: '차규민', label: '앰버서더' }];
   const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;' }[c]));
 
   const today = new Date(); today.setHours(0, 0, 0, 0);
@@ -40,7 +42,7 @@
   };
 
   root.innerHTML = `
-    <datalist id="ivMembers">${names.map(n => `<option value="${esc(n)}">`).join('')}</datalist>
+    <datalist id="ivMembers">${GUESTS.map(g => `<option value="${esc(g.name)}" label="${esc(g.label)}">`).join('')}${names.map(n => `<option value="${esc(n)}">`).join('')}</datalist>
     <div class="iv-wrap">
       <table class="iv-table">
         <thead>
@@ -62,7 +64,7 @@
         </tbody>
       </table>
     </div>
-    <p class="iv-note">인터뷰어 칸은 멤버 이름이 자동완성되며, 외부 인원도 직접 적을 수 있습니다. 날짜가 30일 이내로 다가오면 빨간색으로 표시됩니다. 6개월 리뷰를 하지 않는 멤버는 비워두면 됩니다.</p>`;
+    <p class="iv-note">인터뷰어 칸은 멤버와 박선주 디렉터·차규민 앰버서더가 자동완성되며, 다른 분도 직접 적을 수 있습니다. 날짜가 30일 이내로 다가오면 빨간색으로 표시됩니다. 6개월 리뷰를 하지 않는 멤버는 비워두면 됩니다.</p>`;
 
   root.querySelectorAll('.iv-table input').forEach(inp => {
     inp.addEventListener('change', async () => {
