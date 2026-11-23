@@ -42,13 +42,13 @@ function canAccess(session, requiredTier = 3, requiredTypes = null) {
   return true;
 }
 
-// 트래픽라이트 접근 — 부의장, [멤버십] 트래픽라이트 담당만
+// 트래픽라이트 접근 — 의장단 전원, [멤버십] 트래픽라이트 담당
 // roleName 미배정(member_roles 미입력) 상태에서는 roleType 폴백 허용
 function canAccessTraffic(s) {
   if (!s) return false;
   const hasRoleName = !!s.roleName;
   if (hasRoleName) {
-    if (s.roleType === 'board'      && s.roleName === '부의장')               return true;
+    if (s.roleType === 'board') return true;  // 의장단은 전원 전체 메뉴
     if (s.roleType === 'membership' && s.roleName === '[멤버십] 트래픽라이트') return true;
     return false;
   }
