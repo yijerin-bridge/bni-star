@@ -103,11 +103,9 @@ function getNavItems(session) {
     items.push({ href: '/portal/goals.html', icon: '🎯', label: '목표 관리', always: false });
   }
   items.push({ href: '/portal/meetings.html', icon: '📋', label: '회의록', always: true });
-  items.push({
-    href: '/portal/traffic-light.html', icon: '🚦',
-    label: canAccessTraffic(session) ? '트래픽라이트' : '내 트래픽라이트',
-    always: false,
-  });
+  if (canAccessTraffic(session)) {
+    items.push({ href: '/portal/traffic-light.html', icon: '🚦', label: '트래픽라이트', always: false });
+  }
   if (canAccessInterviews(session)) {
     items.push({ href: '/portal/interviews.html', icon: '🗓️', label: '인터뷰 일정', always: false });
   }

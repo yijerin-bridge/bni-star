@@ -117,7 +117,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const { session, bodyEl } = layout;
 
   if (!canAccessTraffic(session)) {
-    initTrafficLightPersonal(session, bodyEl);
+    bodyEl.innerHTML = `<div class="page-header"><div><h1>트래픽라이트</h1></div></div>
+      <div class="empty-state"><div class="es-icon">🔒</div><p>트래픽라이트는 부의장과 트래픽라이트 담당만 볼 수 있습니다.<br>개인 점수는 공유 링크로 받아보세요.</p></div>`;
     return;
   }
 
