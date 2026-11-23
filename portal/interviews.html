@@ -9,8 +9,12 @@
   <link rel="stylesheet" href="/portal/css/portal.css">
   <style>
     .iv-wrap { overflow-x:auto; border:1.5px solid var(--border); border-radius:12px; background:#fff; }
-    .iv-table { border-collapse:collapse; font-size:13px; width:100%; min-width:560px; }
-    .iv-table th { background:#f9fafb; font-size:11.5px; font-weight:700; color:#6b7280; text-align:left; padding:10px 12px; border-bottom:1.5px solid var(--border); }
+    .iv-table { border-collapse:collapse; font-size:13px; width:100%; min-width:980px; }
+    .iv-table thead tr.grp th { text-align:center; font-size:12px; color:#374151; border-bottom:1px solid #f0f0f0; }
+    .iv-table .rv { background:#f8fafc; }
+    .iv-table thead th.rv { background:#eef2f7; }
+    .iv-table .rv-start { border-left:2px solid #e5e7eb; }
+    .iv-table th { background:#f9fafb; font-size:11.5px; font-weight:700; color:#6b7280; text-align:left; padding:10px 12px; border-bottom:1.5px solid var(--border); white-space:nowrap; }
     .iv-table td { padding:7px 12px; border-bottom:1px solid #f0f0f0; vertical-align:middle; }
     .iv-table td.name { font-weight:700; white-space:nowrap; }
     .iv-table input { width:100%; padding:6px 8px; border:1.5px solid #e5e7eb; border-radius:7px; font-size:13px; font-family:inherit; background:#fff; }
@@ -27,6 +31,8 @@
       .iv-table tr { display:grid; grid-template-columns:1fr 1fr; gap:8px; padding:12px 14px; border-bottom:1px solid #f0f0f0; }
       .iv-table td { padding:0; border:0; min-width:0; }
       .iv-table td.name, .iv-table td.date { grid-column:1 / -1; }
+      .iv-table td.rv { background:transparent; }
+      .iv-table td.rv-start { border-left:0; border-top:1px dashed #e5e7eb; padding-top:8px; }
       .iv-table td[data-label]::before { content:attr(data-label); display:block; font-size:11px; color:#9ca3af; margin-bottom:3px; }
     }
     .iv-notice { background:#fff7ed; border:1.5px solid #fdba74; color:#9a3412; border-radius:12px; padding:14px 16px; font-size:13.5px; }
