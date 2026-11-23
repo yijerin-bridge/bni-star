@@ -13,7 +13,7 @@
 
   bodyEl.innerHTML = `
     <div class="page-header">
-      <div><h1>인터뷰 일정</h1><p>갱신 인터뷰 · 6개월 리뷰(해당자만) — 입력하면 바로 저장됩니다</p></div>
+      <div><h1>인터뷰 일정</h1><p>갱신 인터뷰 · 6개월 리뷰(해당자만) · 멘토링(90일 리뷰) — 입력하면 바로 저장됩니다</p></div>
     </div>
     <div id="ivRoot"><div style="text-align:center;padding:48px;color:#9ca3af">불러오는 중...</div></div>`;
   const root = document.getElementById('ivRoot');
@@ -28,6 +28,8 @@
     return;
   }
   const names = (mRes.data || []).map(m => m.name);
+  // 멘토링 칸은 interviews-schema-v3.sql 실행 후 사용 가능
+  const hasMent = !(iRes.data || []).length || 'mentoring' in iRes.data[0];
   const byName = Object.fromEntries((iRes.data || []).map(r => [r.member_name, r]));
   // 멤버는 아니지만 인터뷰어로 참여하는 분
   const GUESTS = [{ name: '박선주', label: '디렉터' }, { name: '차규민', label: '앰버서더' }];
@@ -52,9 +54,9 @@
     <div class="iv-wrap">
       <table class="iv-table">
         <thead>
-          <tr class="grp"><th></th><th colspan="3">갱신 인터뷰</th><th colspan="3" class="rv rv-start">6개월 리뷰 <span style="font-weight:400;color:#9ca3af">(해당자만)</span></th></tr>
+          <tr class="grp"><th></th><th colspan="3">갱신 인터뷰</th><th colspan="3" class="rv rv-start">6개월 리뷰 <span style="font-weight:400;color:#9ca3af">(해당자만)</span></th><th class="mt">멘토링</th></tr>
           <tr><th>인터뷰 대상</th><th style="width:180px">갱신일자</th><th>인터뷰어 1</th><th>인터뷰어 2</th>
-              <th class="rv rv-start" style="width:180px">리뷰 날짜</th><th class="rv">인터뷰어 1</th><th class="rv">인터뷰어 2</th></tr>
+              <th class="rv rv-start" style="width:180px">리뷰 날짜</th><th class="rv">인터뷰어 1</th><th class="rv">인터뷰어 2</th><th class="mt" style="width:110px">90일 리뷰</th></tr>
         </thead>
         <tbody>
           ${names.map(n => { const r = byName[n] || {}; return `
@@ -66,10 +68,13 @@
             <td class="date rv rv-start" data-label="6개월 리뷰 날짜 (해당자만)"><div style="display:flex;align-items:center"><input type="date" data-f="review_date" value="${esc(r.review_date)}">${dday(r.review_date)}</div></td>
             <td class="rv" data-label="리뷰 인터뷰어 1"><input type="text" data-f="review_interviewer1" list="ivMembers" placeholder="이름" value="${esc(r.review_interviewer1)}"></td>
             <td class="rv" data-label="리뷰 인터뷰어 2"><input type="text" data-f="review_interviewer2" list="ivMembers" placeholder="이름" value="${esc(r.review_interviewer2)}"></td>
+            <td class="mt" data-label="멘토링 (90일 리뷰)"><select data-f="mentoring" class="ment-${esc(r.mentoring || 'none')}"${hasMent ? '' : ' disabled title="SQL 실행 필요"'}>
+              <option value="">—</option><option value="O"${r.mentoring === 'O' ? ' selected' : ''}>O</option><option value="X"${r.mentoring === 'X' ? ' selected' : ''}>X</option></select></td>
           </tr>`; }).join('')}
         </tbody>
       </table>
     </div>
+    ${hasMent ? '' : '<div class="iv-notice" style="margin-top:10px">멘토링 칸을 쓰려면 <b>portal/interviews-schema-v3.sql</b>을 Supabase SQL Editor에서 실행해 주세요.</div>'}
     <p class="iv-note">인터뷰어 칸은 멤버와 박선주 디렉터·차규민 앰버서더가 자동완성되며, 다른 분도 직접 적을 수 있습니다. 날짜가 30일 이내로 다가오면 빨간색으로 표시됩니다. 6개월 리뷰를 하지 않는 멤버는 비워두면 됩니다.</p>`;
 
   // 인터뷰어별 배정 횟수 (화면 입력값 기준, 적게 맡은 순)
@@ -106,15 +111,16 @@
   root.querySelectorAll('.iv-sort button').forEach(b => b.addEventListener('click', () => sortRows(b.dataset.sort)));
   try { const k = localStorage.getItem('ivSort'); if (k && k !== 'name') sortRows(k); } catch {}
 
-  root.querySelectorAll('.iv-table input').forEach(inp => {
+  root.querySelectorAll('.iv-table input, .iv-table select').forEach(inp => {
     inp.addEventListener('change', async () => {
       const tr = inp.closest('tr');
       const row = { member_name: tr.dataset.name, updated_at: new Date().toISOString() };
-      tr.querySelectorAll('input').forEach(i => { row[i.dataset.f] = i.value.trim() || null; });
+      tr.querySelectorAll('input, select:not([disabled])').forEach(i => { row[i.dataset.f] = i.value.trim() || null; });
       inp.classList.remove('saved', 'err');
       const { error } = await getSb().from('member_interviews').upsert(row, { onConflict: 'member_name' });
       if (error) { console.error(error); inp.classList.add('err'); alert('저장 실패: ' + error.message); return; }
       inp.classList.add('saved');
+      if (inp.tagName === 'SELECT') inp.className = 'saved ment-' + (inp.value || 'none');
       renderCounts();
       setTimeout(() => inp.classList.remove('saved'), 1200);
       if (inp.type === 'date') {
