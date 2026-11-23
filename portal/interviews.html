@@ -27,6 +27,12 @@
     .iv-table select.ment-X { background:#fef2f2; color:#991b1b; border-color:#fca5a5; }
     .iv-table select.saved { border-color:#16a34a; }
     .iv-table select:disabled { opacity:.45; cursor:not-allowed; }
+    .iv-table td.done { text-align:center; }
+    .iv-done { display:inline-flex; align-items:center; gap:5px; font-size:12px; color:#6b7280; cursor:pointer; white-space:nowrap; }
+    .iv-table .iv-done input { width:18px; height:18px; padding:0; accent-color:#16a34a; cursor:pointer; }
+    .iv-done input:checked + span { color:#16a34a; font-weight:700; }
+    .iv-done input:disabled { cursor:not-allowed; opacity:.45; }
+    .iv-dday.ok { color:#16a34a; font-weight:700; }
     .iv-dday { font-size:11px; color:#9ca3af; margin-left:6px; white-space:nowrap; }
     .iv-dday.soon { color:#CC0000; font-weight:700; }
     .iv-note { font-size:12px; color:#9ca3af; margin:10px 2px 0; }

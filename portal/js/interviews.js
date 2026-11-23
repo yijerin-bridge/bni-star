@@ -30,13 +30,17 @@
   const names = (mRes.data || []).map(m => m.name);
   // 멘토링 칸은 interviews-schema-v3.sql 실행 후 사용 가능
   const hasMent = !(iRes.data || []).length || 'mentoring' in iRes.data[0];
+  // 완료 체크는 interviews-schema-v4.sql 실행 후 사용 가능
+  const hasDone = !(iRes.data || []).length || 'renewal_done' in iRes.data[0];
+  const doneBox = (f, on, label) => `<td class="done${f === 'review_done' ? ' rv' : ''}" data-label="${label}"><label class="iv-done"><input type="checkbox" data-f="${f}"${on ? ' checked' : ''}${hasDone ? '' : ' disabled title="SQL 실행 필요"'}><span>완료</span></label></td>`;
   const byName = Object.fromEntries((iRes.data || []).map(r => [r.member_name, r]));
   // 멤버는 아니지만 인터뷰어로 참여하는 분
   const GUESTS = [{ name: '박선주', label: '디렉터' }, { name: '차규민', label: '앰버서더' }];
   const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;' }[c]));
 
   const today = new Date(); today.setHours(0, 0, 0, 0);
-  const dday = d => {
+  const dday = (d, done) => {
+    if (done) return '<span class="iv-dday ok">✓ 완료</span>';
     if (!d) return '';
     const n = Math.round((new Date(d + 'T00:00:00') - today) / 86400000);
     const txt = n === 0 ? 'D-day' : n > 0 ? `D-${n}` : `D+${-n}`;
@@ -54,26 +58,29 @@
     <div class="iv-wrap">
       <table class="iv-table">
         <thead>
-          <tr class="grp"><th></th><th colspan="3">갱신 인터뷰</th><th colspan="3" class="rv rv-start">6개월 리뷰 <span style="font-weight:400;color:#9ca3af">(해당자만)</span></th><th class="mt">멘토링</th></tr>
-          <tr><th>인터뷰 대상</th><th style="width:180px">갱신일자</th><th>인터뷰어 1</th><th>인터뷰어 2</th>
-              <th class="rv rv-start" style="width:180px">리뷰 날짜</th><th class="rv">인터뷰어 1</th><th class="rv">인터뷰어 2</th><th class="mt" style="width:110px">90일 리뷰</th></tr>
+          <tr class="grp"><th></th><th colspan="4">갱신 인터뷰</th><th colspan="4" class="rv rv-start">6개월 리뷰 <span style="font-weight:400;color:#9ca3af">(해당자만)</span></th><th class="mt">멘토링</th></tr>
+          <tr><th>인터뷰 대상</th><th style="width:180px">갱신일자</th><th>인터뷰어 1</th><th>인터뷰어 2</th><th style="width:70px">완료</th>
+              <th class="rv rv-start" style="width:180px">리뷰 날짜</th><th class="rv">인터뷰어 1</th><th class="rv">인터뷰어 2</th><th class="rv" style="width:70px">완료</th><th class="mt" style="width:110px">90일 리뷰</th></tr>
         </thead>
         <tbody>
           ${names.map(n => { const r = byName[n] || {}; return `
           <tr data-name="${esc(n)}">
             <td class="name">${esc(n)}</td>
-            <td class="date" data-label="갱신일자"><div style="display:flex;align-items:center"><input type="date" data-f="renewal_date" value="${esc(r.renewal_date)}">${dday(r.renewal_date)}</div></td>
+            <td class="date" data-label="갱신일자"><div style="display:flex;align-items:center"><input type="date" data-f="renewal_date" value="${esc(r.renewal_date)}">${dday(r.renewal_date, r.renewal_done)}</div></td>
             <td data-label="갱신 인터뷰어 1"><input type="text" data-f="interviewer1" list="ivMembers" placeholder="이름" value="${esc(r.interviewer1)}"></td>
             <td data-label="갱신 인터뷰어 2"><input type="text" data-f="interviewer2" list="ivMembers" placeholder="이름" value="${esc(r.interviewer2)}"></td>
-            <td class="date rv rv-start" data-label="6개월 리뷰 날짜 (해당자만)"><div style="display:flex;align-items:center"><input type="date" data-f="review_date" value="${esc(r.review_date)}">${dday(r.review_date)}</div></td>
+            ${doneBox('renewal_done', r.renewal_done, '갱신 인터뷰 완료')}
+            <td class="date rv rv-start" data-label="6개월 리뷰 날짜 (해당자만)"><div style="display:flex;align-items:center"><input type="date" data-f="review_date" value="${esc(r.review_date)}">${dday(r.review_date, r.review_done)}</div></td>
             <td class="rv" data-label="리뷰 인터뷰어 1"><input type="text" data-f="review_interviewer1" list="ivMembers" placeholder="이름" value="${esc(r.review_interviewer1)}"></td>
             <td class="rv" data-label="리뷰 인터뷰어 2"><input type="text" data-f="review_interviewer2" list="ivMembers" placeholder="이름" value="${esc(r.review_interviewer2)}"></td>
+            ${doneBox('review_done', r.review_done, '리뷰 완료')}
             <td class="mt" data-label="멘토링 (90일 리뷰)"><select data-f="mentoring" class="ment-${esc(r.mentoring || 'none')}"${hasMent ? '' : ' disabled title="SQL 실행 필요"'}>
               <option value="">—</option><option value="O"${r.mentoring === 'O' ? ' selected' : ''}>O</option><option value="X"${r.mentoring === 'X' ? ' selected' : ''}>X</option></select></td>
           </tr>`; }).join('')}
         </tbody>
       </table>
     </div>
+    ${hasDone ? '' : '<div class="iv-notice" style="margin-top:10px">완료 체크를 쓰려면 <b>portal/interviews-schema-v4.sql</b>을 Supabase SQL Editor에서 실행해 주세요.</div>'}
     ${hasMent ? '' : '<div class="iv-notice" style="margin-top:10px">멘토링 칸을 쓰려면 <b>portal/interviews-schema-v3.sql</b>을 Supabase SQL Editor에서 실행해 주세요.</div>'}
     <p class="iv-note">인터뷰어 칸은 멤버와 박선주 디렉터·차규민 앰버서더가 자동완성되며, 다른 분도 직접 적을 수 있습니다. 날짜가 30일 이내로 다가오면 빨간색으로 표시됩니다. 6개월 리뷰를 하지 않는 멤버는 비워두면 됩니다.</p>`;
 
@@ -115,7 +122,9 @@
     inp.addEventListener('change', async () => {
       const tr = inp.closest('tr');
       const row = { member_name: tr.dataset.name, updated_at: new Date().toISOString() };
-      tr.querySelectorAll('input, select:not([disabled])').forEach(i => { row[i.dataset.f] = i.value.trim() || null; });
+      tr.querySelectorAll('input:not([disabled]), select:not([disabled])').forEach(i => {
+        row[i.dataset.f] = i.type === 'checkbox' ? i.checked : (i.value.trim() || null);
+      });
       inp.classList.remove('saved', 'err');
       const { error } = await getSb().from('member_interviews').upsert(row, { onConflict: 'member_name' });
       if (error) { console.error(error); inp.classList.add('err'); alert('저장 실패: ' + error.message); return; }
@@ -123,10 +132,13 @@
       if (inp.tagName === 'SELECT') inp.className = 'saved ment-' + (inp.value || 'none');
       renderCounts();
       setTimeout(() => inp.classList.remove('saved'), 1200);
-      if (inp.type === 'date') {
-        const old = inp.parentElement.querySelector('.iv-dday'); if (old) old.remove();
-        inp.insertAdjacentHTML('afterend', dday(row[inp.dataset.f]));
-      }
+      // 날짜나 완료 체크가 바뀌면 D-day 표시 갱신
+      [['renewal_date', 'renewal_done'], ['review_date', 'review_done']].forEach(([df, cf]) => {
+        if (inp.dataset.f !== df && inp.dataset.f !== cf) return;
+        const di = tr.querySelector(`input[data-f="${df}"]`);
+        const old = di.parentElement.querySelector('.iv-dday'); if (old) old.remove();
+        di.insertAdjacentHTML('afterend', dday(row[df], row[cf]));
+      });
     });
   });
 })();
