@@ -43,6 +43,7 @@
 
   root.innerHTML = `
     <datalist id="ivMembers">${GUESTS.map(g => `<option value="${esc(g.name)}" label="${esc(g.label)}">`).join('')}${names.map(n => `<option value="${esc(n)}">`).join('')}</datalist>
+    <div class="iv-count" id="ivCount"></div>
     <div class="iv-wrap">
       <table class="iv-table">
         <thead>
@@ -66,6 +67,28 @@
     </div>
     <p class="iv-note">인터뷰어 칸은 멤버와 박선주 디렉터·차규민 앰버서더가 자동완성되며, 다른 분도 직접 적을 수 있습니다. 날짜가 30일 이내로 다가오면 빨간색으로 표시됩니다. 6개월 리뷰를 하지 않는 멤버는 비워두면 됩니다.</p>`;
 
+  // 인터뷰어별 배정 횟수 (화면 입력값 기준, 적게 맡은 순)
+  function renderCounts() {
+    const cnt = {};
+    [...GUESTS.map(g => g.name), ...names].forEach(n => { cnt[n] = { r: 0, v: 0 }; });
+    root.querySelectorAll('.iv-table input[type=text]').forEach(i => {
+      const n = i.value.trim(); if (!n) return;
+      if (!cnt[n]) cnt[n] = { r: 0, v: 0 };
+      cnt[n][i.dataset.f.startsWith('review_') ? 'v' : 'r']++;
+    });
+    const rows = Object.entries(cnt).map(([n, c]) => ({ n, ...c, t: c.r + c.v }))
+      .sort((a, b) => a.t - b.t || a.n.localeCompare(b.n, 'ko'));
+    const max = Math.max(0, ...rows.map(x => x.t));
+    const guest = n => GUESTS.find(g => g.name === n);
+    document.getElementById('ivCount').innerHTML = `
+      <div class="iv-count-head"><b>인터뷰어 배정 횟수</b><span>적게 맡은 순 · 갱신 + 리뷰 합계 · 최다 ${max}회</span></div>
+      <div class="iv-chips">${rows.map(x => `
+        <span class="iv-chip${x.t === 0 ? ' zero' : x.t === max && max > 0 ? ' top' : ''}" title="갱신 ${x.r}회 · 리뷰 ${x.v}회">
+          ${esc(x.n)}${guest(x.n) ? `<small>${esc(guest(x.n).label)}</small>` : ''} <b>${x.t}</b>
+        </span>`).join('')}</div>`;
+  }
+  renderCounts();
+
   root.querySelectorAll('.iv-table input').forEach(inp => {
     inp.addEventListener('change', async () => {
       const tr = inp.closest('tr');
@@ -75,6 +98,7 @@
       const { error } = await getSb().from('member_interviews').upsert(row, { onConflict: 'member_name' });
       if (error) { console.error(error); inp.classList.add('err'); alert('저장 실패: ' + error.message); return; }
       inp.classList.add('saved');
+      renderCounts();
       setTimeout(() => inp.classList.remove('saved'), 1200);
       if (inp.type === 'date') {
         const old = inp.parentElement.querySelector('.iv-dday'); if (old) old.remove();
