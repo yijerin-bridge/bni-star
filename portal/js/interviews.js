@@ -44,6 +44,11 @@
   root.innerHTML = `
     <datalist id="ivMembers">${GUESTS.map(g => `<option value="${esc(g.name)}" label="${esc(g.label)}">`).join('')}${names.map(n => `<option value="${esc(n)}">`).join('')}</datalist>
     <div class="iv-count" id="ivCount"></div>
+    <div class="iv-sort">정렬
+      <button type="button" data-sort="name" class="on">이름순</button>
+      <button type="button" data-sort="renewal_date">갱신일순</button>
+      <button type="button" data-sort="review_date">리뷰일순</button>
+    </div>
     <div class="iv-wrap">
       <table class="iv-table">
         <thead>
@@ -88,6 +93,18 @@
         </span>`).join('')}</div>`;
   }
   renderCounts();
+
+  // 정렬: 날짜순은 빠른 날짜부터, 날짜 없는 멤버는 맨 아래 (버튼 누를 때만 다시 정렬)
+  function sortRows(key) {
+    const tbody = root.querySelector('.iv-table tbody');
+    const val = tr => key === 'name' ? '' : (tr.querySelector(`input[data-f="${key}"]`).value || '9999');
+    [...tbody.rows].sort((a, b) => val(a).localeCompare(val(b)) || a.dataset.name.localeCompare(b.dataset.name, 'ko'))
+      .forEach(tr => tbody.appendChild(tr));
+    root.querySelectorAll('.iv-sort button').forEach(b => b.classList.toggle('on', b.dataset.sort === key));
+    try { localStorage.setItem('ivSort', key); } catch {}
+  }
+  root.querySelectorAll('.iv-sort button').forEach(b => b.addEventListener('click', () => sortRows(b.dataset.sort)));
+  try { const k = localStorage.getItem('ivSort'); if (k && k !== 'name') sortRows(k); } catch {}
 
   root.querySelectorAll('.iv-table input').forEach(inp => {
     inp.addEventListener('change', async () => {
