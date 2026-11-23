@@ -86,6 +86,12 @@ function canAccessThanksCall(s) {
   return false;
 }
 
+// 인터뷰 일정(갱신·6개월 리뷰) — 의장단 또는 멤버십위원회
+function canAccessInterviews(s) {
+  if (!s) return false;
+  return s.roleType === 'board' || s.roleType === 'membership';
+}
+
 /* ---------- Nav Items by Role ---------- */
 function getNavItems(session) {
   if (!session) return [];
@@ -105,6 +111,9 @@ function getNavItems(session) {
     label: canAccessTraffic(session) ? '트래픽라이트' : '내 트래픽라이트',
     always: false,
   });
+  if (canAccessInterviews(session)) {
+    items.push({ href: '/portal/interviews.html', icon: '🗓️', label: '인터뷰 일정', always: false });
+  }
   if (canAccessFeatureFeedback(session)) {
     items.push({ href: '/portal/feature-feedback.html', icon: '🎤', label: '피처 피드백', always: false });
   }
