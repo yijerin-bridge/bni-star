@@ -123,9 +123,6 @@ function buildDashboard(session, el, members, weekly) {
   const convRate     = visitorCnt  > 0 ? Math.round(newMemberCnt  / visitorCnt  * 100) : 0;
   const convRatePrev = visitorPrev > 0 ? Math.round(newMemberPrev / visitorPrev * 100) : 0;
 
-  const myName   = session.memberName;
-  const myMember = members.find(m => m.name === myName);
-  const myStats  = myName ? calcMemberStats(myName, weekly, weeks4, myMember?.joined_date) : null;
 
   el.innerHTML = `
     <div class="page-header">
@@ -174,11 +171,6 @@ function buildDashboard(session, el, members, weekly) {
       ${renderRankCard('비지터 초대 Top 5', topN(members, statsMap, 'visitors',  5, '명'))}
       ${renderRankCard('감사장 금액 Top 5', topN(members, statsMap, 'tyfcb',     5, v => fmtAmt(v)))}
     </div>
-    ` : ''}
-
-    ${myStats ? `
-    <div class="dash-section-label" style="margin-top:${isLeader?'8px':'0'}">👤 내 현황</div>
-    ${renderPersonalCard(session, myStats, weeks4.length)}
     ` : ''}
 
     <div class="dash-section-label">📋 최근 회의</div>

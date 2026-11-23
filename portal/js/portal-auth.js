@@ -102,10 +102,7 @@ function getNavItems(session) {
   if (t === 'board') {
     items.push({ href: '/portal/goals.html', icon: '🎯', label: '목표 관리', always: false });
   }
-  items.push(
-    { href: '/portal/my-performance.html', icon: '📊', label: '내 성과',    always: true },
-    { href: '/portal/meetings.html',       icon: '📋', label: '회의록',     always: true },
-  );
+  items.push({ href: '/portal/meetings.html', icon: '📋', label: '회의록', always: true });
   items.push({
     href: '/portal/traffic-light.html', icon: '🚦',
     label: canAccessTraffic(session) ? '트래픽라이트' : '내 트래픽라이트',
