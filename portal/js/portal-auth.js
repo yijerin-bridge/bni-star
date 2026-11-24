@@ -108,6 +108,7 @@ function getNavItems(session) {
   }
   if (canAccessInterviews(session)) {
     items.push({ href: '/portal/interviews.html', icon: '🗓️', label: '인터뷰 일정', always: false });
+    items.push({ href: '/portal/interview-sheet.html', icon: '🖨️', label: '인터뷰 일정표', always: false });
   }
   if (canAccessFeatureFeedback(session)) {
     items.push({ href: '/portal/feature-feedback.html', icon: '🎤', label: '피처 피드백', always: false });

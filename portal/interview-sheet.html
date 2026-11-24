@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>인터뷰 일정표 — BNI STAR Portal</title>
+  <meta name="robots" content="noindex, nofollow">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/portal/css/portal.css">
+  <style>
+    .sh-bar { display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; margin-bottom:12px; }
+    .sh-paper { background:#fff; border:1.5px solid var(--border); border-radius:12px; padding:22px 24px; }
+    .sh-paper h2 { font-size:19px; margin:0 0 2px; }
+    .sh-sub { color:#6b7280; font-size:12px; margin-bottom:10px; }
+    .sh-legend { display:flex; gap:12px; font-size:11.5px; color:#4b5563; margin-bottom:8px; flex-wrap:wrap; }
+    .sh-legend span::before { content:''; display:inline-block; width:10px; height:10px; margin-right:4px; vertical-align:-1px; border:1px solid #d1d5db; }
+    .sh-legend .l1::before { background:#fef3c7; } .sh-legend .l2::before { background:#e0f2fe; } .sh-legend .l3::before { background:#f0fdf4; }
+    .sh-scroll { overflow-x:auto; }
+    .sh-table { width:100%; min-width:900px; border-collapse:collapse; font-size:12.5px; }
+    .sh-table th, .sh-table td { border:1px solid #d1d5db; padding:7px 8px; text-align:center; }
+    .sh-table th { font-size:11.5px; }
+    .sh-table .no { width:30px; color:#9ca3af; } .sh-table .name { text-align:left; font-weight:700; width:90px; white-space:nowrap; }
+    .g-rev { background:#fef3c7; } .h-rev { background:#f59e0b; color:#fff; } .s-rev { background:#fde68a; color:#78350f; }
+    .g-ren { background:#e0f2fe; } .h-ren { background:#0284c7; color:#fff; } .s-ren { background:#bae6fd; color:#075985; }
+    .g-mt { background:#f0fdf4; } .h-mt { background:#16a34a; color:#fff; } .s-mt { background:#bbf7d0; color:#14532d; }
+    .h-base { background:#374151; color:#fff; }
+    .sh-table tr.sep td { border-top:2.5px solid #6b7280; }
+    .rev-off { background:#f9fafb; }
+    .sh-table small { font-size:10px; color:#6b7280; margin-left:3px; }
+    .none { color:#cbd5e1; } .date { font-weight:700; white-space:nowrap; }
+    .ok { color:#16a34a; font-weight:700; font-size:10.5px; }
+    .mo { color:#16a34a; font-size:14px; } .mx { color:#dc2626; font-size:14px; }
+    .sh-sum { margin-top:12px; display:flex; flex-wrap:wrap; gap:5px; align-items:center; font-size:12px; }
+    .sh-chip { border:1px solid #d1d5db; border-radius:10px; padding:2px 8px; background:#fff; }
+    .sh-chip b { margin-left:3px; }
+    @media print {
+      @page { size:A4 landscape; margin:12mm; }
+      * { -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+      html, body { background:#fff !important; }
+      .sidebar, .topbar, .no-print { display:none !important; }
+      .portal-layout, .main-content { min-height:0 !important; background:#fff !important; }
+      .main-content { margin-left:0 !important; padding-top:0 !important; }
+      .page-body { padding:0 !important; max-width:none !important; }
+      .sh-paper { border:0; padding:0; border-radius:0; }
+      .sh-scroll { overflow:visible; }
+      .sh-table { min-width:0; font-size:11.5px; }
+      .sh-table thead { display:table-header-group; }
+      .sh-table tr { break-inside:avoid; }
+    }
+  </style>
+</head>
+<body>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="/js/supabase-config.js"></script>
+<script src="/js/members-data.js"></script>
+<script src="/portal/js/portal-auth.js"></script>
+<script src="/portal/js/portal-nav.js"></script>
+<script src="/portal/js/interview-sheet.js"></script>
+</body>
+</html>

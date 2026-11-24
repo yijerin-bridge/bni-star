@@ -14,6 +14,7 @@
   bodyEl.innerHTML = `
     <div class="page-header">
       <div><h1>인터뷰 일정</h1><p>갱신 인터뷰 · 6개월 리뷰(해당자만) · 멘토링(90일 리뷰) — 입력하면 바로 저장됩니다</p></div>
+      <a href="/portal/interview-sheet.html" class="btn btn-outline btn-sm">🖨️ 일정표 보기 · 출력</a>
     </div>
     <div id="ivRoot"><div style="text-align:center;padding:48px;color:#9ca3af">불러오는 중...</div></div>`;
   const root = document.getElementById('ivRoot');
