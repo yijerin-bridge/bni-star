@@ -226,14 +226,31 @@ function renderOverview() {
     <div class="member-score-grid">
       ${memberScores.map(m => {
         const lEmoji = {green:'🟢',amber:'🟡',red:'🔴',gray:'⚫'}[m.light]||'⚫';
-        // 바 = 월별 누적 점수 추세
-        const months = [...new Set(m.recs.map(r => r.week_date.slice(0,7)))].sort();
-        const wBars = months.map(mo => {
-          const recsUpTo = m.recs.filter(r => r.week_date.slice(0,7) <= mo);
-          const sc = calcMemberScore(recsUpTo, recsUpTo.length || 1);
+        // 바 = 월별 트래픽라이트 점수 (N월 = 전월까지 마감된 6개월 기준, 마지막 막대 = 지금 적용 중인 달)
+        const joinYm = (m.joined_date || CHAPTER_LAUNCH).slice(0, 7);
+        const months = [], scores = [];
+        for (let d = new Date(+CHAPTER_LAUNCH.slice(0,4), +CHAPTER_LAUNCH.slice(5,7) - 1, 1); ; d.setMonth(d.getMonth() + 1)) {
+          const ym = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;   // 마감 월
+          if (ym >= WIN6.end.slice(0, 7)) break;
+          if (ym < joinYm) continue;
+          const mEnd = new Date(d.getFullYear(), d.getMonth() + 1, 0);
+          const endS = `${ym}-${String(mEnd.getDate()).padStart(2,'0')}`;
+          const st6 = new Date(d.getFullYear(), d.getMonth() - 5, 1);
+          const startS = [`${st6.getFullYear()}-${String(st6.getMonth()+1).padStart(2,'0')}-01`, CHAPTER_LAUNCH, m.joined_date || CHAPTER_LAUNCH].sort().reverse()[0];
+          const recs = m.recs.filter(r => r.week_date >= startS && r.week_date <= endS);
+          const denom = Math.max(WEEKS_ALL.filter(w => w >= startS && w <= endS).length, new Set(recs.map(r => r.week_date)).size, 1);
+          months.push(d.getMonth() === 11 ? 1 : d.getMonth() + 2);   // 적용 월 = 마감 월 + 1
+          scores.push(recs.length ? calcMemberScore(recs, denom) : null);
+        }
+        months.push(applyMonth);
+        scores.push(m.recs.length ? { total: m.total, light: m.light } : null);
+        const wBars = months.map((mo, i) => {
+          const sc = scores[i];
+          if (!sc) return `<div class="ms-spark-bar" style="height:4px;background:#e5e7eb;border-radius:2px" title="${mo}월: 기록 없음"></div>`;
           const h = Math.max(4, Math.round(sc.total / 100 * 28));
           const col = {green:'#16a34a', amber:'#ca8a04', red:'#CC0000', gray:'#9ca3af'}[sc.light] || '#9ca3af';
-          return `<div class="ms-spark-bar" style="height:${h}px;background:${col};border-radius:2px" title="${mo}: ${sc.total}점 (${sc.light})"></div>`;
+          const cur = i === months.length - 1 ? ';outline:1.5px solid #1a1f2e;outline-offset:1px' : '';
+          return `<div class="ms-spark-bar" style="height:${h}px;background:${col};border-radius:2px${cur}" title="${mo}월 트래픽라이트: ${sc.total}점 (${sc.light})"></div>`;
         });
         return `
         <div class="ms-card ${m.light}" onclick="showMemberDetail('${m.name}')">
@@ -244,7 +261,7 @@ function renderOverview() {
           </div>
           ${m.light === 'gray' ? `<div style="font-size:10px;color:#9ca3af;background:#f9fafb;border-radius:6px;padding:4px 8px;margin-bottom:6px">💬 활동 독려가 필요합니다</div>` : ''}
           ${m.light === 'red'  ? `<div style="font-size:10px;color:#CC0000;background:#fff1f2;border-radius:6px;padding:4px 8px;margin-bottom:6px">⚠️ 개선 상담을 권장합니다</div>` : ''}
-          <div style="font-size:9px;color:#9ca3af;margin-bottom:3px">월별 점수 추세 ${months.length ? `(${months[0].slice(0,7)} ~ ${months[months.length-1].slice(0,7)})` : ''}</div>
+          <div style="font-size:9px;color:#9ca3af;margin-bottom:3px">월별 점수 추세 ${months.length ? `(${months[0]}월 ~ ${months[months.length-1]}월)` : ''}</div>
           <div class="ms-sparkline" style="align-items:flex-end">${wBars.length ? wBars.join('') : '<span style="font-size:10px;color:#d1d5db">데이터 없음</span>'}</div>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-top:8px">
             ${[
