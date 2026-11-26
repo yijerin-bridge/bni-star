@@ -192,6 +192,15 @@ function renderOverview() {
 
   const aiTips = genAIOverview(memberScores);
 
+  // 적용 월 = 마감된 6개월 다음 달 (11월 마감 → 12월 트래픽라이트)
+  const [wy, wm] = WIN6.end.split('-').map(Number);
+  const applyMonth = wm === 12 ? 1 : wm + 1;
+  const chapterExtra = allWeeklyRecs.filter(r => r.week_date > WIN6.end).map(r => r.week_date).sort().pop();
+  const chapterEnd   = chapterExtra ? (chapterExtra > TODAY ? chapterExtra : TODAY) : WIN6.end;
+  const chapterStart = [winStartFor(chapterEnd), CHAPTER_LAUNCH].sort().reverse()[0];
+  const chapterWeeks = WEEKS_ALL.filter(w => w >= chapterStart && w <= chapterEnd).length;
+  const md = d => `${+d.slice(5,7)}/${+d.slice(8,10)}`;
+
   el.innerHTML = `
     ${aiTips.length ? `
     <div class="card" style="margin-bottom:16px">
@@ -206,7 +215,7 @@ function renderOverview() {
     </div>` : ''}
 
     <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:16px">
-      <span style="font-size:13px;color:#9ca3af">챕터 런칭 후 ${pastWeeks}주차 · 24주 중</span>
+      <span class="tl-month-label"><b>${applyMonth}월 트래픽라이트</b> · 점수 기간 ${md(chapterStart)} ~ ${md(chapterEnd)} (${chapterWeeks}주)${chapterExtra ? ' · 다음 달 입력분 포함' : ''}</span>
       <span class="score-badge green">🟢 ${green}명</span>
       <span class="score-badge amber">🟡 ${amber}명</span>
       <span class="score-badge red">🔴 ${red}명</span>
