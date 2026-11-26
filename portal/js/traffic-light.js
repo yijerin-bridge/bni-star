@@ -70,7 +70,7 @@ function get6MonthWindow() {
   const fmt = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
   return { start: fmt(start), end: fmt(end) };
 }
-const WIN6 = get6MonthWindow(); // 페이지 로드 시 한 번 계산
+let WIN6 = get6MonthWindow(); // 기록을 불러오면 tlClosedWindow로 다시 계산 (월 마감 반영)
 
 // 점수 기간 시작: 마감 전이면 끝 날짜에서 날짜로 6개월 (예: 11/12까지 → 5/13부터, 12/2까지 → 6/3부터)
 function winStartFor(endDate) { return tlWinStart(endDate, WIN6.end, WIN6.start); }
@@ -95,6 +95,7 @@ async function loadAll() {
   ]);
   allMembers    = (memRes.data || []).map(m => ({ ...m, uid: m.legacy_id ?? m.id }));
   allWeeklyRecs = recRes.data || [];
+  WIN6 = tlClosedWindow(allWeeklyRecs.map(r => r.week_date));
 }
 
 /* ── 초기화 ── */
@@ -1984,11 +1985,13 @@ function genAIOverview(memberScores) {
     tips.push({type:'positive',icon:'🏅',text:`이번 기간 MVP — ${mvpParts.join(' · ')} · 미팅에서 박수로 공개 인정해 주세요!`});
 
   // 전월대비 트래픽라이트 점수 향상
-  if (TODAY > WIN6.end) {
+  {
+    // 진행 중인 달이면 직전 마감 기간과, 이번 달이 이미 마감됐으면 그 전 기간과 비교
+    const PW = TODAY > WIN6.end ? WIN6 : tlPrevWindow(WIN6);
     const improved = memberScores.map(m => {
-      const effStart = [WIN6.start, CHAPTER_LAUNCH, m.joined_date || CHAPTER_LAUNCH].sort().reverse()[0];
-      const prevRecs = m.recs.filter(r => r.week_date >= effStart && r.week_date <= WIN6.end);
-      const prevDenom = Math.max(WEEKS_ALL.filter(w => w >= effStart && w <= WIN6.end).length, 1);
+      const effStart = [PW.start, CHAPTER_LAUNCH, m.joined_date || CHAPTER_LAUNCH].sort().reverse()[0];
+      const prevRecs = m.recs.filter(r => r.week_date >= effStart && r.week_date <= PW.end);
+      const prevDenom = Math.max(WEEKS_ALL.filter(w => w >= effStart && w <= PW.end).length, 1);
       const prevSc = calcMemberScore(prevRecs, prevDenom);
       return { name: m.name, prev: prevSc.total, now: m.total, diff: m.total - prevSc.total };
     }).filter(m => m.diff > 0).sort((a,b) => b.diff - a.diff);

@@ -58,6 +58,26 @@ function calcMemberScore(recs, pastWeeks) {
 /* 트래픽라이트 점수 기간 시작일
    - 달이 마감된 상태(끝 = 전월 말): 마감된 6개월의 1일부터
    - 이번 달 기록이 있어 마감 전(끝 > 전월 말): 끝 날짜에서 날짜로 6개월 전 다음 날부터 (주 단위로 끊김) */
+/* ── 6개월 마감 윈도우 ──
+   기본은 달력상 전월까지 6개월. 그 다음 달도 마지막 수요일 기록이 들어왔으면 마감으로 보고
+   바로 다음 달 기준을 적용 (예: 11/25 입력 완료 → 6/1~11/30) */
+function tlFmt(d) { return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
+function tlLastWed(y, m0) {          // m0: 0부터 시작하는 월
+  const d = new Date(y, m0 + 1, 0);
+  d.setDate(d.getDate() - ((d.getDay() - 3 + 7) % 7));
+  return tlFmt(d);
+}
+function tlClosedWindow(weekDates, now = new Date()) {
+  const dates = new Set(weekDates || []);
+  const y = now.getFullYear(); let m = now.getMonth();  // m월(0-index) 직전까지 마감
+  for (let i = 0; i < 2 && dates.has(tlLastWed(y, m)); i++) m++;
+  return { start: tlFmt(new Date(y, m - 6, 1)), end: tlFmt(new Date(y, m, 0)) };
+}
+function tlPrevWindow(win) {         // 한 달 앞의 6개월 윈도우 (전월 대비용)
+  const [sy, sm] = win.start.split('-').map(Number), [ey, em] = win.end.split('-').map(Number);
+  return { start: tlFmt(new Date(sy, sm - 2, 1)), end: tlFmt(new Date(ey, em - 1, 0)) };
+}
+
 function tlWinStart(end, closedEnd, closedStart) {
   if (end <= closedEnd) return closedStart;
   const d = new Date(end + 'T00:00:00Z');
@@ -79,7 +99,8 @@ function tlMonthScores(ym, members, weekly) {
   const monthStart6 = fmt(new Date(y, m - 1 - 5, 1)); // 이번 달까지 6개월의 시작
   const monthEnd = fmt(new Date(y, m, 0));
   if (`${ym}-01` > today) return [];
-  const isCurrent = monthEnd >= today;
+  // 이번 달이라도 마지막 수요일 기록이 들어왔으면 마감된 달로 취급
+  const isCurrent = monthEnd >= today && !weekly.some(r => r.week_date === tlLastWed(y, m - 1));
   const wedsUpTo = end => { const a = []; const d = new Date(LAUNCH + 'T00:00:00Z');
     while (d.toISOString().slice(0,10) <= end) { a.push(d.toISOString().slice(0,10)); d.setUTCDate(d.getUTCDate() + 7); } return a; };
   return members.map(mb => {

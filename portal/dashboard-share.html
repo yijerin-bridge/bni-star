@@ -119,7 +119,7 @@ function renderRank(title, list) {
   const w4      = weekly.filter(w => weeks4.includes(w.week_date));
 
   // 트래픽라이트 색상 (직전 6개월 윈도우)
-  const win6 = get6MonthWindow();
+  const win6 = tlClosedWindow(weekly.map(r => r.week_date)); // 월 마감 반영
   const lightMap = {};
   members.forEach(m => { lightMap[m.name] = calcLight(weekly.filter(r => r.member_name === m.name && r.week_date >= win6.start && r.week_date <= win6.end)); });
 

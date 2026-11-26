@@ -375,13 +375,8 @@ function getRecentWeeks(n) {
   return weeks;
 }
 
-function _get6MonthWindow() {
-  const t = new Date();
-  const end   = new Date(t.getFullYear(), t.getMonth(), 0);
-  const start = new Date(t.getFullYear(), t.getMonth() - 6, 1);
-  const fmt = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-  return { start: fmt(start), end: fmt(end) };
-}
+// 월 마감 반영 6개월 윈도우 (scoring.js tlClosedWindow)
+function _get6MonthWindow(weekly) { return tlClosedWindow((weekly || []).map(w => w.week_date)); }
 
 /* 채점 함수 → scoring.js 참고 */
 
@@ -394,10 +389,11 @@ function calcMemberStats(memberName, weekly, weeks, joinedDate) {
   const referrals  = wRecs.reduce((s,w) => s + (w.given_t1||0) + (w.given_t2||0), 0);
 
   // 트래픽라이트 색상: traffic-light.js와 동일한 effStart 로직
-  const win6     = _get6MonthWindow();
+  const win6     = _get6MonthWindow(weekly);
   const allRecs  = weekly.filter(w => w.member_name === memberName);
   const extraRecs = allRecs.filter(w => w.week_date > win6.end);
-  const previewEnd = extraRecs.length > 0 ? _TODAY : win6.end;
+  const lastExtra = extraRecs.map(w => w.week_date).sort().pop();
+  const previewEnd = extraRecs.length > 0 ? (lastExtra > _TODAY ? lastExtra : _TODAY) : win6.end;
   const effStart = [tlWinStart(previewEnd, win6.end, win6.start), _CHAPTER_LAUNCH, joinedDate || _CHAPTER_LAUNCH].sort().reverse()[0];
   const winRecs  = allRecs.filter(w => w.week_date >= effStart && w.week_date <= previewEnd);
   if (!winRecs.length) return { attendance, ono, visitors, referrals, light: 'gray' };
@@ -499,16 +495,20 @@ function renderAIDirector(allStats, members, total, statsMap, weekly) {
 
   // 전월대비 점수 향상
   if (weekly) {
-    const win6 = _get6MonthWindow();
+    const cur6 = _get6MonthWindow(weekly);
+    // 이번 달이 이미 마감됐으면 현재 = 마감 기간, 비교 대상 = 그 전 기간
+    const closedNow = cur6.end >= _TODAY;
+    const win6 = closedNow ? tlPrevWindow(cur6) : cur6;
+    const nowEnd = closedNow ? cur6.end : _TODAY;
     const calcScore = (recs, denom) => calcMemberScore(recs, denom).total;
     const improved = members.map(m => {
       const allRecs  = weekly.filter(w => w.member_name === m.name);
       const effStart = [win6.start, _CHAPTER_LAUNCH, m.joined_date || _CHAPTER_LAUNCH].sort().reverse()[0];
       const prevRecs = allRecs.filter(r => r.week_date >= effStart && r.week_date <= win6.end);
       const prevDenom = Math.max(_WEEKS_ALL.filter(w => w >= effStart && w <= win6.end).length, 1);
-      const nowStart = [tlWinStart(_TODAY, win6.end, win6.start), _CHAPTER_LAUNCH, m.joined_date || _CHAPTER_LAUNCH].sort().reverse()[0];
-      const nowRecs  = allRecs.filter(r => r.week_date >= nowStart && r.week_date <= _TODAY);
-      const nowDenom = Math.max(_WEEKS_ALL.filter(w => w >= nowStart && w <= _TODAY).length, nowRecs.length, 1);
+      const nowStart = [closedNow ? cur6.start : tlWinStart(_TODAY, win6.end, win6.start), _CHAPTER_LAUNCH, m.joined_date || _CHAPTER_LAUNCH].sort().reverse()[0];
+      const nowRecs  = allRecs.filter(r => r.week_date >= nowStart && r.week_date <= nowEnd);
+      const nowDenom = Math.max(_WEEKS_ALL.filter(w => w >= nowStart && w <= nowEnd).length, nowRecs.length, 1);
       return { name: m.name, diff: calcScore(nowRecs, nowDenom) - calcScore(prevRecs, prevDenom) };
     }).filter(m => m.diff > 0).sort((a,b) => b.diff - a.diff);
     if (improved.length > 0)

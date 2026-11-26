@@ -66,6 +66,7 @@ function getAllWeeks() {
 }
 const WEEKS_ALL = getAllWeeks();
 
+let chapterDates = [];
 function get6MonthWindow() {
   const t = new Date();
   const end   = new Date(t.getFullYear(), t.getMonth(), 0);
@@ -141,16 +142,19 @@ function genAITips(name, sc) {
   const [{ data: members }, { data: recs }] = await Promise.all([
     sb.from('members').select('name,joined_date').eq('name', decodeURIComponent(name)).limit(1),
     sb.from('weekly_records').select('*').eq('member_name', decodeURIComponent(name)).order('week_date'),
-  ]);
+    // 월 마감 판정용 — 챕터 전체의 최근 기록 날짜
+    sb.from('weekly_records').select('week_date').gt('week_date', get6MonthWindow().end),
+  ]).then(r => { chapterDates = (r[2].data || []).map(x => x.week_date); return r; });
 
   const nm      = decodeURIComponent(name);
   const member  = members?.[0];
 
-  const win6     = get6MonthWindow();
+  const win6     = tlClosedWindow(chapterDates);
   const allRecs  = recs || [];
   const extraRecs = allRecs.filter(r => r.week_date > win6.end);
   const hasExtra  = extraRecs.length > 0;
-  const previewEnd = hasExtra ? TODAY : win6.end;
+  const lastExtra = extraRecs.map(r => r.week_date).sort().pop();
+  const previewEnd = hasExtra ? (lastExtra > TODAY ? lastExtra : TODAY) : win6.end;
   const effStart = [tlWinStart(previewEnd, win6.end, win6.start), CHAPTER_LAUNCH, member?.joined_date || CHAPTER_LAUNCH].sort().reverse()[0];
   const winRecs  = allRecs.filter(r => r.week_date >= effStart && r.week_date <= previewEnd);
   const memWeeks = getMemberWeeks(member?.joined_date);
